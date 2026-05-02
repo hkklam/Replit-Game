@@ -19,215 +19,369 @@ function Shell({ title, controls, children }: { title: string; controls?: string
   );
 }
 
-const COLS = 11; const ROWS = 10; const R = 22; const DIAM = R * 2;
-const W = COLS * DIAM; const H = 520;
+const COLS = 11;
+const R = 18;
+const DIAM = R * 2;
+const ROW_H = DIAM + 2;
+const W = COLS * DIAM;           // 396
+const H = 560;
+const TOP_PAD = 18;
+const DANGER_Y = H - 90;
+const SHOOTER_X = W / 2;
+const SHOOTER_Y = H - 42;
 const COLORS = ["#f43f5e", "#10b981", "#3b82f6", "#f59e0b", "#a78bfa"];
-type Bubble = { color: string } | null;
+
+type Difficulty = "easy" | "medium" | "hard";
+const DIFF: Record<Difficulty, { rows: number; interval: number; label: string; desc: string }> = {
+  easy:   { rows: 3, interval: 20000, label: "Easy",   desc: "3 starting rows · new row every 20s" },
+  medium: { rows: 5, interval: 12000, label: "Medium", desc: "5 starting rows · new row every 12s" },
+  hard:   { rows: 7, interval: 7000,  label: "Hard",   desc: "7 starting rows · new row every 7s"  },
+};
 
 function rndColor() { return COLORS[Math.floor(Math.random() * COLORS.length)]; }
-function initGrid(): Bubble[][] { return Array.from({ length: 8 }, (_, r) => Array.from({ length: r % 2 === 0 ? COLS : COLS - 1 }, () => ({ color: rndColor() }))); }
-function bx(col: number, row: number) { return col * DIAM + (row % 2 !== 0 ? R : 0) + R; }
-function by(row: number) { return row * (DIAM - 6) + R + 40; }
-function distSq(ax: number, ay: number, bxv: number, byv: number) { return (ax - bxv) ** 2 + (ay - byv) ** 2; }
+function bx(col: number) { return col * DIAM + R; }
+function by(row: number) { return row * ROW_H + R + TOP_PAD; }
 
-type PlayerState = { color: string; nextColor: string; angle: number; score: number; shotsLeft: number };
+function makeRow(): (string | null)[] {
+  return Array.from({ length: COLS }, () => rndColor());
+}
+function initGrid(rows: number): (string | null)[][] {
+  return Array.from({ length: rows }, () => makeRow());
+}
+
+function cellNbrs(r: number, c: number): [number, number][] {
+  return ([ [-1,-1],[-1,0],[-1,1], [0,-1],[0,1], [1,-1],[1,0],[1,1] ] as [number,number][])
+    .map(([dr, dc]) => [r + dr, c + dc] as [number, number])
+    .filter(([nr, nc]) => nr >= 0 && nc >= 0 && nc < COLS);
+}
+
+function floodFill(grid: (string | null)[][], r: number, c: number): [number, number][] {
+  const color = grid[r]?.[c];
+  if (!color) return [];
+  const vis = new Set<string>();
+  const q: [number, number][] = [[r, c]];
+  const out: [number, number][] = [];
+  while (q.length) {
+    const [cr, cc] = q.pop()!;
+    const k = `${cr},${cc}`;
+    if (vis.has(k)) continue;
+    if (cr < 0 || cr >= grid.length || cc < 0 || cc >= COLS) continue;
+    if (grid[cr]?.[cc] !== color) continue;
+    vis.add(k); out.push([cr, cc]);
+    cellNbrs(cr, cc).forEach(n => q.push(n));
+  }
+  return out;
+}
+
+function findDetached(grid: (string | null)[][]): [number, number][] {
+  const conn = new Set<string>();
+  const q: [number, number][] = [];
+  for (let c = 0; c < COLS; c++) {
+    if (grid[0]?.[c]) { conn.add(`0,${c}`); q.push([0, c]); }
+  }
+  while (q.length) {
+    const [r, c] = q.pop()!;
+    cellNbrs(r, c).forEach(([nr, nc]) => {
+      const k = `${nr},${nc}`;
+      if (conn.has(k) || nr >= grid.length || !grid[nr]?.[nc]) return;
+      conn.add(k); q.push([nr, nc]);
+    });
+  }
+  const det: [number, number][] = [];
+  for (let r = 1; r < grid.length; r++)
+    for (let c = 0; c < COLS; c++)
+      if (grid[r]?.[c] && !conn.has(`${r},${c}`)) det.push([r, c]);
+  return det;
+}
+
+type GS = {
+  grid: (string | null)[][];
+  color: string; nextColor: string; angle: number;
+  proj: { x: number; y: number; vx: number; vy: number; color: string } | null;
+  score: number;
+  state: "playing" | "lose";
+  lastAdd: number;
+  interval: number;
+};
+function mkGS(d: Difficulty): GS {
+  const cfg = DIFF[d];
+  return {
+    grid: initGrid(cfg.rows),
+    color: rndColor(), nextColor: rndColor(),
+    angle: -Math.PI / 2,
+    proj: null,
+    score: 0, state: "playing",
+    lastAdd: Date.now(), interval: cfg.interval,
+  };
+}
 
 export default function BubbleShooter() {
   const cv = useRef<HTMLCanvasElement>(null);
-  const g = useRef({
-    mode: "1p" as "1p" | "2p",
-    grid: initGrid() as Bubble[][],
-    p1: { color: rndColor(), nextColor: rndColor(), angle: -Math.PI / 2, score: 0, shotsLeft: 0 } as PlayerState,
-    p2: { color: rndColor(), nextColor: rndColor(), angle: -Math.PI / 2, score: 0, shotsLeft: 0 } as PlayerState,
-    turn: 1 as 1 | 2,
-    projectile: null as { x: number; y: number; vx: number; vy: number; color: string; owner: 1 | 2 } | null,
-    state: "playing" as "playing" | "win" | "lose",
-  });
-  const [screen, setScreen] = useState<"menu" | "game">("menu");
-  const [p1Score, setP1Score] = useState(0); const [p2Score, setP2Score] = useState(0);
-  const [turn, setTurn] = useState<1 | 2>(1);
-  const [state, setState] = useState<"playing" | "win" | "lose">("playing");
-  const [gameMode, setGameMode] = useState<"1p" | "2p">("1p");
+  const g = useRef<GS>(mkGS("easy"));
   const raf = useRef(0);
+  const [screen, setScreen] = useState<"menu" | "game">("menu");
+  const [score, setScore] = useState(0);
+  const [gstate, setGState] = useState<"playing" | "lose">("playing");
+  const [diff, setDiff] = useState<Difficulty>("easy");
 
   const draw = useCallback(() => {
-    const c = cv.current; if (!c) return;
-    const ctx = c.getContext("2d")!;
-    ctx.fillStyle = "#0d1117"; ctx.fillRect(0, 0, W, H);
+    const cvEl = cv.current; if (!cvEl) return;
+    const ctx = cvEl.getContext("2d")!;
     const s = g.current;
+
+    ctx.fillStyle = "#0d1117"; ctx.fillRect(0, 0, W, H);
+
+    // Danger zone
+    ctx.fillStyle = "rgba(239,68,68,0.07)"; ctx.fillRect(0, DANGER_Y, W, H - DANGER_Y);
+    ctx.strokeStyle = "rgba(239,68,68,0.5)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(0, DANGER_Y); ctx.lineTo(W, DANGER_Y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(239,68,68,0.6)"; ctx.font = "9px sans-serif"; ctx.textAlign = "right";
+    ctx.fillText("DANGER", W - 4, DANGER_Y - 3);
+
+    // Grid bubbles
     s.grid.forEach((row, r) => row.forEach((b, col) => {
       if (!b) return;
-      const x = bx(col, r), y = by(r);
-      ctx.beginPath(); ctx.arc(x, y, R - 2, 0, Math.PI * 2);
-      ctx.fillStyle = b.color; ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 1.5; ctx.stroke();
+      const x = bx(col), y = by(r);
+      ctx.beginPath(); ctx.arc(x, y, R - 1, 0, Math.PI * 2);
+      ctx.fillStyle = b; ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x - R * 0.28, y - R * 0.28, R * 0.27, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,0.22)"; ctx.fill();
     }));
-    // Danger line
-    ctx.strokeStyle = "rgba(239,68,68,0.3)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(0, H - 80); ctx.lineTo(W, H - 80); ctx.stroke(); ctx.setLineDash([]);
-    // Shooter area — who's turn it is
-    const activePl = s.mode === "2p" && s.turn === 2 ? s.p2 : s.p1;
-    const shooterColor = s.mode === "2p" && s.turn === 2 ? "#f472b6" : "#6366f1";
-    const cx2 = W / 2, cy2 = H - 40;
-    ctx.fillStyle = "#334155"; ctx.beginPath(); ctx.arc(cx2, cy2, R + 4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = activePl.color; ctx.beginPath(); ctx.arc(cx2, cy2, R - 2, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = shooterColor; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(cx2, cy2); ctx.lineTo(cx2 + Math.cos(activePl.angle) * 55, cy2 + Math.sin(activePl.angle) * 55); ctx.stroke();
-    // Next bubble
-    ctx.fillStyle = activePl.nextColor; ctx.beginPath(); ctx.arc(30, H - 40, R - 2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#94a3b8"; ctx.font = "10px sans-serif"; ctx.textAlign = "left"; ctx.fillText("NEXT", 13, H - 70);
-    // Turn indicator
-    if (s.mode === "2p") {
-      ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center";
-      ctx.fillStyle = s.turn === 1 ? "#6366f1" : "#f472b6";
-      ctx.fillText(s.turn === 1 ? "P1's Turn" : "P2's Turn", W / 2, H - 75);
-    }
+
     // Projectile
-    if (s.projectile) {
-      const p = s.projectile;
-      ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, R - 2, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 1.5; ctx.stroke();
+    if (s.proj) {
+      const p = s.proj;
+      ctx.beginPath(); ctx.arc(p.x, p.y, R - 1, 0, Math.PI * 2);
+      ctx.fillStyle = p.color; ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 2; ctx.stroke();
     }
-    // Scores
-    ctx.fillStyle = "#6366f1"; ctx.font = "bold 13px sans-serif"; ctx.textAlign = "left"; ctx.fillText(`P1: ${s.p1.score}`, 8, 24);
-    if (s.mode === "2p") { ctx.fillStyle = "#f472b6"; ctx.textAlign = "right"; ctx.fillText(`P2: ${s.p2.score}`, W - 8, 24); }
+
+    // Aim guide
+    if (!s.proj && s.state === "playing") {
+      ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.lineWidth = 1; ctx.setLineDash([3, 6]);
+      ctx.beginPath(); ctx.moveTo(SHOOTER_X, SHOOTER_Y);
+      ctx.lineTo(SHOOTER_X + Math.cos(s.angle) * 65, SHOOTER_Y + Math.sin(s.angle) * 65);
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // Shooter circle
+    ctx.fillStyle = "#1e293b"; ctx.beginPath(); ctx.arc(SHOOTER_X, SHOOTER_Y, R + 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#334155"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(SHOOTER_X, SHOOTER_Y, R - 1, 0, Math.PI * 2);
+    ctx.fillStyle = s.color; ctx.fill();
+
+    // Next bubble preview
+    ctx.fillStyle = "#1e293b"; ctx.beginPath(); ctx.arc(W - 30, SHOOTER_Y, R + 2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#334155"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(W - 30, SHOOTER_Y, R - 3, 0, Math.PI * 2);
+    ctx.fillStyle = s.nextColor; ctx.fill();
+    ctx.fillStyle = "#64748b"; ctx.font = "9px sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("NEXT", W - 30, SHOOTER_Y - R - 5);
+
+    // Score
+    ctx.fillStyle = "#e2e8f0"; ctx.font = "bold 14px sans-serif"; ctx.textAlign = "left";
+    ctx.fillText(`Score: ${s.score}`, 8, 18);
+
+    // Row timer bar
+    const frac = Math.max(0, 1 - (Date.now() - s.lastAdd) / s.interval);
+    ctx.fillStyle = "#1e293b"; ctx.fillRect(8, 26, 80, 5);
+    ctx.fillStyle = frac > 0.35 ? "#22d3ee" : "#f43f5e";
+    ctx.fillRect(8, 26, frac * 80, 5);
+    ctx.fillStyle = "#475569"; ctx.font = "9px sans-serif";
+    ctx.fillText("next row ▼", 8, 40);
   }, []);
 
-  const popMatches = useCallback((grid: Bubble[][], startR: number, startC: number, color: string) => {
-    const visited = new Set<string>(); const queue = [[startR, startC]]; const matched: [number, number][] = [];
-    while (queue.length) {
-      const [r, c] = queue.pop()!; const k = `${r},${c}`;
-      if (visited.has(k)) continue;
-      if (r < 0 || r >= grid.length || c < 0 || c >= (grid[r]?.length ?? 0)) continue;
-      if (!grid[r]?.[c] || grid[r][c]!.color !== color) continue;
-      visited.add(k); matched.push([r, c]);
-      const offs = r % 2 === 0
-        ? [[0,1],[0,-1],[-1,-1],[-1,0],[1,-1],[1,0]]
-        : [[0,1],[0,-1],[-1,0],[-1,1],[1,0],[1,1]];
-      offs.forEach(([dr, dc]) => queue.push([r + dr, c + dc]));
+  const applyHit = useCallback((px: number, py: number, color: string, hitR: number, hitC: number) => {
+    const s = g.current;
+    // Find the best adjacent empty cell to place the bubble
+    const cands = cellNbrs(hitR, hitC).filter(([r, c]) => {
+      if (r < 0) return false;
+      if (r >= s.grid.length) return true; // new row below
+      return !s.grid[r]?.[c];
+    });
+    let plR = hitR + 1, plC = hitC, bestD = Infinity;
+    for (const [r, c] of cands) {
+      const d = (px - bx(c)) ** 2 + (py - by(r)) ** 2;
+      if (d < bestD) { bestD = d; plR = r; plC = c; }
     }
+    plC = Math.max(0, Math.min(COLS - 1, plC));
+    // Extend grid if new row needed
+    while (s.grid.length <= plR) s.grid.push(Array(COLS).fill(null));
+    s.grid[plR][plC] = color;
+    // Flood fill same color
+    const matched = floodFill(s.grid, plR, plC);
     if (matched.length >= 2) {
-      const lowestRow = Math.max(...matched.map(([r]) => r));
-      const toRemove = matched.filter(([r]) => r === lowestRow);
-      toRemove.forEach(([r, c]) => { grid[r][c] = null; });
-      return toRemove.length * 10;
+      matched.forEach(([r, c]) => { s.grid[r][c] = null; });
+      s.score += matched.length * 10;
+      // Bonus: detached bubbles fall off
+      const det = findDetached(s.grid);
+      det.forEach(([r, c]) => { s.grid[r][c] = null; });
+      s.score += det.length * 5;
+      // Trim fully-empty bottom rows
+      while (s.grid.length > 0 && s.grid[s.grid.length - 1].every(b => !b)) s.grid.pop();
     }
-    return 0;
+    setScore(s.score);
+    if (s.grid.length > 0 && by(s.grid.length - 1) + R >= DANGER_Y) {
+      s.state = "lose"; setGState("lose");
+    }
+  }, []);
+
+  const placeAtTop = useCallback((px: number, color: string) => {
+    const s = g.current;
+    if (!s.grid[0]) s.grid.unshift(Array(COLS).fill(null));
+    const c0 = Math.max(0, Math.min(COLS - 1, Math.round((px - R) / DIAM)));
+    let col = c0;
+    // Find nearest empty in row 0
+    for (let offset = 0; offset <= COLS; offset++) {
+      if (!s.grid[0][c0 + offset] && c0 + offset < COLS) { col = c0 + offset; break; }
+      if (!s.grid[0][c0 - offset] && c0 - offset >= 0) { col = c0 - offset; break; }
+    }
+    s.grid[0][col] = color;
+    const matched = floodFill(s.grid, 0, col);
+    if (matched.length >= 2) {
+      matched.forEach(([r, c]) => { s.grid[r][c] = null; });
+      s.score += matched.length * 10;
+      const det = findDetached(s.grid);
+      det.forEach(([r, c]) => { s.grid[r][c] = null; });
+      s.score += det.length * 5;
+      while (s.grid.length > 0 && s.grid[s.grid.length - 1].every(b => !b)) s.grid.pop();
+    }
+    setScore(s.score);
+    if (s.grid.length > 0 && by(s.grid.length - 1) + R >= DANGER_Y) {
+      s.state = "lose"; setGState("lose");
+    }
   }, []);
 
   const loop = useCallback(() => {
     const s = g.current;
     if (s.state !== "playing") { draw(); return; }
-    const p = s.projectile;
+
+    // Periodic new row from top
+    if (Date.now() - s.lastAdd >= s.interval) {
+      s.grid.unshift(makeRow());
+      s.lastAdd = Date.now();
+      if (by(s.grid.length - 1) + R >= DANGER_Y) {
+        s.state = "lose"; setGState("lose"); draw(); return;
+      }
+    }
+
+    const p = s.proj;
     if (p) {
       p.x += p.vx; p.y += p.vy;
       if (p.x <= R) { p.x = R; p.vx = Math.abs(p.vx); }
       if (p.x >= W - R) { p.x = W - R; p.vx = -Math.abs(p.vx); }
-      let hit = false;
+
+      // Hit top wall
+      if (p.y <= R + TOP_PAD) {
+        placeAtTop(p.x, p.color);
+        s.proj = null; s.color = s.nextColor; s.nextColor = rndColor();
+        draw(); raf.current = requestAnimationFrame(loop); return;
+      }
+
+      // Hit existing bubble
+      let hitR = -1, hitC = -1;
       outer: for (let r = 0; r < s.grid.length; r++) {
-        for (let col = 0; col < (s.grid[r]?.length ?? 0); col++) {
-          if (!s.grid[r][col]) continue;
-          if (distSq(p.x, p.y, bx(col, r), by(r)) < (DIAM - 4) ** 2) { hit = true; break outer; }
+        for (let c = 0; c < COLS; c++) {
+          if (!s.grid[r]?.[c]) continue;
+          const dx = p.x - bx(c), dy = p.y - by(r);
+          if (dx * dx + dy * dy < (DIAM - 1) ** 2) { hitR = r; hitC = c; break outer; }
         }
       }
-      if (p.y <= R + 40 || hit) {
-        let bestR = 0, bestC = 0, bestD = Infinity;
-        for (let r = 0; r < s.grid.length; r++) for (let col = 0; col <= (r % 2 === 0 ? COLS - 1 : COLS - 2); col++) {
-          if (s.grid[r]?.[col]) continue;
-          const d = distSq(p.x, p.y, bx(col, r), by(r));
-          if (d < bestD) { bestD = d; bestR = r; bestC = col; }
-        }
-        if (!s.grid[bestR]) s.grid[bestR] = [];
-        s.grid[bestR][bestC] = { color: p.color };
-        const pts = popMatches(s.grid, bestR, bestC, p.color);
-        if (p.owner === 1) { s.p1.score += pts; setP1Score(s.p1.score); }
-        else { s.p2.score += pts; setP2Score(s.p2.score); }
-        s.projectile = null;
-        // Swap active player's colors
-        const pl = p.owner === 1 ? s.p1 : s.p2;
-        pl.color = pl.nextColor; pl.nextColor = rndColor();
-        // Switch turn in 2P
-        if (s.mode === "2p") { s.turn = s.turn === 1 ? 2 : 1; setTurn(s.turn); }
-        const anyLeft = s.grid.some(r => r.some(b => b !== null));
-        const tooLow = s.grid.some((r, ri) => r.some(b => b && by(ri) > H - 90));
-        if (!anyLeft) { s.state = "win"; setState("win"); }
-        else if (tooLow) { s.state = "lose"; setState("lose"); }
+      if (hitR >= 0) {
+        applyHit(p.x, p.y, p.color, hitR, hitC);
+        s.proj = null; s.color = s.nextColor; s.nextColor = rndColor();
       }
     }
-    draw(); raf.current = requestAnimationFrame(loop);
-  }, [draw, popMatches]);
 
-  const shoot = useCallback((player: 1 | 2) => {
+    draw();
+    raf.current = requestAnimationFrame(loop);
+  }, [draw, applyHit, placeAtTop]);
+
+  const shoot = useCallback(() => {
     const s = g.current;
-    if (s.projectile || s.state !== "playing") return;
-    if (s.mode === "2p" && s.turn !== player) return;
-    const pl = player === 1 ? s.p1 : s.p2;
-    const speed = 12;
-    s.projectile = { x: W / 2, y: H - 40, vx: Math.cos(pl.angle) * speed, vy: Math.sin(pl.angle) * speed, color: pl.color, owner: player };
+    if (s.proj || s.state !== "playing") return;
+    s.proj = {
+      x: SHOOTER_X, y: SHOOTER_Y,
+      vx: Math.cos(s.angle) * 12,
+      vy: Math.sin(s.angle) * 12,
+      color: s.color,
+    };
   }, []);
 
-  const startGame = useCallback((m: "1p" | "2p") => {
-    g.current = { mode: m, grid: initGrid(), p1: { color: rndColor(), nextColor: rndColor(), angle: -Math.PI / 2, score: 0, shotsLeft: 0 }, p2: { color: rndColor(), nextColor: rndColor(), angle: -Math.PI / 2, score: 0, shotsLeft: 0 }, turn: 1, projectile: null, state: "playing" };
-    setGameMode(m); setP1Score(0); setP2Score(0); setTurn(1); setState("playing");
-    cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(loop);
+  const startGame = useCallback((d: Difficulty) => {
+    g.current = mkGS(d);
+    setDiff(d); setScore(0); setGState("playing");
+    cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(loop);
   }, [loop]);
 
   useEffect(() => {
     if (screen !== "game") return;
     const onMove = (e: MouseEvent) => {
       const rect = cv.current?.getBoundingClientRect(); if (!rect) return;
-      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-      const ang = Math.atan2(my - (H - 40), mx - W / 2);
-      const s = g.current;
-      // In 2P, mouse controls whoever's turn it is (or always P1 in 1P)
-      const activePl = s.mode === "2p" && s.turn === 2 ? s.p2 : s.p1;
-      activePl.angle = Math.max(-Math.PI + 0.2, Math.min(-0.2, ang));
+      const ang = Math.atan2(e.clientY - rect.top - SHOOTER_Y, e.clientX - rect.left - SHOOTER_X);
+      g.current.angle = Math.max(-Math.PI + 0.15, Math.min(-0.15, ang));
     };
     const onKey = (e: KeyboardEvent) => {
-      const s = g.current;
-      // P1: Space / click to shoot
-      if (e.code === "Space") { e.preventDefault(); shoot(1); }
-      // P2: ← → to aim, Enter to shoot
-      if (e.code === "ArrowLeft") { s.p2.angle = Math.max(-Math.PI + 0.2, s.p2.angle - 0.08); e.preventDefault(); }
-      if (e.code === "ArrowRight") { s.p2.angle = Math.min(-0.2, s.p2.angle + 0.08); e.preventDefault(); }
-      if (e.code === "Enter") { e.preventDefault(); shoot(2); }
+      if (e.code === "Space") { e.preventDefault(); shoot(); }
+      if (e.code === "ArrowLeft") { g.current.angle = Math.max(-Math.PI + 0.15, g.current.angle - 0.06); e.preventDefault(); }
+      if (e.code === "ArrowRight") { g.current.angle = Math.min(-0.15, g.current.angle + 0.06); e.preventDefault(); }
     };
     const c = cv.current;
-    c?.addEventListener("mousemove", onMove); c?.addEventListener("click", () => shoot(1));
+    c?.addEventListener("mousemove", onMove);
+    c?.addEventListener("click", shoot);
     window.addEventListener("keydown", onKey);
     raf.current = requestAnimationFrame(loop);
-    return () => { c?.removeEventListener("mousemove", onMove); window.removeEventListener("keydown", onKey); cancelAnimationFrame(raf.current); };
+    return () => {
+      c?.removeEventListener("mousemove", onMove);
+      c?.removeEventListener("click", shoot);
+      window.removeEventListener("keydown", onKey);
+      cancelAnimationFrame(raf.current);
+    };
   }, [screen, loop, shoot]);
 
-  const winner2p = gameMode === "2p" ? (p1Score > p2Score ? "🟣 P1 Wins!" : p2Score > p1Score ? "🩷 P2 Wins!" : "🤝 Tie!") : null;
-
   if (screen === "menu") return (
-    <Shell title="Bubble Shooter" controls="">
-      <div className="flex flex-col items-center gap-8 text-center max-w-sm">
+    <Shell title="Bubble Shooter">
+      <div className="flex flex-col items-center gap-8 text-center max-w-sm w-full">
         <div className="text-6xl select-none">🫧</div>
-        <h2 className="text-2xl font-black text-pink-400">Select Mode</h2>
-        <div className="flex gap-4 w-full">
-          <button onClick={() => { startGame("1p"); setScreen("game"); }} className="flex-1 py-4 bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/50 text-pink-400 font-black rounded-2xl transition-colors">
-            👤<br /><span className="text-sm font-semibold">1 Player</span><br /><span className="text-xs font-normal text-muted-foreground">Mouse + Space</span>
-          </button>
-          <button onClick={() => { startGame("2p"); setScreen("game"); }} className="flex-1 py-4 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/50 text-violet-400 font-black rounded-2xl transition-colors">
-            👥<br /><span className="text-sm font-semibold">2 Players</span><br /><span className="text-xs font-normal text-muted-foreground">P1: Mouse · P2: ←→ Enter</span>
-          </button>
+        <div>
+          <h2 className="text-2xl font-black text-pink-400">Bubble Shooter</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Pop connected same-color bubbles before they fill the screen.<br />
+            New rows drop from the top — clear fast to survive!
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 w-full">
+          {(["easy", "medium", "hard"] as Difficulty[]).map(d => (
+            <button key={d}
+              onClick={() => { startGame(d); setScreen("game"); }}
+              className={`py-4 px-6 rounded-2xl border font-black transition-colors text-left ${
+                d === "easy"   ? "bg-green-500/20  hover:bg-green-500/30  border-green-500/50  text-green-400"  :
+                d === "medium" ? "bg-yellow-500/20 hover:bg-yellow-500/30 border-yellow-500/50 text-yellow-400" :
+                                 "bg-red-500/20    hover:bg-red-500/30    border-red-500/50    text-red-400"
+              }`}>
+              <span className="text-lg">{DIFF[d].label}</span>
+              <br />
+              <span className="text-xs font-normal text-muted-foreground">{DIFF[d].desc}</span>
+            </button>
+          ))}
         </div>
       </div>
     </Shell>
   );
 
   return (
-    <Shell title="Bubble Shooter" controls={gameMode === "2p" ? `${turn === 1 ? "🟣 P1's turn" : "🩷 P2's turn"} · P1: Mouse · P2: ←→ Enter` : "Mouse to aim · Click/Space to shoot"}>
+    <Shell title="Bubble Shooter" controls="Mouse to aim · Click or Space to shoot · ← → to aim with keyboard">
       <div className="relative">
         <canvas ref={cv} width={W} height={H} className="rounded-xl border border-slate-700 cursor-crosshair" style={{ maxWidth: "95vw" }} />
-        {(state === "win" || state === "lose") && (
+        {gstate === "lose" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-xl gap-4">
-            <p className="text-2xl font-black text-primary">{winner2p ?? (state === "win" ? "🎉 You Win!" : "💥 Game Over!")}</p>
-            <p className="font-mono text-muted-foreground">{gameMode === "2p" ? `P1: ${p1Score} · P2: ${p2Score}` : `Score: ${p1Score}`}</p>
+            <p className="text-3xl font-black text-red-400">💥 Game Over!</p>
+            <p className="text-muted-foreground font-mono">Score: {score}</p>
             <div className="flex gap-3">
-              <button onClick={() => startGame(gameMode)} className="px-8 py-2 bg-primary text-black font-bold rounded-xl">Play Again</button>
+              <button onClick={() => startGame(diff)} className="px-8 py-2 bg-pink-500 text-white font-bold rounded-xl">Play Again</button>
               <button onClick={() => setScreen("menu")} className="px-6 py-2 bg-secondary text-foreground font-bold rounded-xl">Menu</button>
             </div>
           </div>
