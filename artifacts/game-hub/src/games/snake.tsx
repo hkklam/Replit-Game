@@ -25,13 +25,79 @@ const GRID = 20; const CELL = 24; const W = GRID * CELL; const H = GRID * CELL;
 const SPEED0 = 140;
 type P = { x: number; y: number };
 type Snake = { snake: P[]; dir: P; nd: P; alive: boolean; score: number };
-type GameMode = "1p" | "2p" | "online";
+export type Difficulty = "easy" | "medium" | "hard";
+type GameMode = "1p" | "2p" | "ai" | "online";
+
+const DIFF_LABELS: Record<Difficulty, { label: string; color: string; desc: string; icon: string }> = {
+  easy:   { label: "Easy",   color: "text-green-400",  desc: "Mostly random, wanders around",   icon: "🟢" },
+  medium: { label: "Medium", color: "text-amber-400",  desc: "Chases food, occasional mistakes", icon: "🟡" },
+  hard:   { label: "Hard",   color: "text-red-400",    desc: "BFS pathfinding, ruthless",        icon: "🔴" },
+};
 
 function rnd(occupied: P[]): P {
   let p: P;
   do { p = { x: (Math.random() * GRID) | 0, y: (Math.random() * GRID) | 0 }; }
   while (occupied.some(s => s.x === p.x && s.y === p.y));
   return p;
+}
+
+function bfsDir(head: P, body: P[], obstacles: P[], target: P, curDir: P): P | null {
+  const key = (p: P) => `${p.x},${p.y}`;
+  const blocked = new Set([...body.slice(1), ...obstacles].map(key));
+  const visited = new Set<string>([key(head)]);
+  const dirs: P[] = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
+  const queue: { pos: P; first: P }[] = [];
+  for (const d of dirs) {
+    if (d.x === -curDir.x && d.y === -curDir.y) continue;
+    const nx = head.x + d.x, ny = head.y + d.y;
+    if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) continue;
+    const nk = key({ x: nx, y: ny });
+    if (blocked.has(nk)) continue;
+    visited.add(nk); queue.push({ pos: { x: nx, y: ny }, first: d });
+  }
+  while (queue.length) {
+    const { pos, first } = queue.shift()!;
+    if (pos.x === target.x && pos.y === target.y) return first;
+    for (const d of dirs) {
+      const nx = pos.x + d.x, ny = pos.y + d.y;
+      if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) continue;
+      const nk = key({ x: nx, y: ny });
+      if (visited.has(nk) || blocked.has(nk)) continue;
+      visited.add(nk); queue.push({ pos: { x: nx, y: ny }, first });
+    }
+  }
+  return null;
+}
+
+function computeAIDir(sn: Snake, other: P[], food: P, diff: Difficulty): P {
+  const head = sn.snake[0];
+  const dirs: P[] = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
+  const key = (p: P) => `${p.x},${p.y}`;
+  const allBlocked = new Set([...sn.snake, ...other].map(key));
+  const safe = dirs.filter(d => {
+    if (d.x === -sn.dir.x && d.y === -sn.dir.y) return false;
+    const nx = head.x + d.x, ny = head.y + d.y;
+    if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) return false;
+    return !allBlocked.has(key({ x: nx, y: ny }));
+  });
+  if (safe.length === 0) return sn.nd;
+
+  const closest = (candidates: P[]) =>
+    candidates.reduce((best, d) => {
+      const da = Math.abs(head.x + d.x - food.x) + Math.abs(head.y + d.y - food.y);
+      const db = Math.abs(head.x + best.x - food.x) + Math.abs(head.y + best.y - food.y);
+      return da < db ? d : best;
+    });
+
+  if (diff === "easy") {
+    return Math.random() < 0.35 ? closest(safe) : safe[Math.floor(Math.random() * safe.length)];
+  }
+  if (diff === "medium") {
+    return Math.random() < 0.12 ? safe[Math.floor(Math.random() * safe.length)] : closest(safe);
+  }
+  // Hard: BFS
+  const bfs = bfsDir(head, sn.snake, other, food, sn.dir);
+  return bfs ?? closest(safe);
 }
 
 function initState(mode: GameMode) {
@@ -46,52 +112,37 @@ function initState(mode: GameMode) {
   };
 }
 
-type StatePayload = {
-  s1: Snake; s2: Snake; food: P; spd: number;
-  done: boolean; p1Score: number; p2Score: number;
-};
+type StatePayload = { s1: Snake; s2: Snake; food: P; spd: number; done: boolean; p1Score: number; p2Score: number };
 
 export default function SnakeGame() {
   const cv = useRef<HTMLCanvasElement>(null);
   const g = useRef(initState("1p"));
-  const [screen, setScreen] = useState<"menu" | "game" | "over" | "online-lobby">("menu");
+  const [screen, setScreen] = useState<"menu" | "ai-diff" | "game" | "over" | "online-lobby">("menu");
   const [p1Score, setP1Score] = useState(0);
   const [p2Score, setP2Score] = useState(0);
   const [best, setBest] = useState(() => +localStorage.getItem("snk-best")! || 0);
   const [gameMode, setGameMode] = useState<GameMode>("1p");
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
+  const diffRef = useRef<Difficulty>("medium");
   const raf = useRef(0);
 
   const mp = useOnlineMultiplayer({
-    onGuestJoined: useCallback(() => {
-      // Host: opponent joined, start the game
-      startOnlineGame("host");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []),
+    onGuestJoined: useCallback(() => { startOnlineGame("host"); }, []),
     onGameState: useCallback((data: unknown) => {
-      // Guest: received state from host
       const st = data as StatePayload;
-      g.current.s1 = st.s1;
-      g.current.s2 = st.s2;
-      g.current.food = st.food;
-      g.current.spd = st.spd;
-      setP1Score(st.p1Score);
-      setP2Score(st.p2Score);
+      g.current.s1 = st.s1; g.current.s2 = st.s2; g.current.food = st.food; g.current.spd = st.spd;
+      setP1Score(st.p1Score); setP2Score(st.p2Score);
       if (st.done) setScreen("over");
       draw();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []),
     onInput: useCallback((data: unknown) => {
-      // Host: received P2 input from guest
       const inp = data as { nd: P };
       if (inp?.nd && g.current.s2.alive) {
-        if (!(inp.nd.x === -g.current.s2.dir.x && inp.nd.y === -g.current.s2.dir.y)) {
-          g.current.s2.nd = inp.nd;
-        }
+        if (!(inp.nd.x === -g.current.s2.dir.x && inp.nd.y === -g.current.s2.dir.y)) g.current.s2.nd = inp.nd;
       }
     }, []),
-    onOpponentLeft: useCallback(() => {
-      setScreen("over");
-    }, []),
+    onOpponentLeft: useCallback(() => { setScreen("over"); }, []),
   });
 
   const draw = useCallback(() => {
@@ -109,9 +160,12 @@ export default function SnakeGame() {
       ctx.beginPath(); ctx.roundRect(s.x * CELL + 2, s.y * CELL + 2, CELL - 4, CELL - 4, 4); ctx.fill();
     });
     if (mode !== "1p") {
+      const isAI = mode === "ai";
       s2.snake.forEach((s, i) => {
         const t = i / Math.max(s2.snake.length - 1, 1);
-        ctx.fillStyle = s2.alive ? `hsl(${28 - t * 10},90%,${55 - t * 15}%)` : "#374151";
+        ctx.fillStyle = s2.alive
+          ? isAI ? `hsl(${280 - t * 20},75%,${55 - t * 10}%)` : `hsl(${28 - t * 10},90%,${55 - t * 15}%)`
+          : "#374151";
         ctx.beginPath(); ctx.roundRect(s.x * CELL + 2, s.y * CELL + 2, CELL - 4, CELL - 4, 4); ctx.fill();
       });
     }
@@ -124,6 +178,11 @@ export default function SnakeGame() {
     if (done1p || done2p) { draw(); return; }
     if (now - st.last > st.spd) {
       st.last = now;
+
+      if (st.mode === "ai" && st.s2.alive) {
+        st.s2.nd = computeAIDir(st.s2, st.s1.snake, st.food, diffRef.current);
+      }
+
       const moveSnake = (sn: Snake, other: P[]) => {
         if (!sn.alive) return;
         sn.dir = sn.nd;
@@ -137,19 +196,17 @@ export default function SnakeGame() {
           st.food = rnd([...st.s1.snake, ...st.s2.snake]);
         } else sn.snake.pop();
       };
+
       const p2Body = st.mode !== "1p" ? st.s2.snake : [];
       moveSnake(st.s1, p2Body);
       if (st.mode !== "1p") moveSnake(st.s2, st.s1.snake);
       setP1Score(st.s1.score); setP2Score(st.s2.score);
 
       const isDone = (st.mode === "1p" && !st.s1.alive) || (st.mode !== "1p" && !st.s1.alive && !st.s2.alive);
-
       if (st.mode === "online") {
-        // Host: broadcast state every tick
         const payload: StatePayload = { s1: st.s1, s2: st.s2, food: st.food, spd: st.spd, done: isDone, p1Score: st.s1.score, p2Score: st.s2.score };
         mp.sendGameState(payload);
       }
-
       if (isDone) {
         if (st.mode === "1p") {
           const nb = Math.max(st.s1.score, +localStorage.getItem("snk-best")! || 0);
@@ -161,7 +218,8 @@ export default function SnakeGame() {
     draw(); raf.current = requestAnimationFrame(loop);
   }, [draw, mp.sendGameState]);
 
-  const startGame = useCallback((m: GameMode) => {
+  const startGame = useCallback((m: GameMode, diff?: Difficulty) => {
+    if (diff) { setDifficulty(diff); diffRef.current = diff; }
     g.current = initState(m); setGameMode(m); setP1Score(0); setP2Score(0); setScreen("game");
     cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(loop);
   }, [loop]);
@@ -169,10 +227,7 @@ export default function SnakeGame() {
   const startOnlineGame = useCallback((role: "host" | "guest") => {
     g.current = initState("online");
     setGameMode("online"); setP1Score(0); setP2Score(0); setScreen("game");
-    if (role === "host") {
-      cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(loop);
-    }
-    // Guest: just draw initial state — render loop triggered by incoming game_state
+    if (role === "host") { cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(loop); }
   }, [loop]);
 
   useEffect(() => {
@@ -181,8 +236,12 @@ export default function SnakeGame() {
       const isGuest = gameMode === "online" && mp.role === "guest";
       const m1: Record<string, P> = { w: { x: 0, y: -1 }, s: { x: 0, y: 1 }, a: { x: -1, y: 0 }, d: { x: 1, y: 0 } };
       const m2: Record<string, P> = { ArrowUp: { x: 0, y: -1 }, ArrowDown: { x: 0, y: 1 }, ArrowLeft: { x: -1, y: 0 }, ArrowRight: { x: 1, y: 0 } };
-      if (!isGuest) {
-        const nd1 = m1[e.key];
+      if (!isGuest && gameMode !== "ai") {
+        const nd1 = m1[e.key] || m2[e.key];
+        if (nd1 && g.current.s1.alive && !(nd1.x === -g.current.s1.dir.x && nd1.y === -g.current.s1.dir.y)) g.current.s1.nd = nd1;
+      }
+      if (gameMode === "1p" || gameMode === "ai") {
+        const nd1 = m1[e.key] || m2[e.key];
         if (nd1 && g.current.s1.alive && !(nd1.x === -g.current.s1.dir.x && nd1.y === -g.current.s1.dir.y)) g.current.s1.nd = nd1;
       }
       if (gameMode === "2p" || isGuest) {
@@ -198,27 +257,66 @@ export default function SnakeGame() {
     return () => window.removeEventListener("keydown", onKey);
   }, [screen, gameMode, mp.role, mp.sendInput]);
 
+  const isAI = gameMode === "ai";
   const isOnlineGuest = gameMode === "online" && mp.role === "guest";
   const winner = (gameMode !== "1p" && screen === "over")
-    ? (!g.current.s1.alive && g.current.s2.alive ? "🟠 P2 Wins!" : g.current.s1.alive && !g.current.s2.alive ? "🟢 P1 Wins!" : p1Score > p2Score ? "🟢 P1 Wins!" : p2Score > p1Score ? "🟠 P2 Wins!" : "🤝 Draw!")
+    ? (!g.current.s1.alive && g.current.s2.alive
+        ? (isAI ? `🤖 AI Wins!` : "🟠 P2 Wins!")
+        : g.current.s1.alive && !g.current.s2.alive
+          ? (isAI ? "🟢 You Win!" : "🟢 P1 Wins!")
+          : p1Score > p2Score ? (isAI ? "🟢 You Win!" : "🟢 P1 Wins!")
+          : p2Score > p1Score ? (isAI ? "🤖 AI Wins!" : "🟠 P2 Wins!")
+          : "🤝 Draw!")
     : null;
 
   if (screen === "menu") return (
-    <Shell title="Snake" controls="">
+    <Shell title="Snake">
       <div className="flex flex-col items-center gap-8 text-center max-w-sm">
         <div className="text-6xl select-none">🐍</div>
         <h2 className="text-2xl font-black text-emerald-400">Select Mode</h2>
-        <div className="flex gap-3 w-full">
-          <button onClick={() => startGame("1p")} className="flex-1 py-4 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-400 font-black rounded-2xl transition-colors text-sm">
-            👤<br />1 Player<br /><span className="text-xs font-normal text-muted-foreground">WASD / Arrows</span>
-          </button>
-          <button onClick={() => startGame("2p")} className="flex-1 py-4 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-400 font-black rounded-2xl transition-colors text-sm">
-            👥<br />2 Players<br /><span className="text-xs font-normal text-muted-foreground">P1: WASD · P2: Arrows</span>
-          </button>
-          <button onClick={() => setScreen("online-lobby")} className="flex-1 py-4 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/50 text-sky-400 font-black rounded-2xl transition-colors text-sm">
-            🌐<br />Online<br /><span className="text-xs font-normal text-muted-foreground">vs friend</span>
-          </button>
+        <div className="flex flex-col gap-3 w-full">
+          <div className="flex gap-3">
+            <button onClick={() => startGame("1p")} className="flex-1 py-4 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-400 font-black rounded-2xl transition-colors text-sm">
+              👤<br />1 Player<br /><span className="text-xs font-normal text-muted-foreground">WASD / Arrows</span>
+            </button>
+            <button onClick={() => setScreen("ai-diff")} className="flex-1 py-4 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 font-black rounded-2xl transition-colors text-sm">
+              🤖<br />vs AI<br /><span className="text-xs font-normal text-muted-foreground">Choose difficulty</span>
+            </button>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => startGame("2p")} className="flex-1 py-4 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/50 text-orange-400 font-black rounded-2xl transition-colors text-sm">
+              👥<br />2 Players<br /><span className="text-xs font-normal text-muted-foreground">P1: WASD · P2: Arrows</span>
+            </button>
+            <button onClick={() => setScreen("online-lobby")} className="flex-1 py-4 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/50 text-sky-400 font-black rounded-2xl transition-colors text-sm">
+              🌐<br />Online<br /><span className="text-xs font-normal text-muted-foreground">vs friend</span>
+            </button>
+          </div>
         </div>
+      </div>
+    </Shell>
+  );
+
+  if (screen === "ai-diff") return (
+    <Shell title="Snake — vs AI">
+      <div className="flex flex-col items-center gap-6 max-w-sm w-full">
+        <div className="text-5xl">🤖</div>
+        <h2 className="text-xl font-black text-purple-400">Choose Difficulty</h2>
+        <div className="flex flex-col gap-3 w-full">
+          {(["easy", "medium", "hard"] as Difficulty[]).map(d => {
+            const cfg = DIFF_LABELS[d];
+            return (
+              <button key={d} onClick={() => startGame("ai", d)} className={`w-full py-4 px-5 rounded-2xl border transition-colors font-black flex items-center gap-4 text-left
+                ${d === "easy" ? "bg-green-500/15 hover:bg-green-500/25 border-green-500/40" : d === "medium" ? "bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40" : "bg-red-500/15 hover:bg-red-500/25 border-red-500/40"}`}>
+                <span className="text-2xl">{cfg.icon}</span>
+                <div>
+                  <div className={`font-black ${cfg.color}`}>{cfg.label}</div>
+                  <div className="text-xs text-muted-foreground font-normal">{cfg.desc}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <button onClick={() => setScreen("menu")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
       </div>
     </Shell>
   );
@@ -226,10 +324,7 @@ export default function SnakeGame() {
   if (screen === "online-lobby") return (
     <Shell title="Snake — Online">
       <OnlineLobby
-        status={mp.status}
-        roomCode={mp.roomCode}
-        role={mp.role}
-        error={mp.error}
+        status={mp.status} roomCode={mp.roomCode} role={mp.role} error={mp.error}
         onCreate={() => mp.createRoom("snake")}
         onJoin={(code) => { mp.joinRoom(code); startOnlineGame("guest"); }}
         onDisconnect={() => { mp.disconnect(); }}
@@ -238,32 +333,41 @@ export default function SnakeGame() {
     </Shell>
   );
 
-  const controlsLabel = gameMode === "online"
-    ? (mp.role === "host" ? "🟢 You are P1 (WASD)" : "🟠 You are P2 (WASD / Arrows)")
+  const p2Label = isAI ? `🤖 AI (${DIFF_LABELS[difficulty].label})` : gameMode === "online" ? (mp.role === "host" ? "🟠 Guest" : "🟢 Host") : "🟠 P2";
+  const controlsLabel = isAI ? `🟢 You: WASD/Arrows  ·  ${DIFF_LABELS[difficulty].icon} AI: ${DIFF_LABELS[difficulty].label}`
+    : gameMode === "online" ? (mp.role === "host" ? "🟢 HOST (WASD)" : "🟠 GUEST (WASD/Arrows)")
     : gameMode === "2p" ? "🟢 P1: WASD · 🟠 P2: Arrows"
     : "WASD or Arrow keys";
 
   return (
     <Shell title="Snake" controls={controlsLabel}>
-      <div className="flex gap-6 font-mono text-sm">
-        <span className="text-emerald-400">🟢 P1: {p1Score}</span>
-        {gameMode !== "1p" && <span className="text-orange-400">🟠 P2: {p2Score}</span>}
+      <div className="flex gap-6 font-mono text-sm items-center">
+        <span className="text-emerald-400">🟢 You: {p1Score}</span>
+        {gameMode !== "1p" && <span className={isAI ? "text-purple-400" : "text-orange-400"}>{p2Label}: {p2Score}</span>}
         {gameMode === "1p" && <span className="text-muted-foreground">Best: {best}</span>}
-        {gameMode === "online" && <span className={`text-xs px-2 py-0.5 rounded-full border ${mp.role === "host" ? "border-emerald-500/50 text-emerald-400" : "border-orange-500/50 text-orange-400"}`}>{mp.role === "host" ? "HOST" : "GUEST"}</span>}
+        {isAI && (
+          <span className={`text-xs px-2 py-0.5 rounded-full border ${difficulty === "easy" ? "border-green-500/50 text-green-400" : difficulty === "medium" ? "border-amber-500/50 text-amber-400" : "border-red-500/50 text-red-400"}`}>
+            {DIFF_LABELS[difficulty].icon} {DIFF_LABELS[difficulty].label}
+          </span>
+        )}
       </div>
       <div className="relative">
         <canvas ref={cv} width={W} height={H} className="rounded-lg border border-slate-700" />
         {isOnlineGuest && screen === "game" && (
           <div className="absolute top-2 left-0 right-0 flex justify-center pointer-events-none">
-            <span className="bg-orange-500/20 border border-orange-500/40 text-orange-300 text-xs px-3 py-1 rounded-full">You are 🟠 P2 — use WASD or Arrow keys</span>
+            <span className="bg-orange-500/20 border border-orange-500/40 text-orange-300 text-xs px-3 py-1 rounded-full">You are 🟠 P2 — WASD or Arrows</span>
           </div>
         )}
         {screen === "over" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 rounded-lg gap-4">
             <p className="text-2xl font-black text-white">{winner ?? "Game Over"}</p>
-            <p className="font-mono text-sm text-muted-foreground">{gameMode !== "1p" ? `P1: ${p1Score}  ·  P2: ${p2Score}` : `Score: ${p1Score}  ·  Best: ${best}`}</p>
+            <p className="font-mono text-sm text-muted-foreground">
+              {gameMode !== "1p" ? `You: ${p1Score}  ·  ${isAI ? "AI" : "P2"}: ${p2Score}` : `Score: ${p1Score}  ·  Best: ${best}`}
+            </p>
             <div className="flex gap-3">
-              {gameMode !== "online" && <button onClick={() => startGame(gameMode)} className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-lg">Play Again</button>}
+              {gameMode !== "online" && <button onClick={() => startGame(gameMode, isAI ? difficulty : undefined)} className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-lg">
+                {isAI ? "Try Again" : "Play Again"}
+              </button>}
               <button onClick={() => { mp.disconnect(); setScreen("menu"); }} className="px-6 py-2 bg-secondary text-foreground font-bold rounded-lg">Menu</button>
             </div>
           </div>

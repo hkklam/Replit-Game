@@ -30,6 +30,14 @@ const INNER_SCALE = 0.5;
 const INNER_WPS = WAYPOINTS.map(wp => ({ x: (wp.x - W / 2) * INNER_SCALE + W / 2, y: (wp.y - H / 2) * INNER_SCALE + H / 2 }));
 const TRACK_W = 70;
 
+export type Difficulty = "easy" | "medium" | "hard";
+
+const AI_CFG: Record<Difficulty, { maxSpd: number; turnThresh: number; missChance: number; label: string; icon: string; desc: string; color: string }> = {
+  easy:   { maxSpd: 3.2, turnThresh: 0.12, missChance: 0.28, label: "Easy",   icon: "🟢", desc: "Slow cars, wide turns",        color: "text-green-400" },
+  medium: { maxSpd: 4.5, turnThresh: 0.06, missChance: 0.05, label: "Medium", icon: "🟡", desc: "Competitive pace, fair racing", color: "text-amber-400" },
+  hard:   { maxSpd: 5.5, turnThresh: 0.03, missChance: 0,    label: "Hard",   icon: "🔴", desc: "Blazing speed, tight cornering", color: "text-red-400" },
+};
+
 function drawTrack(ctx: CanvasRenderingContext2D) {
   ctx.fillStyle = "#14532d"; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = "#3b3b3b";
@@ -64,15 +72,24 @@ function makeCar(color: string, label: string, offsetX = 0): Car {
   return { x: WAYPOINTS[0].x + offsetX, y: WAYPOINTS[0].y + 20, angle: 0, speed: 0, color, lap: 0, wpIdx: 1, bestLap: Infinity, lapStart: Date.now(), label };
 }
 
+type GameMode = "1p" | "2p";
+
 export default function Racing() {
   const cv = useRef<HTMLCanvasElement>(null);
-  const g = useRef({ mode: "1p" as "1p" | "2p", car: makeCar("#ef4444", "P1"), car2: makeCar("#22d3ee", "P2", 30), ai: [makeCar("#3b82f6", "AI 1"), makeCar("#a855f7", "AI 2", 40)], keys: new Set<string>(), frame: 0, state: "idle" as "idle" | "playing" | "done", winner: "" });
-  const [screen, setScreen] = useState<"menu" | "race">("menu");
+  const g = useRef({
+    mode: "1p" as GameMode,
+    aiDiff: "medium" as Difficulty,
+    car: makeCar("#ef4444", "P1"), car2: makeCar("#22d3ee", "P2", 30),
+    ai: [makeCar("#3b82f6", "AI 1"), makeCar("#a855f7", "AI 2", 40)],
+    keys: new Set<string>(), frame: 0, state: "idle" as "idle" | "playing" | "done", winner: "",
+  });
+  const [screen, setScreen] = useState<"menu" | "ai-diff" | "race">("menu");
   const [state, setState] = useState<"idle" | "playing" | "done">("idle");
   const [lap1, setLap1] = useState(0); const [lap2, setLap2] = useState(0);
   const [laps1, setLaps1] = useState<number[]>([]); const [laps2, setLaps2] = useState<number[]>([]);
   const [winner, setWinner] = useState("");
-  const [gameMode, setGameMode] = useState<"1p" | "2p">("1p");
+  const [gameMode, setGameMode] = useState<GameMode>("1p");
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const raf = useRef(0);
 
   const drawCar = useCallback((ctx: CanvasRenderingContext2D, car: Car) => {
@@ -101,10 +118,10 @@ export default function Racing() {
   const loop = useCallback(() => {
     const s = g.current; s.frame++;
     const accel = 0.18, brake = 0.22, turnSpd = 0.055, friction = 0.96, offRoad = 0.88;
-    const updateCar = (c: Car, left: boolean, right: boolean, up: boolean, down: boolean): boolean => {
+    const updateCar = (c: Car, left: boolean, right: boolean, up: boolean, down: boolean, maxSpd = 5.5): boolean => {
       if (left) c.angle -= turnSpd * Math.max(0.2, c.speed / 5);
       if (right) c.angle += turnSpd * Math.max(0.2, c.speed / 5);
-      if (up) c.speed = Math.min(c.speed + accel, 5.5);
+      if (up) c.speed = Math.min(c.speed + accel, maxSpd);
       else if (down) c.speed = Math.max(c.speed - brake, -2);
       c.speed *= isOnTrack(c.x + Math.cos(c.angle) * c.speed, c.y + Math.sin(c.angle) * c.speed) ? friction : offRoad;
       if (Math.abs(c.speed) < 0.01) c.speed = 0;
@@ -124,17 +141,27 @@ export default function Racing() {
       const lap2Done = updateCar(s.car2, k.has("a"), k.has("d"), k.has("w"), k.has("s"));
       if (lap2Done) { setLap2(s.car2.lap); setLaps2(prev => [...prev, s.car2.bestLap]); if (s.car2.lap >= 3) { s.state = "done"; s.winner = "P2"; setWinner("P2"); setState("done"); draw(); return; } }
     }
+    const cfg = AI_CFG[s.aiDiff];
     s.ai.forEach(ai => {
       const twp = WAYPOINTS[ai.wpIdx];
       const ang = Math.atan2(twp.y - ai.y, twp.x - ai.x);
       let da = ang - ai.angle; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
-      updateCar(ai, da < -0.05, da > 0.05, true, false);
+      const accelNow = Math.random() > cfg.missChance;
+      const lapDone = updateCar(ai, da < -cfg.turnThresh, da > cfg.turnThresh, accelNow, false, cfg.maxSpd);
+      if (lapDone && ai.lap >= 3 && s.mode === "1p") { s.state = "done"; s.winner = ai.label; setWinner(ai.label); setState("done"); draw(); return; }
     });
     draw(); raf.current = requestAnimationFrame(loop);
   }, [draw]);
 
-  const startRace = useCallback((m: "1p" | "2p") => {
-    g.current = { mode: m, car: makeCar("#ef4444", "P1"), car2: makeCar("#22d3ee", "P2", 30), ai: [makeCar("#3b82f6", "AI 1"), makeCar("#a855f7", "AI 2", 40)], keys: new Set(), frame: 0, state: "playing", winner: "" };
+  const startRace = useCallback((m: GameMode, diff?: Difficulty) => {
+    const d = diff ?? g.current.aiDiff;
+    g.current = {
+      mode: m, aiDiff: d,
+      car: makeCar("#ef4444", "You"), car2: makeCar("#22d3ee", "P2", 30),
+      ai: [makeCar("#3b82f6", "AI 1"), makeCar("#a855f7", "AI 2", 40)],
+      keys: new Set(), frame: 0, state: "playing", winner: "",
+    };
+    if (diff) setDifficulty(diff);
     setGameMode(m); setState("playing"); setLaps1([]); setLaps2([]); setLap1(0); setLap2(0); setWinner("");
     cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(loop);
   }, [loop]);
@@ -148,31 +175,76 @@ export default function Racing() {
   }, [screen, draw]);
 
   if (screen === "menu") return (
-    <Shell title="Racing Game" controls="">
+    <Shell title="Racing Game">
       <div className="flex flex-col items-center gap-8 text-center max-w-sm">
         <div className="text-6xl select-none">🏎️</div>
         <h2 className="text-2xl font-black text-indigo-400">Select Mode</h2>
-        <div className="flex gap-4 w-full">
-          <button onClick={() => { startRace("1p"); setScreen("race"); }} className="flex-1 py-4 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/50 text-indigo-400 font-black rounded-2xl transition-colors">
-            👤<br /><span className="text-sm font-semibold">1 Player</span><br /><span className="text-xs font-normal text-muted-foreground">Arrow keys</span>
+        <div className="flex flex-col gap-3 w-full">
+          <button onClick={() => setScreen("ai-diff")} className="w-full py-4 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 font-black rounded-2xl transition-colors">
+            🤖 vs Computer AI
+            <div className="text-xs font-normal text-muted-foreground mt-1">Race against 2 AI opponents · choose difficulty</div>
           </button>
-          <button onClick={() => { startRace("2p"); setScreen("race"); }} className="flex-1 py-4 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-400 font-black rounded-2xl transition-colors">
-            👥<br /><span className="text-sm font-semibold">2 Players</span><br /><span className="text-xs font-normal text-muted-foreground">P1: Arrows · P2: WASD</span>
+          <button onClick={() => { startRace("2p"); setScreen("race"); }} className="w-full py-4 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-400 font-black rounded-2xl transition-colors">
+            👥 2 Players Local
+            <div className="text-xs font-normal text-muted-foreground mt-1">P1: Arrows · P2: WASD</div>
           </button>
         </div>
       </div>
     </Shell>
   );
 
+  if (screen === "ai-diff") return (
+    <Shell title="Racing — vs AI">
+      <div className="flex flex-col items-center gap-6 max-w-sm w-full">
+        <div className="text-5xl">🤖</div>
+        <h2 className="text-xl font-black text-purple-400">AI Difficulty</h2>
+        <div className="flex flex-col gap-3 w-full">
+          {(["easy", "medium", "hard"] as Difficulty[]).map(d => {
+            const cfg = AI_CFG[d];
+            return (
+              <button key={d} onClick={() => { startRace("1p", d); setScreen("race"); }} className={`w-full py-4 px-5 rounded-2xl border transition-colors font-black flex items-center gap-4 text-left
+                ${d === "easy" ? "bg-green-500/15 hover:bg-green-500/25 border-green-500/40" : d === "medium" ? "bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40" : "bg-red-500/15 hover:bg-red-500/25 border-red-500/40"}`}>
+                <span className="text-2xl">{cfg.icon}</span>
+                <div>
+                  <div className={`font-black ${cfg.color}`}>{cfg.label} AI</div>
+                  <div className="text-xs text-muted-foreground font-normal">{cfg.desc}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <button onClick={() => setScreen("menu")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
+      </div>
+    </Shell>
+  );
+
+  const diffCfg = AI_CFG[difficulty];
+
   return (
-    <Shell title="Racing Game" controls={gameMode === "2p" ? "🔴 P1: Arrows · 🔵 P2: WASD · 3 laps" : "Arrow keys · 3 laps to win"}>
+    <Shell title="Racing Game" controls={gameMode === "2p" ? "🔴 P1: Arrows · 🔵 P2: WASD · 3 laps" : `Arrow keys · 3 laps · vs ${diffCfg.icon} ${diffCfg.label} AI`}>
+      {gameMode === "1p" && (
+        <div className="flex items-center gap-2 text-xs">
+          {(["easy", "medium", "hard"] as Difficulty[]).map(d => {
+            const c = AI_CFG[d];
+            return (
+              <span key={d} className={`px-2 py-0.5 rounded-full ${d === difficulty ? (d === "easy" ? "bg-green-500/20 text-green-400 border border-green-500/50" : d === "medium" ? "bg-amber-500/20 text-amber-400 border border-amber-500/50" : "bg-red-500/20 text-red-400 border border-red-500/50") : "text-muted-foreground"}`}>
+                {c.icon} {c.label}
+              </span>
+            );
+          })}
+        </div>
+      )}
       <div className="relative">
         <canvas ref={cv} width={W} height={H} className="rounded-xl border border-slate-700" style={{ maxWidth: "95vw" }} />
         {(state === "idle" || state === "done") && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-xl gap-4">
-            {state === "done" && <p className="text-2xl font-black text-primary">{gameMode === "2p" ? `🏁 ${winner} Wins the Race!` : `🏁 Race Complete!`}</p>}
+            {state === "done" && (
+              <p className="text-2xl font-black text-primary">
+                {gameMode === "2p" ? `🏁 ${winner} Wins!` : winner === "You" ? "🏁 You Win! 🎉" : `🏁 ${winner} Won!`}
+              </p>
+            )}
             {state === "idle" && <p className="text-2xl font-black text-white">🏎️ Ready to Race?</p>}
-            {laps1.length > 0 && <div className="font-mono text-sm text-red-400">{laps1.slice(-3).map((t, i) => <div key={i}>P1 Lap {i + 1}: {(t / 1000).toFixed(2)}s</div>)}</div>}
+            {laps1.length > 0 && <div className="font-mono text-sm text-red-400">{laps1.slice(-3).map((t, i) => <div key={i}>You Lap {i + 1}: {(t / 1000).toFixed(2)}s</div>)}</div>}
             {gameMode === "2p" && laps2.length > 0 && <div className="font-mono text-sm text-cyan-400">{laps2.slice(-3).map((t, i) => <div key={i}>P2 Lap {i + 1}: {(t / 1000).toFixed(2)}s</div>)}</div>}
             <div className="flex gap-3">
               <button onClick={() => startRace(gameMode)} className="px-8 py-2 bg-primary text-black font-bold rounded-xl">{state === "done" ? "Race Again" : "Start Race"}</button>
