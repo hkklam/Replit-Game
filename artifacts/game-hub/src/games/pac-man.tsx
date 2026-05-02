@@ -54,64 +54,85 @@ function passable(grid: string[][], r: number, c: number, ghost = false) {
 
 /* ── Map data ────────────────────────────────────────────── */
 type MapCfg = { raw: string[]; ghosts: [number, number][]; name: string };
+type MapSize = "simple" | "normal" | "complex";
 
-const MAPS: MapCfg[] = [
-  {
-    name: "Classic", ghosts: [[8,8],[8,9],[11,10],[11,11]],
+// Ghost-pen rows 7–14 are shared across all maps
+const PEN = [
+  "####.###   ###.#####",
+  "#####.# GG   #.#####",
+  "#####.# #### #.#####",
+  "#####.#      #.#####",
+  "#####.#   GG #.#####",
+  "#####.# #### #.#####",
+  "#####.#      #.#####",
+  "####.###   ###.#####",
+] as const;
+
+const MAPS: Record<MapSize, MapCfg> = {
+  // Simple – wide-open corridors, very few walls, small maze space
+  simple: {
+    name: "Simple", ghosts: [[8,8],[8,9],[11,10],[11,11]],
     raw: [
-      "####################","#p.......#.......p.#","#.######.#.######..#","#P.................#",
-      "#.######.#.######..#","#..................#","#.##.#...#...#.##..#","####.###   ###.#####",
-      "#####.# GG   #.#####","#####.# #### #.#####","#####.#      #.#####","#####.#   GG #.#####",
-      "#####.# #### #.#####","#####.#      #.#####","####.###   ###.#####","#.##.#...#...#.##..#",
-      "#..................#","#.######.#.######..#","#...............p..#","##.###.###.###.###.#",
-      "#p.................#","####################",
+      "####################",
+      "#p................p#",
+      "#..................#",
+      "#P.................#",
+      "#..................#",
+      "#..................#",
+      "#..................#",
+      ...PEN,
+      "#..................#",
+      "#..................#",
+      "#..................#",
+      "#..................#",
+      "#..................#",
+      "#p...............p.#",
+      "####################",
     ],
   },
-  {
-    name: "Corridors", ghosts: [[8,8],[8,9],[11,10],[11,11]],
+  // Normal – balanced wall density, classic layout, medium maze space
+  normal: {
+    name: "Normal", ghosts: [[8,8],[8,9],[11,10],[11,11]],
     raw: [
-      "####################","#p.....#.....#....p#","#.#####.....#####..#","#P.................#",
-      "#..#####.....#####.#","#..................#","#.####.#...#.####..#","####.###   ###.#####",
-      "#####.# GG   #.#####","#####.# #### #.#####","#####.#      #.#####","#####.#   GG #.#####",
-      "#####.# #### #.#####","#####.#      #.#####","####.###   ###.#####","#.####.#...#.####..#",
-      "#..................#","#..#####.....#####.#","#p.................#","#.#####.....#####..#",
-      "#.....#.....#......#","####################",
+      "####################",
+      "#p.......#.......p.#",
+      "#.######.#.######..#",
+      "#P.................#",
+      "#.######.#.######..#",
+      "#..................#",
+      "#.##.#...#...#.##..#",
+      ...PEN,
+      "#.##.#...#...#.##..#",
+      "#..................#",
+      "#.######.#.######..#",
+      "#...............p..#",
+      "##.###.###.###.###.#",
+      "#p.................#",
+      "####################",
     ],
   },
-  {
-    name: "Grid", ghosts: [[8,8],[8,9],[11,10],[11,11]],
+  // Complex – many walls, tight corridors, large maze space
+  complex: {
+    name: "Complex", ghosts: [[8,8],[8,9],[11,10],[11,11]],
     raw: [
-      "####################","#p.#...#...#...#.p.#","#.##.##.#.#.##.##..#","#P.................#",
-      "#.##.##.#.#.##.##..#","#..................#","#.#.#....##.#.#.#..#","####.###   ###.#####",
-      "#####.# GG   #.#####","#####.# #### #.#####","#####.#      #.#####","#####.#   GG #.#####",
-      "#####.# #### #.#####","#####.#      #.#####","####.###   ###.#####","#.#.#....##.#.#.#..#",
-      "#..................#","#.##.##.#.#.##.##..#","#.#...........#...p#","#.##.##.#.#.##.##..#",
-      "#p.#...#...#...#...#","####################",
+      "####################",
+      "#p.#...#.....#...p.#",
+      "#.##.##.#.#.##.##..#",
+      "#P.................#",
+      "#.##.##.#.#.##.##..#",
+      "#..#...#.....#...#.#",
+      "#.##.#...#...#.##..#",
+      ...PEN,
+      "#.##.#...#...#.##..#",
+      "#..#...#.....#...#.#",
+      "#.##.##.#.#.##.##..#",
+      "#p.#...#.....#...p.#",
+      "#.###.###.###.###..#",
+      "#p.................#",
+      "####################",
     ],
   },
-  {
-    name: "Open", ghosts: [[8,8],[8,9],[11,10],[11,11]],
-    raw: [
-      "####################","#p.................#","#..##.......##.....#","#P.................#",
-      "#..............##..#","#..................#","#....#.#...#.#.....#","####.###   ###.#####",
-      "#####.# GG   #.#####","#####.# #### #.#####","#####.#      #.#####","#####.#   GG #.#####",
-      "#####.# #### #.#####","#####.#      #.#####","####.###   ###.#####","#....#.#...#.#.....#",
-      "#..................#","#..............##..#","#...p..........p...#","#..##.......##.....#",
-      "#..................#","####################",
-    ],
-  },
-  {
-    name: "Channels", ghosts: [[8,8],[8,9],[11,10],[11,11]],
-    raw: [
-      "####################","#p..#.....#.....#p.#","#.###.###.###.###..#","#P..#.....#.....#..#",
-      "#...#.###.###.#....#","#..........#.......#","#.##.....#.....##..#","####.###   ###.#####",
-      "#####.# GG   #.#####","#####.# #### #.#####","#####.#      #.#####","#####.#   GG #.#####",
-      "#####.# #### #.#####","#####.#      #.#####","####.###   ###.#####","#.##.....#.....##..#",
-      "#..........#.......#","#...#.###.###.#....#","#p..#.....#.....#p.#","#.###.###.###.###..#",
-      "#..................#","####################",
-    ],
-  },
-];
+};
 
 /* ── Types ───────────────────────────────────────────────── */
 type Pac = {
@@ -136,8 +157,8 @@ type GS = {
 };
 
 /* ── Init ────────────────────────────────────────────────── */
-function initGame(mode: "1p" | "2p", mapIdx: number, diff: Diff): GS {
-  const cfg = MAPS[mapIdx % MAPS.length];
+function initGame(mode: "1p" | "2p", mapSize: MapSize, diff: Diff): GS {
+  const cfg = MAPS[mapSize];
   const dots = new Set<string>(), pellets = new Set<string>();
   let p1r = 3, p1c = 1;
 
@@ -464,7 +485,7 @@ function drawAll(ctx: CanvasRenderingContext2D, s: GS, frame: number) {
     ctx.arc(px, py, R, angle + mouthOpen, angle + Math.PI * 2 - mouthOpen);
     ctx.closePath();
     ctx.fill();
-    const eyeAngle = angle - Math.PI * 0.42;
+    const eyeAngle = dir === 2 ? angle + Math.PI * 0.42 : angle - Math.PI * 0.42;
     ctx.fillStyle = "#1a1a2e";
     ctx.beginPath();
     ctx.arc(px + Math.cos(eyeAngle) * R * 0.55, py + Math.sin(eyeAngle) * R * 0.55, 1.8, 0, Math.PI * 2);
@@ -491,8 +512,7 @@ function DPadBtn({ label, onStart, className }: { label: string; onStart: () => 
 /* ── Component ───────────────────────────────────────────── */
 export default function PacMan() {
   const cv       = useRef<HTMLCanvasElement>(null);
-  const gs       = useRef<GS>(initGame("1p", 0, "normal"));
-  const mapIdx   = useRef(0);
+  const gs       = useRef<GS>(initGame("1p", "normal", "normal"));
   const frameRef = useRef(0);
   const raf      = useRef(0);
   const swipe    = useRef<{ x: number; y: number } | null>(null);
@@ -501,7 +521,8 @@ export default function PacMan() {
   const [result,   setResult]   = useState<"idle" | "dead" | "win">("idle");
   const [gMode,    setGMode]    = useState<"1p" | "2p">("1p");
   const [diff,     setDiff]     = useState<Diff>("normal");
-  const [mapName,  setMapName]  = useState("Classic");
+  const [mapSize,  setMapSize]  = useState<MapSize>("normal");
+  const [mapName,  setMapName]  = useState("Normal");
   const [p1Score,  setP1Score]  = useState(0);
   const [p2Score,  setP2Score]  = useState(0);
   const [p1Lives,  setP1Lives]  = useState(3);
@@ -572,14 +593,12 @@ export default function PacMan() {
     raf.current = requestAnimationFrame(loop);
   }, []);
 
-  const startGame = useCallback((m: "1p" | "2p", d: Diff) => {
+  const startGame = useCallback((m: "1p" | "2p", d: Diff, ms: MapSize) => {
     cancelAnimationFrame(raf.current);
-    const idx = mapIdx.current;
-    mapIdx.current = (idx + 1) % MAPS.length;
-    gs.current = initGame(m, idx, d);
+    gs.current = initGame(m, ms, d);
     frameRef.current = 0;
     setMapName(gs.current.mapName);
-    setGMode(m); setDiff(d);
+    setGMode(m); setDiff(d); setMapSize(ms);
     setP1Score(0); setP2Score(0);
     setP1Lives(3); setP2Lives(3);
     setResult("idle");
@@ -670,28 +689,56 @@ export default function PacMan() {
           </div>
         </div>
 
+        {/* Map size picker */}
+        <div className="w-full">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Map Size</p>
+          <div className="flex gap-2 w-full">
+            {([
+              { id: "simple",  label: "Simple",  emoji: "🟦", desc: "Wide open · few walls",       color: "#38bdf8" },
+              { id: "normal",  label: "Normal",  emoji: "🟨", desc: "Classic layout · balanced",   color: "#facc15" },
+              { id: "complex", label: "Complex", emoji: "🟥", desc: "Tight corridors · many walls", color: "#f87171" },
+            ] as const).map(({ id, label, emoji, desc, color }) => {
+              const sel = mapSize === id;
+              return (
+                <button key={id} onClick={() => setMapSize(id)}
+                  className="flex-1 py-3 rounded-xl border text-xs font-bold transition-all touch-manipulation"
+                  style={{
+                    background: sel ? `${color}22` : "transparent",
+                    borderColor: sel ? color : "#334155",
+                    color: sel ? color : "#64748b",
+                    boxShadow: sel ? `0 0 12px ${color}44` : "none",
+                  }}>
+                  <div className="text-lg mb-0.5">{emoji}</div>
+                  <div className="font-black">{label}</div>
+                  <div className="text-[10px] opacity-75 font-normal leading-tight mt-0.5">{desc}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Mode buttons */}
         <div className="flex gap-3 w-full">
-          <button onClick={() => { setScreen("game"); startGame("1p", diff); }}
+          <button onClick={() => { setScreen("game"); startGame("1p", diff, mapSize); }}
             className="flex-1 py-4 border rounded-2xl font-black transition-colors touch-manipulation"
             style={{ background: `${diffCfg.color}18`, borderColor: `${diffCfg.color}55`, color: diffCfg.color }}>
             👤<br /><span className="text-sm font-semibold">1 Player</span><br />
             <span className="text-xs font-normal text-muted-foreground">Arrows / Swipe</span>
           </button>
-          <button onClick={() => { setScreen("game"); startGame("2p", diff); }}
+          <button onClick={() => { setScreen("game"); startGame("2p", diff, mapSize); }}
             className="flex-1 py-4 bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/40 text-pink-400 font-black rounded-2xl transition-colors touch-manipulation">
             👥<br /><span className="text-sm font-semibold">2 Players</span><br />
             <span className="text-xs font-normal text-muted-foreground">P1: Arrows · P2: WASD</span>
           </button>
         </div>
 
-        <p className="text-xs text-muted-foreground -mt-2">5 rotating maps · Swipe or D-pad on mobile</p>
+        <p className="text-xs text-muted-foreground -mt-2">3 map sizes · Swipe or D-pad on mobile</p>
       </div>
     </Shell>
   );
 
   return (
-    <Shell title={`Pac-Man · ${mapName} · ${DIFF_CFG[diff].label}`}>
+    <Shell title={`Pac-Man · ${mapName} · ${DIFF_CFG[diff].label}`} >
       <div className="flex gap-6 font-mono text-sm items-center">
         <span className="text-yellow-400 font-bold">🟡 {p1Score} {"❤️".repeat(Math.max(0, p1Lives))}</span>
         {gMode === "2p" && <span className="text-pink-400 font-bold">🩷 {p2Score} {"❤️".repeat(Math.max(0, p2Lives))}</span>}
@@ -713,9 +760,8 @@ export default function PacMan() {
             <p className="font-mono text-sm text-muted-foreground">
               {gMode === "2p" ? `P1: ${p1Score} · P2: ${p2Score}` : `Score: ${p1Score}`}
             </p>
-            <p className="text-xs text-muted-foreground">Next map on restart</p>
             <div className="flex gap-3">
-              <button onClick={() => startGame(gMode, diff)}
+              <button onClick={() => startGame(gMode, diff, mapSize)}
                 className="px-8 py-3 bg-yellow-400 text-black font-bold rounded-xl touch-manipulation">
                 Play Again
               </button>
