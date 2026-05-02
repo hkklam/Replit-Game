@@ -985,7 +985,9 @@ export default function Uno() {
           <div className="flex-1 flex flex-col min-h-0 border-t border-gray-800 bg-gray-950">
             <div className="flex items-center gap-2 px-4 pt-2 pb-1">
               <span className="text-xs text-gray-400 font-semibold uppercase tracking-wide">
-                {mode === "ai" ? `${gs.names[gs.turn]}'s Hand` : "YOUR HAND"} ({activeHand.length})
+                {curPlayerIsHuman
+                  ? (mode === "ai" ? `${gs.names[gs.turn]}'s Hand` : "YOUR HAND")
+                  : `${gs.names[gs.turn]}'s Hand (hidden)`} ({activeHand.length})
               </span>
               {activeHand.length === 1 && isMyTurn && (
                 <span className="text-yellow-400 text-xs font-black animate-pulse">⚡ UNO!</span>
@@ -997,10 +999,11 @@ export default function Uno() {
             <div className="flex-1 overflow-x-auto overflow-y-hidden">
               <div className="flex gap-1 px-3 pb-3 items-end min-w-max" style={{ minHeight: 120 }}>
                 {activeHand.map(card => {
-                  const playable = isMyTurn && canPlay(card, top, gs.chosenColor, gs.variant, gs.stackedDraw);
+                  const playable = isMyTurn && curPlayerIsHuman && canPlay(card, top, gs.chosenColor, gs.variant, gs.stackedDraw);
                   return (
                     <UnoCard key={card.id} card={card}
-                      onClick={isMyTurn && playable ? () => playCard(card) : undefined}
+                      faceDown={!curPlayerIsHuman}
+                      onClick={playable ? () => playCard(card) : undefined}
                       disabled={!playable}
                       small={activeHand.length > 12}/>
                   );
