@@ -70,6 +70,76 @@ const LEVEL_WAVES: SpawnEntry[][][] = [
   [[{type:"demon",count:3,interval:75},{type:"boss",count:1,interval:200},{type:"troll",count:3,interval:80}],[{type:"demon",count:3,interval:70},{type:"boss",count:2,interval:180},{type:"mage",count:3,interval:65}]],
 ];
 
+// ─── Complex paths (many more turns) ─────────────────────────────────────────
+const COMPLEX_LEVEL_PATHS: [number,number][][] = [
+  // Complex Level 1 – 5 deep zigzags
+  [
+    [0,2],[1,2],[2,2],[3,2],
+    [3,3],[3,4],[3,5],[3,6],[3,7],[3,8],[3,9],
+    [4,9],[5,9],[6,9],
+    [6,8],[6,7],[6,6],[6,5],[6,4],[6,3],[6,2],
+    [7,2],[8,2],[9,2],
+    [9,3],[9,4],[9,5],[9,6],[9,7],[9,8],[9,9],
+    [10,9],[11,9],[12,9],
+    [12,8],[12,7],[12,6],[12,5],[12,4],[12,3],[12,2],
+    [13,2],[14,2],[15,2],
+    [15,3],[15,4],[15,5],[15,6],[15,7],[15,8],[15,9],
+    [16,9],[17,9],
+  ],
+  // Complex Level 2 – 7 tight zigzags
+  [
+    [0,1],[1,1],[2,1],
+    [2,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,8],[2,9],[2,10],
+    [3,10],[4,10],
+    [4,9],[4,8],[4,7],[4,6],[4,5],[4,4],[4,3],[4,2],[4,1],
+    [5,1],[6,1],
+    [6,2],[6,3],[6,4],[6,5],[6,6],[6,7],[6,8],[6,9],[6,10],
+    [7,10],[8,10],
+    [8,9],[8,8],[8,7],[8,6],[8,5],[8,4],[8,3],[8,2],[8,1],
+    [9,1],[10,1],
+    [10,2],[10,3],[10,4],[10,5],[10,6],[10,7],[10,8],[10,9],[10,10],
+    [11,10],[12,10],
+    [12,9],[12,8],[12,7],[12,6],[12,5],[12,4],[12,3],[12,2],[12,1],
+    [13,1],[14,1],
+    [14,2],[14,3],[14,4],[14,5],[14,6],[14,7],[14,8],[14,9],[14,10],
+    [15,10],[16,10],[17,10],
+  ],
+  // Complex Level 3 – 3 horizontal sweeps with bends
+  [
+    [0,1],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],[8,1],[9,1],[10,1],[11,1],[12,1],[13,1],[14,1],[15,1],[16,1],
+    [16,2],[16,3],[16,4],[16,5],
+    [15,5],[14,5],[13,5],[12,5],[11,5],[10,5],[9,5],[8,5],[7,5],[6,5],[5,5],[4,5],[3,5],[2,5],[1,5],
+    [1,6],[1,7],[1,8],[1,9],
+    [2,9],[3,9],[4,9],[5,9],[6,9],[7,9],[8,9],[9,9],[10,9],[11,9],[12,9],[13,9],[14,9],[15,9],[16,9],[17,9],
+  ],
+  // Complex Level 4 – 4 horizontal sweeps filling entire grid
+  [
+    [0,1],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],[8,1],[9,1],[10,1],[11,1],[12,1],[13,1],[14,1],[15,1],[16,1],[17,1],
+    [17,2],[17,3],
+    [16,3],[15,3],[14,3],[13,3],[12,3],[11,3],[10,3],[9,3],[8,3],[7,3],[6,3],[5,3],[4,3],[3,3],[2,3],[1,3],[0,3],
+    [0,4],[0,5],
+    [1,5],[2,5],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],[9,5],[10,5],[11,5],[12,5],[13,5],[14,5],[15,5],[16,5],[17,5],
+    [17,6],[17,7],
+    [16,7],[15,7],[14,7],[13,7],[12,7],[11,7],[10,7],[9,7],[8,7],[7,7],[6,7],[5,7],[4,7],[3,7],[2,7],[1,7],[0,7],
+    [0,8],[0,9],
+    [1,9],[2,9],[3,9],[4,9],[5,9],[6,9],[7,9],[8,9],[9,9],[10,9],[11,9],[12,9],[13,9],[14,9],[15,9],[16,9],[17,9],
+  ],
+  // Complex Level 5 – twisted maze with 10 direction changes
+  [
+    [0,1],[1,1],[2,1],
+    [2,2],[2,3],[2,4],[2,5],
+    [3,5],[4,5],[5,5],[6,5],[7,5],[8,5],
+    [8,4],[8,3],[8,2],[8,1],
+    [9,1],[10,1],
+    [10,2],[10,3],[10,4],[10,5],[10,6],[10,7],[10,8],[10,9],[10,10],
+    [9,10],[8,10],[7,10],[6,10],[5,10],
+    [5,9],[5,8],[5,7],[5,6],
+    [6,6],[7,6],[8,6],[9,6],[10,6],[11,6],[12,6],[13,6],[14,6],
+    [14,7],[14,8],[14,9],[14,10],
+    [15,10],[16,10],[17,10],
+  ],
+];
+
 const LEVEL_NAMES = ["The Plains","The Valley","Triple Pass","The Long March","The Labyrinth"];
 const LEVEL_GOLD  = [100,130,160,200,250];
 const LEVEL_START_GOLD = [100,130,170,220,280];
@@ -199,8 +269,11 @@ export default function TowerDefense() {
     state:"playing" as GameState,
     path:LEVEL_PATHS[0], pathSet:new Set(LEVEL_PATHS[0].map(([c,r])=>`${c},${r}`)),
     hovCol:-1, hovRow:-1, selTower:"arrow" as TowerType,
+    diffPaths: LEVEL_PATHS as [number,number][][],
   });
 
+  const [screen, setScreen] = useState<"menu"|"game">("menu");
+  const [difficulty, setDifficulty] = useState<"simple"|"complex">("simple");
   const [gold,setGold]=useState(100);
   const [lives,setLives]=useState(20);
   const [score,setScore]=useState(0);
@@ -441,8 +514,8 @@ export default function TowerDefense() {
   const advanceLevel = useCallback(()=>{
     const s=g.current;
     s.level++; s.wave=0; s.wavePhase="idle";
-    s.path=LEVEL_PATHS[s.level];
-    s.pathSet=new Set(LEVEL_PATHS[s.level].map(([c,r])=>`${c},${r}`));
+    s.path=s.diffPaths[s.level];
+    s.pathSet=new Set(s.diffPaths[s.level].map(([c,r])=>`${c},${r}`));
     s.enemies=[]; s.projectiles=[]; s.splashes=[]; s.towers=[];
     s.gold=LEVEL_START_GOLD[s.level]; setGold(s.gold);
     s.state="playing"; setState("playing");
@@ -460,6 +533,7 @@ export default function TowerDefense() {
   },[]);
 
   useEffect(()=>{
+    if(screen!=="game")return;
     const c=cv.current;
     const onMove=(e:MouseEvent)=>{
       const rect=c?.getBoundingClientRect(); if(!rect)return;
@@ -483,12 +557,29 @@ export default function TowerDefense() {
     window.addEventListener("keydown",onKey);
     raf.current=requestAnimationFrame(loop);
     return()=>{c?.removeEventListener("mousemove",onMove);c?.removeEventListener("click",onClick);window.removeEventListener("keydown",onKey);cancelAnimationFrame(raf.current);};
-  },[loop,placeTower,setSelTower]);
+  },[loop,placeTower,setSelTower,screen]);
 
-  const reset=useCallback(()=>{
+  const startGame = useCallback((diff:"simple"|"complex")=>{
+    const paths = diff==="complex" ? COMPLEX_LEVEL_PATHS : LEVEL_PATHS;
     const s=g.current;
     s.level=0;s.wave=0;s.wavePhase="idle";
-    s.path=LEVEL_PATHS[0];s.pathSet=new Set(LEVEL_PATHS[0].map(([c,r])=>`${c},${r}`));
+    s.diffPaths=paths;
+    s.path=paths[0];s.pathSet=new Set(paths[0].map(([c,r])=>`${c},${r}`));
+    s.enemies=[];s.towers=[];s.projectiles=[];s.splashes=[];
+    s.gold=100;s.lives=20;s.score=0;s.frame=0;
+    s.spawnQueue=[];s.spawnTimer=0;s.state="playing";
+    setGold(100);setLives(20);setScore(0);setLevelNum(1);setWaveNum(1);setState("playing");
+    setDifficulty(diff);
+    setScreen("game");
+  },[]);
+
+  const reset=useCallback((diff?:"simple"|"complex")=>{
+    if(!diff){setScreen("menu");cancelAnimationFrame(raf.current);return;}
+    const paths = diff==="complex" ? COMPLEX_LEVEL_PATHS : LEVEL_PATHS;
+    const s=g.current;
+    s.level=0;s.wave=0;s.wavePhase="idle";
+    s.diffPaths=paths;
+    s.path=paths[0];s.pathSet=new Set(paths[0].map(([c,r])=>`${c},${r}`));
     s.enemies=[];s.towers=[];s.projectiles=[];s.splashes=[];
     s.gold=100;s.lives=20;s.score=0;s.frame=0;
     s.spawnQueue=[];s.spawnTimer=0;s.state="playing";
@@ -497,8 +588,42 @@ export default function TowerDefense() {
     raf.current=requestAnimationFrame(loop);
   },[loop]);
 
-  return (
+  if (screen === "menu") return (
     <Shell title="Tower Defense">
+      <div className="flex flex-col items-center gap-8 text-center max-w-sm w-full">
+        <div className="text-6xl select-none">🏰</div>
+        <div>
+          <h2 className="text-2xl font-black text-orange-400 mb-1">Select Difficulty</h2>
+          <p className="text-sm text-muted-foreground">Choose how complex the enemy path will be across all 5 levels.</p>
+        </div>
+        <div className="flex flex-col gap-3 w-full">
+          <button onClick={()=>startGame("simple")}
+            className="w-full py-5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 text-green-300 font-black rounded-2xl transition-colors touch-manipulation">
+            🛡️ Simple
+            <div className="text-xs font-normal text-muted-foreground mt-1">Gentle curves · Easy-to-follow paths · Great for beginners</div>
+            <div className="flex flex-wrap gap-1 justify-center mt-2">
+              {["Straightaway","S-Curve","Triple Zigzag","Snake","Labyrinth"].map((n,i)=>(
+                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400">{n}</span>
+              ))}
+            </div>
+          </button>
+          <button onClick={()=>startGame("complex")}
+            className="w-full py-5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-black rounded-2xl transition-colors touch-manipulation">
+            ⚔️ Complex
+            <div className="text-xs font-normal text-muted-foreground mt-1">Many tight turns · Enemies travel farther · Fewer straight-shot opportunities</div>
+            <div className="flex flex-wrap gap-1 justify-center mt-2">
+              {["5 Deep Zigzags","7 Tight Zigzags","3 Sweeps","Full Grid","Twisted Maze"].map((n,i)=>(
+                <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400">{n}</span>
+              ))}
+            </div>
+          </button>
+        </div>
+      </div>
+    </Shell>
+  );
+
+  return (
+    <Shell title={`Tower Defense · ${difficulty === "complex" ? "⚔️ Complex" : "🛡️ Simple"}`}>
       {/* Tower selector */}
       <div className="flex gap-2 flex-wrap justify-center">
         {(Object.entries(TOWER_DEFS) as [TowerType,typeof TOWER_DEFS.arrow][]).map(([type,td])=>(
@@ -527,7 +652,10 @@ export default function TowerDefense() {
               {state==="win"?"🏆 Victory! All 5 Levels Cleared!":"💀 The Realm Has Fallen!"}
             </p>
             <p className="font-mono text-muted-foreground">Score: {score} · Level {levelNum}</p>
-            <button onClick={reset} className="px-8 py-3 bg-primary text-black font-black rounded-xl">Play Again</button>
+            <div className="flex gap-3 flex-wrap justify-center">
+              <button onClick={()=>reset(difficulty)} className="px-6 py-3 bg-primary text-black font-black rounded-xl">Play Again</button>
+              <button onClick={()=>reset()} className="px-6 py-3 bg-secondary text-foreground font-bold rounded-xl">Change Difficulty</button>
+            </div>
           </div>
         )}
       </div>
