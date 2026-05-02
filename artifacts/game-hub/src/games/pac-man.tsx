@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 
-function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
+function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center gap-4 px-4 py-3 border-b border-amber-500/30 bg-gradient-to-r from-amber-950/60 to-transparent">
@@ -12,9 +12,8 @@ function Shell({ title, controls, children }: { title: string; controls?: string
         </Link>
         <span className="text-2xl select-none" style={{ filter: "drop-shadow(0 0 8px #fbbf2480)" }}>👾</span>
         <h1 className="text-lg font-bold text-amber-400">{title}</h1>
-        {controls && <span className="text-xs text-muted-foreground ml-auto hidden sm:block">{controls}</span>}
       </header>
-      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">{children}</div>
+      <div className="flex-1 flex flex-col items-center justify-center p-2 gap-2">{children}</div>
     </div>
   );
 }
@@ -29,143 +28,58 @@ type MapConfig = { raw: string[]; ghosts: [number, number][]; name: string };
 
 const MAPS: MapConfig[] = [
   {
-    name: "Classic",
-    ghosts: [[8,8],[8,9],[11,10],[11,11]],
+    name: "Classic", ghosts: [[8,8],[8,9],[11,10],[11,11]],
     raw: [
-      "####################",
-      "#p.......#.......p.#",
-      "#.######.#.######..#",
-      "#P.................#",
-      "#.######.#.######..#",
-      "#..................#",
-      "#.##.#...#...#.##..#",
-      "####.###   ###.#####",
-      "#####.# GG   #.#####",
-      "#####.# #### #.#####",
-      "#####.#      #.#####",
-      "#####.#   GG #.#####",
-      "#####.# #### #.#####",
-      "#####.#      #.#####",
-      "####.###   ###.#####",
-      "#.##.#...#...#.##..#",
-      "#..................#",
-      "#.######.#.######..#",
-      "#...............p..#",
-      "##.###.###.###.###.#",
-      "#p.................#",
-      "####################",
+      "####################","#p.......#.......p.#","#.######.#.######..#","#P.................#",
+      "#.######.#.######..#","#..................#","#.##.#...#...#.##..#","####.###   ###.#####",
+      "#####.# GG   #.#####","#####.# #### #.#####","#####.#      #.#####","#####.#   GG #.#####",
+      "#####.# #### #.#####","#####.#      #.#####","####.###   ###.#####","#.##.#...#...#.##..#",
+      "#..................#","#.######.#.######..#","#...............p..#","##.###.###.###.###.#",
+      "#p.................#","####################",
     ],
   },
   {
-    name: "Corridors",
-    ghosts: [[8,8],[8,9],[11,10],[11,11]],
+    name: "Corridors", ghosts: [[8,8],[8,9],[11,10],[11,11]],
     raw: [
-      "####################",
-      "#p.....#.....#....p#",
-      "#.#####.....#####..#",
-      "#P.................#",
-      "#..#####.....#####.#",
-      "#..................#",
-      "#.####.#...#.####..#",
-      "####.###   ###.#####",
-      "#####.# GG   #.#####",
-      "#####.# #### #.#####",
-      "#####.#      #.#####",
-      "#####.#   GG #.#####",
-      "#####.# #### #.#####",
-      "#####.#      #.#####",
-      "####.###   ###.#####",
-      "#.####.#...#.####..#",
-      "#..................#",
-      "#..#####.....#####.#",
-      "#p.................#",
-      "#.#####.....#####..#",
-      "#.....#.....#......#",
-      "####################",
+      "####################","#p.....#.....#....p#","#.#####.....#####..#","#P.................#",
+      "#..#####.....#####.#","#..................#","#.####.#...#.####..#","####.###   ###.#####",
+      "#####.# GG   #.#####","#####.# #### #.#####","#####.#      #.#####","#####.#   GG #.#####",
+      "#####.# #### #.#####","#####.#      #.#####","####.###   ###.#####","#.####.#...#.####..#",
+      "#..................#","#..#####.....#####.#","#p.................#","#.#####.....#####..#",
+      "#.....#.....#......#","####################",
     ],
   },
   {
-    name: "Grid",
-    ghosts: [[8,8],[8,9],[11,10],[11,11]],
+    name: "Grid", ghosts: [[8,8],[8,9],[11,10],[11,11]],
     raw: [
-      "####################",
-      "#p.#...#...#...#.p.#",
-      "#.##.##.#.#.##.##..#",
-      "#P.................#",
-      "#.##.##.#.#.##.##..#",
-      "#..................#",
-      "#.#.#....##.#.#.#..#",
-      "####.###   ###.#####",
-      "#####.# GG   #.#####",
-      "#####.# #### #.#####",
-      "#####.#      #.#####",
-      "#####.#   GG #.#####",
-      "#####.# #### #.#####",
-      "#####.#      #.#####",
-      "####.###   ###.#####",
-      "#.#.#....##.#.#.#..#",
-      "#..................#",
-      "#.##.##.#.#.##.##..#",
-      "#.#...........#...p#",
-      "#.##.##.#.#.##.##..#",
-      "#p.#...#...#...#...#",
-      "####################",
+      "####################","#p.#...#...#...#.p.#","#.##.##.#.#.##.##..#","#P.................#",
+      "#.##.##.#.#.##.##..#","#..................#","#.#.#....##.#.#.#..#","####.###   ###.#####",
+      "#####.# GG   #.#####","#####.# #### #.#####","#####.#      #.#####","#####.#   GG #.#####",
+      "#####.# #### #.#####","#####.#      #.#####","####.###   ###.#####","#.#.#....##.#.#.#..#",
+      "#..................#","#.##.##.#.#.##.##..#","#.#...........#...p#","#.##.##.#.#.##.##..#",
+      "#p.#...#...#...#...#","####################",
     ],
   },
   {
-    name: "Open",
-    ghosts: [[8,8],[8,9],[11,10],[11,11]],
+    name: "Open", ghosts: [[8,8],[8,9],[11,10],[11,11]],
     raw: [
-      "####################",
-      "#p.................#",
-      "#..##.......##.....#",
-      "#P.................#",
-      "#..............##..#",
-      "#..................#",
-      "#....#.#...#.#.....#",
-      "####.###   ###.#####",
-      "#####.# GG   #.#####",
-      "#####.# #### #.#####",
-      "#####.#      #.#####",
-      "#####.#   GG #.#####",
-      "#####.# #### #.#####",
-      "#####.#      #.#####",
-      "####.###   ###.#####",
-      "#....#.#...#.#.....#",
-      "#..................#",
-      "#..............##..#",
-      "#...p..........p...#",
-      "#..##.......##.....#",
-      "#..................#",
-      "####################",
+      "####################","#p.................#","#..##.......##.....#","#P.................#",
+      "#..............##..#","#..................#","#....#.#...#.#.....#","####.###   ###.#####",
+      "#####.# GG   #.#####","#####.# #### #.#####","#####.#      #.#####","#####.#   GG #.#####",
+      "#####.# #### #.#####","#####.#      #.#####","####.###   ###.#####","#....#.#...#.#.....#",
+      "#..................#","#..............##..#","#...p..........p...#","#..##.......##.....#",
+      "#..................#","####################",
     ],
   },
   {
-    name: "Channels",
-    ghosts: [[8,8],[8,9],[11,10],[11,11]],
+    name: "Channels", ghosts: [[8,8],[8,9],[11,10],[11,11]],
     raw: [
-      "####################",
-      "#p..#.....#.....#p.#",
-      "#.###.###.###.###..#",
-      "#P..#.....#.....#..#",
-      "#...#.###.###.#....#",
-      "#..........#.......#",
-      "#.##.....#.....##..#",
-      "####.###   ###.#####",
-      "#####.# GG   #.#####",
-      "#####.# #### #.#####",
-      "#####.#      #.#####",
-      "#####.#   GG #.#####",
-      "#####.# #### #.#####",
-      "#####.#      #.#####",
-      "####.###   ###.#####",
-      "#.##.....#.....##..#",
-      "#..........#.......#",
-      "#...#.###.###.#....#",
-      "#p..#.....#.....#p.#",
-      "#.###.###.###.###..#",
-      "#..................#",
-      "####################",
+      "####################","#p..#.....#.....#p.#","#.###.###.###.###..#","#P..#.....#.....#..#",
+      "#...#.###.###.#....#","#..........#.......#","#.##.....#.....##..#","####.###   ###.#####",
+      "#####.# GG   #.#####","#####.# #### #.#####","#####.#      #.#####","#####.#   GG #.#####",
+      "#####.# #### #.#####","#####.#      #.#####","####.###   ###.#####","#.##.....#.....##..#",
+      "#..........#.......#","#...#.###.###.#....#","#p..#.....#.....#p.#","#.###.###.###.###..#",
+      "#..................#","####################",
     ],
   },
 ];
@@ -185,13 +99,24 @@ function initGame(mode: "1p" | "2p", mapIdx: number) {
     return ch;
   }));
   const ghostColors = ["#f43f5e", "#fb923c", "#a78bfa", "#34d399"];
-  const ghosts: Ghost[] = cfg.ghosts.map(([gr, gc], i) => ({
-    r: gr, c: gc, color: ghostColors[i % ghostColors.length],
-    dir: { x: i % 2 === 0 ? 1 : -1, y: 0 }, scared: false,
-  }));
+  const ghosts: Ghost[] = cfg.ghosts.map(([gr, gc], i) => ({ r: gr, c: gc, color: ghostColors[i % ghostColors.length], dir: { x: i % 2 === 0 ? 1 : -1, y: 0 }, scared: false }));
   const p1: PacState = { r: p1r, c: p1c, dir: { x: 1, y: 0 }, nd: { x: 1, y: 0 }, alive: true, lives: 3, score: 0 };
   const p2: PacState = { r: 20, c: 10, dir: { x: -1, y: 0 }, nd: { x: -1, y: 0 }, alive: true, lives: 3, score: 0 };
   return { mode, grid, p1, p2, dots, pellets, ghosts, scared: 0, frame: 0, mapName: cfg.name };
+}
+
+// D-pad button component
+function DPadBtn({ label, onStart, onEnd, className }: { label: string; onStart: () => void; onEnd: () => void; className?: string }) {
+  return (
+    <button
+      className={`flex items-center justify-center w-14 h-14 bg-slate-700/80 active:bg-slate-500/80 rounded-xl text-2xl select-none touch-manipulation border border-slate-600 ${className ?? ""}`}
+      onPointerDown={e => { e.preventDefault(); onStart(); }}
+      onPointerUp={onEnd}
+      onPointerLeave={onEnd}
+    >
+      {label}
+    </button>
+  );
 }
 
 export default function PacMan() {
@@ -205,6 +130,8 @@ export default function PacMan() {
   const [gameMode, setGameMode] = useState<"1p" | "2p">("1p");
   const [mapName, setMapName] = useState("Classic");
   const raf = useRef(0);
+  // Swipe tracking
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
 
   const drawPac = useCallback((ctx: CanvasRenderingContext2D, r: number, c: number, dir: Dir, frame: number, color: string, alive: boolean) => {
     if (!alive) return;
@@ -241,8 +168,7 @@ export default function PacMan() {
   }, [drawPac]);
 
   const loop = useCallback((frame: number) => {
-    const s = g.current;
-    s.frame = frame;
+    const s = g.current; s.frame = frame;
     const movePac = (pac: PacState) => {
       if (!pac.alive) return;
       if (frame % 12 === 0) {
@@ -253,8 +179,7 @@ export default function PacMan() {
         if (s.dots.has(key)) {
           s.dots.delete(key); pac.score += s.pellets.has(key) ? 50 : 10;
           if (s.pellets.has(key)) { s.scared = 300; s.ghosts.forEach(gh => gh.scared = true); }
-          s.pellets.delete(key);
-          setP1Score(s.p1.score); setP2Score(s.p2.score);
+          s.pellets.delete(key); setP1Score(s.p1.score); setP2Score(s.p2.score);
         }
       }
     };
@@ -277,7 +202,7 @@ export default function PacMan() {
       if (hit) {
         const scared = s.ghosts.find(gh => gh.scared && gh.r === pac.r && gh.c === pac.c);
         if (scared) { scared.r = 10; scared.c = 9; pac.score += 200; setP1Score(s.p1.score); setP2Score(s.p2.score); }
-        else { pac.lives--; setP1Lives(s.p1.lives); setP2Lives(s.p2.lives); if (pac.lives <= 0) { pac.alive = false; } pac.r = pac === s.p1 ? 3 : 20; pac.c = pac === s.p1 ? 1 : 10; pac.dir = { x: 1, y: 0 }; }
+        else { pac.lives--; setP1Lives(s.p1.lives); setP2Lives(s.p2.lives); if (pac.lives <= 0) pac.alive = false; pac.r = pac === s.p1 ? 3 : 20; pac.c = pac === s.p1 ? 1 : 10; pac.dir = { x: 1, y: 0 }; }
       }
     };
     checkHit(s.p1); if (s.mode === "2p") checkHit(s.p2);
@@ -287,13 +212,17 @@ export default function PacMan() {
   }, [draw]);
 
   const startGame = useCallback((m: "1p" | "2p") => {
-    const idx = mapIdxRef.current;
-    mapIdxRef.current = (idx + 1) % MAPS.length;
+    const idx = mapIdxRef.current; mapIdxRef.current = (idx + 1) % MAPS.length;
     g.current = initGame(m, idx);
     setMapName(MAPS[idx % MAPS.length].name);
     setGameMode(m); setP1Score(0); setP2Score(0); setP1Lives(3); setP2Lives(3); setGameState("playing");
     cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(() => loop(0));
   }, [loop]);
+
+  const setDir = useCallback((dir: Dir, player: 1 | 2 = 1) => {
+    if (player === 1) g.current.p1.nd = dir;
+    else g.current.p2.nd = dir;
+  }, []);
 
   useEffect(() => {
     if (screen !== "game") return;
@@ -303,23 +232,49 @@ export default function PacMan() {
       const nd1 = m1[e.key]; if (nd1) { g.current.p1.nd = nd1; e.preventDefault(); }
       const nd2 = m2[e.key]; if (nd2) { g.current.p2.nd = nd2; e.preventDefault(); }
     };
-    window.addEventListener("keydown", onKey); draw();
-    return () => { window.removeEventListener("keydown", onKey); cancelAnimationFrame(raf.current); };
-  }, [screen, draw]);
+
+    // Swipe detection on canvas
+    const cvEl = cv.current;
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const t = e.touches[0]; swipeRef.current = { x: t.clientX, y: t.clientY };
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      if (!swipeRef.current) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - swipeRef.current.x, dy = t.clientY - swipeRef.current.y;
+      swipeRef.current = null;
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? { x: 1, y: 0 } : { x: -1, y: 0 });
+      else setDir(dy > 0 ? { x: 0, y: 1 } : { x: 0, y: -1 });
+    };
+
+    window.addEventListener("keydown", onKey);
+    cvEl?.addEventListener("touchstart", onTouchStart, { passive: false });
+    cvEl?.addEventListener("touchend", onTouchEnd, { passive: false });
+    draw();
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      cvEl?.removeEventListener("touchstart", onTouchStart);
+      cvEl?.removeEventListener("touchend", onTouchEnd);
+      cancelAnimationFrame(raf.current);
+    };
+  }, [screen, draw, setDir]);
 
   const winner2p = gameMode === "2p" ? (p1Score > p2Score ? "🟡 P1 Wins!" : p2Score > p1Score ? "🩷 P2 Wins!" : "🤝 Tie!") : null;
 
   if (screen === "menu") return (
-    <Shell title="Pac-Man" controls="">
+    <Shell title="Pac-Man">
       <div className="flex flex-col items-center gap-8 text-center max-w-sm">
         <div className="text-6xl select-none">👾</div>
         <h2 className="text-2xl font-black text-amber-400">Select Mode</h2>
-        <p className="text-xs text-muted-foreground -mt-4">5 rotating maps · Classic · Corridors · Grid · Open · Channels</p>
+        <p className="text-xs text-muted-foreground -mt-4">5 rotating maps · Swipe or D-pad on mobile</p>
         <div className="flex gap-4 w-full">
-          <button onClick={() => { setScreen("game"); startGame("1p"); }} className="flex-1 py-4 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-400 font-black rounded-2xl transition-colors">
-            👤<br /><span className="text-sm font-semibold">1 Player</span><br /><span className="text-xs font-normal text-muted-foreground">Arrow keys</span>
+          <button onClick={() => { setScreen("game"); startGame("1p"); }} className="flex-1 py-4 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-400 font-black rounded-2xl transition-colors touch-manipulation">
+            👤<br /><span className="text-sm font-semibold">1 Player</span><br /><span className="text-xs font-normal text-muted-foreground">Arrows / Swipe</span>
           </button>
-          <button onClick={() => { setScreen("game"); startGame("2p"); }} className="flex-1 py-4 bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/50 text-pink-400 font-black rounded-2xl transition-colors">
+          <button onClick={() => { setScreen("game"); startGame("2p"); }} className="flex-1 py-4 bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/50 text-pink-400 font-black rounded-2xl transition-colors touch-manipulation">
             👥<br /><span className="text-sm font-semibold">2 Players</span><br /><span className="text-xs font-normal text-muted-foreground">P1: Arrows · P2: WASD</span>
           </button>
         </div>
@@ -328,13 +283,13 @@ export default function PacMan() {
   );
 
   return (
-    <Shell title={`Pac-Man · ${mapName}`} controls={gameMode === "2p" ? "🟡 P1: Arrows · 🩷 P2: WASD" : "Arrow keys to move"}>
-      <div className="flex gap-6 font-mono text-sm">
+    <Shell title={`Pac-Man · ${mapName}`}>
+      <div className="flex gap-4 font-mono text-sm">
         <span className="text-yellow-400">🟡 P1: {p1Score} {"❤️".repeat(Math.max(0, p1Lives))}</span>
         {gameMode === "2p" && <span className="text-pink-400">🩷 P2: {p2Score} {"❤️".repeat(Math.max(0, p2Lives))}</span>}
       </div>
-      <div className="relative">
-        <canvas ref={cv} width={W} height={H} className="rounded-lg border border-slate-700" style={{ maxWidth: "95vw" }} />
+      <div className="relative w-full flex justify-center">
+        <canvas ref={cv} width={W} height={H} className="rounded-lg border border-slate-700 touch-none" style={{ width: "100%", maxWidth: W, height: "auto" }} />
         {(gameState === "dead" || gameState === "win") && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-lg gap-4">
             {gameState === "win" && <p className="text-2xl font-black text-yellow-400">{winner2p ?? "You Win! 🎉"}</p>}
@@ -342,12 +297,26 @@ export default function PacMan() {
             <p className="font-mono text-sm text-muted-foreground">{gameMode === "2p" ? `P1: ${p1Score} · P2: ${p2Score}` : `Score: ${p1Score}`}</p>
             <p className="text-xs text-muted-foreground">Next map on restart</p>
             <div className="flex gap-3">
-              <button onClick={() => startGame(gameMode)} className="px-8 py-2 bg-yellow-400 text-black font-bold rounded-xl">Play Again</button>
-              <button onClick={() => setScreen("menu")} className="px-6 py-2 bg-secondary text-foreground font-bold rounded-xl">Menu</button>
+              <button onClick={() => startGame(gameMode)} className="px-8 py-3 bg-yellow-400 text-black font-bold rounded-xl touch-manipulation">Play Again</button>
+              <button onClick={() => setScreen("menu")} className="px-6 py-3 bg-secondary text-foreground font-bold rounded-xl touch-manipulation">Menu</button>
             </div>
           </div>
         )}
       </div>
+      {/* On-screen D-pad for mobile (1p only, shown below canvas) */}
+      {gameMode === "1p" && (
+        <div className="flex flex-col items-center gap-1 sm:hidden select-none mt-1">
+          <DPadBtn label="▲" onStart={() => setDir({ x: 0, y: -1 })} onEnd={() => {}} />
+          <div className="flex gap-1">
+            <DPadBtn label="◀" onStart={() => setDir({ x: -1, y: 0 })} onEnd={() => {}} />
+            <div className="w-14 h-14" />
+            <DPadBtn label="▶" onStart={() => setDir({ x: 1, y: 0 })} onEnd={() => {}} />
+          </div>
+          <DPadBtn label="▼" onStart={() => setDir({ x: 0, y: 1 })} onEnd={() => {}} />
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground text-center sm:hidden">Swipe the board or use the D-pad</p>
+      <p className="text-xs text-muted-foreground text-center hidden sm:block">{gameMode === "2p" ? "🟡 P1: Arrows · 🩷 P2: WASD" : "Arrow keys to move"}</p>
     </Shell>
   );
 }
