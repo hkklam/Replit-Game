@@ -21,7 +21,7 @@ function Shell({ title, controls, children }: { title: string; controls?: string
   );
 }
 
-const GRID = 20; const CELL = 24; const W = GRID * CELL; const H = GRID * CELL;
+const GRID = 26; const CELL = 24; const W = GRID * CELL; const H = GRID * CELL;
 const SPEED0 = 140;
 type P = { x: number; y: number };
 type Snake = { snake: P[]; dir: P; nd: P; alive: boolean; score: number };
@@ -81,28 +81,21 @@ function computeAIDir(sn: Snake, other: P[], food: P, diff: Difficulty): P {
     return !allBlocked.has(key({ x: nx, y: ny }));
   });
   if (safe.length === 0) return sn.nd;
-
   const closest = (candidates: P[]) =>
     candidates.reduce((best, d) => {
       const da = Math.abs(head.x + d.x - food.x) + Math.abs(head.y + d.y - food.y);
       const db = Math.abs(head.x + best.x - food.x) + Math.abs(head.y + best.y - food.y);
       return da < db ? d : best;
     });
-
-  if (diff === "easy") {
-    return Math.random() < 0.35 ? closest(safe) : safe[Math.floor(Math.random() * safe.length)];
-  }
-  if (diff === "medium") {
-    return Math.random() < 0.12 ? safe[Math.floor(Math.random() * safe.length)] : closest(safe);
-  }
-  // Hard: BFS
+  if (diff === "easy")   return Math.random() < 0.35 ? closest(safe) : safe[Math.floor(Math.random() * safe.length)];
+  if (diff === "medium") return Math.random() < 0.12 ? safe[Math.floor(Math.random() * safe.length)] : closest(safe);
   const bfs = bfsDir(head, sn.snake, other, food, sn.dir);
   return bfs ?? closest(safe);
 }
 
 function initState(mode: GameMode) {
-  const s1Body = [{ x: 5, y: 10 }];
-  const s2Body = [{ x: 15, y: 10 }];
+  const s1Body = [{ x: 5, y: 13 }];
+  const s2Body = [{ x: 21, y: 13 }];
   return {
     mode,
     s1: { snake: s1Body, dir: { x: 1, y: 0 }, nd: { x: 1, y: 0 }, alive: true, score: 0 } as Snake,
@@ -114,6 +107,175 @@ function initState(mode: GameMode) {
 
 type StatePayload = { s1: Snake; s2: Snake; food: P; spd: number; done: boolean; p1Score: number; p2Score: number };
 
+// ─── Snake drawing helpers ────────────────────────────────────────────────────
+type SnakePalette = [number, number, number, number, number, number];
+// [hHead, sHead, lHead, hTail, sTail, lTail]
+const PAL_GREEN:  SnakePalette = [145, 82, 52, 162, 68, 24];
+const PAL_ORANGE: SnakePalette = [28,  90, 58, 18,  76, 30];
+const PAL_PURPLE: SnakePalette = [278, 78, 64, 258, 62, 34];
+
+function segCol(pal: SnakePalette, t: number): string {
+  const [hH, sH, lH, hT, sT, lT] = pal;
+  return `hsl(${hH + (hT - hH) * t},${sH + (sT - sH) * t}%,${lH + (lT - lH) * t}%)`;
+}
+
+function drawSnake(ctx: CanvasRenderingContext2D, segs: P[], dir: P, pal: SnakePalette, alive: boolean) {
+  if (!segs.length) return;
+  const r = CELL / 2 - 2;
+
+  if (!alive) {
+    segs.forEach(s => {
+      const cx = s.x * CELL + CELL / 2, cy = s.y * CELL + CELL / 2;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = "#374151"; ctx.fill();
+    });
+    return;
+  }
+
+  // 1. Connecting quads (fill gaps between circle centres)
+  for (let i = 0; i < segs.length - 1; i++) {
+    const t  = i / Math.max(segs.length - 1, 1);
+    const t2 = (i + 1) / Math.max(segs.length - 1, 1);
+    const ax = segs[i].x * CELL + CELL / 2,     ay = segs[i].y * CELL + CELL / 2;
+    const bx = segs[i+1].x * CELL + CELL / 2,   by = segs[i+1].y * CELL + CELL / 2;
+    const dx = bx - ax, dy = by - ay;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const px = (-dy / len) * r, py = (dx / len) * r;
+    const r2 = i === segs.length - 2 ? r * 0.45 : r; // taper near tail
+    const grd = ctx.createLinearGradient(ax, ay, bx, by);
+    grd.addColorStop(0, segCol(pal, t)); grd.addColorStop(1, segCol(pal, t2));
+    ctx.beginPath();
+    ctx.moveTo(ax + px,  ay + py);
+    ctx.lineTo(bx + ((-dy/len)*r2), by + ((dx/len)*r2));
+    ctx.lineTo(bx - ((-dy/len)*r2), by - ((dx/len)*r2));
+    ctx.lineTo(ax - px,  ay - py);
+    ctx.closePath();
+    ctx.fillStyle = grd; ctx.fill();
+  }
+
+  // 2. Circles (tail → head so head paints on top)
+  for (let i = segs.length - 1; i >= 1; i--) {
+    const t  = i / Math.max(segs.length - 1, 1);
+    const cx = segs[i].x * CELL + CELL / 2, cy = segs[i].y * CELL + CELL / 2;
+    const isTail = i === segs.length - 1;
+    const segR = isTail ? r * 0.45 : r;
+
+    ctx.beginPath(); ctx.arc(cx, cy, segR, 0, Math.PI * 2);
+    ctx.fillStyle = segCol(pal, t); ctx.fill();
+
+    // Scale marks: small perpendicular arc every 3rd segment
+    if (!isTail && i % 3 === 0 && i < segs.length - 1) {
+      const prev = segs[i - 1], next = segs[i + 1];
+      const mdx = prev.x - next.x, mdy = prev.y - next.y;
+      const mlen = Math.sqrt(mdx*mdx + mdy*mdy) || 1;
+      const scx = -mdy / mlen, scy = mdx / mlen; // perpendicular
+      ctx.save();
+      ctx.globalAlpha = 0.22;
+      ctx.strokeStyle = segCol(pal, Math.min(t + 0.15, 1));
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx + scx * segR * 0.75, cy + scy * segR * 0.75);
+      ctx.lineTo(cx - scx * segR * 0.75, cy - scy * segR * 0.75);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 3D shine on each body segment
+    const shine = ctx.createRadialGradient(cx - segR * 0.32, cy - segR * 0.34, 0, cx, cy, segR);
+    shine.addColorStop(0, "rgba(255,255,255,0.28)"); shine.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.beginPath(); ctx.arc(cx, cy, segR, 0, Math.PI * 2);
+    ctx.fillStyle = shine; ctx.fill();
+  }
+
+  // 3. Head
+  if (segs.length > 0) {
+    const hx = segs[0].x * CELL + CELL / 2, hy = segs[0].y * CELL + CELL / 2;
+    const hr = r + 1.5;
+    const dx = dir.x, dy = dir.y;
+
+    // Head circle
+    ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI * 2);
+    ctx.fillStyle = segCol(pal, 0); ctx.fill();
+
+    // Head shine
+    const hshine = ctx.createRadialGradient(hx - hr * 0.3, hy - hr * 0.35, 0, hx, hy, hr);
+    hshine.addColorStop(0, "rgba(255,255,255,0.38)"); hshine.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI * 2); ctx.fillStyle = hshine; ctx.fill();
+
+    // Nostrils (small darker dots near the tip of the head)
+    const nx2 = hx + dx * hr * 0.62, ny2 = hy + dy * hr * 0.62;
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    [1, -1].forEach(s => {
+      ctx.beginPath(); ctx.arc(nx2 + dy * s * hr * 0.28, ny2 - dx * s * hr * 0.28, hr * 0.1, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // Eyes
+    [1, -1].forEach(side => {
+      const ex = hx + dx * hr * 0.28 + dy * side * hr * 0.42;
+      const ey = hy + dy * hr * 0.28 - dx * side * hr * 0.42;
+      // Sclera
+      ctx.beginPath(); ctx.arc(ex, ey, hr * 0.24, 0, Math.PI * 2);
+      ctx.fillStyle = "#f0f0f0"; ctx.fill();
+      // Pupil — vertical slit
+      ctx.save();
+      ctx.translate(ex + dx * hr * 0.08, ey + dy * hr * 0.08);
+      ctx.scale(0.55, 1);
+      ctx.beginPath(); ctx.arc(0, 0, hr * 0.14, 0, Math.PI * 2);
+      ctx.fillStyle = "#111"; ctx.fill();
+      ctx.restore();
+      // Specular dot
+      ctx.beginPath(); ctx.arc(ex - hr * 0.08, ey - hr * 0.1, hr * 0.07, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,0.85)"; ctx.fill();
+    });
+
+    // Forked tongue
+    const tx = hx + dx * (hr + 2), ty = hy + dy * (hr + 2);
+    const tmx = tx + dx * hr * 0.55, tmy = ty + dy * hr * 0.55;
+    ctx.save();
+    ctx.strokeStyle = "#f43f5e"; ctx.lineWidth = 1.8; ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(tx, ty); ctx.lineTo(tmx, tmy);
+    ctx.moveTo(tmx, tmy); ctx.lineTo(tmx + dx * hr * 0.32 + dy * hr * 0.28, tmy + dy * hr * 0.32 - dx * hr * 0.28);
+    ctx.moveTo(tmx, tmy); ctx.lineTo(tmx + dx * hr * 0.32 - dy * hr * 0.28, tmy + dy * hr * 0.32 + dx * hr * 0.28);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawFood(ctx: CanvasRenderingContext2D, food: P) {
+  const cx = food.x * CELL + CELL / 2, cy = food.y * CELL + CELL / 2;
+  const r = CELL / 2 - 2;
+
+  // Glow
+  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 2.2);
+  glow.addColorStop(0, "rgba(239,68,68,0.25)"); glow.addColorStop(1, "rgba(239,68,68,0)");
+  ctx.beginPath(); ctx.arc(cx, cy, r * 2.2, 0, Math.PI * 2); ctx.fillStyle = glow; ctx.fill();
+
+  // Apple body
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = "#ef4444"; ctx.fill();
+
+  // Body gradient
+  const bg = ctx.createRadialGradient(cx - r * 0.32, cy - r * 0.32, 0, cx + r * 0.1, cy + r * 0.1, r * 1.1);
+  bg.addColorStop(0, "rgba(255,180,180,0.65)"); bg.addColorStop(0.5, "rgba(239,68,68,0.1)"); bg.addColorStop(1, "rgba(80,0,0,0.4)");
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill();
+
+  // Stem
+  ctx.save(); ctx.strokeStyle = "#854d0e"; ctx.lineWidth = 2; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(cx, cy - r); ctx.quadraticCurveTo(cx + 3, cy - r - 5, cx + 4, cy - r - 9); ctx.stroke();
+  ctx.restore();
+
+  // Leaf
+  ctx.save(); ctx.fillStyle = "#22c55e";
+  ctx.beginPath(); ctx.ellipse(cx + 5, cy - r - 6, 5, 3, -0.5, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  // Shine
+  ctx.beginPath(); ctx.arc(cx - r * 0.3, cy - r * 0.33, r * 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,0.65)"; ctx.fill();
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function SnakeGame() {
   const cv = useRef<HTMLCanvasElement>(null);
   const g = useRef(initState("1p"));
@@ -148,26 +310,28 @@ export default function SnakeGame() {
   const draw = useCallback(() => {
     const c = cv.current; if (!c) return;
     const ctx = c.getContext("2d")!;
-    ctx.fillStyle = "#0d1117"; ctx.fillRect(0, 0, W, H);
+
+    // Background: dark green-tinted
+    ctx.fillStyle = "#071a0f"; ctx.fillRect(0, 0, W, H);
+
+    // Subtle grid dots
     ctx.fillStyle = "rgba(255,255,255,0.03)";
-    for (let x = 0; x < GRID; x++) for (let y = 0; y < GRID; y++) ctx.fillRect(x * CELL + 11, y * CELL + 11, 2, 2);
+    for (let x = 0; x < GRID; x++)
+      for (let y = 0; y < GRID; y++)
+        ctx.fillRect(x * CELL + CELL / 2 - 0.8, y * CELL + CELL / 2 - 0.8, 1.6, 1.6);
+
+    // Border
+    ctx.strokeStyle = "rgba(52,211,153,0.12)"; ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, W - 2, H - 2);
+
     const { s1, s2, food, mode } = g.current;
-    ctx.fillStyle = "#f43f5e";
-    ctx.beginPath(); ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL / 2 - 3, 0, Math.PI * 2); ctx.fill();
-    s1.snake.forEach((s, i) => {
-      const t = i / Math.max(s1.snake.length - 1, 1);
-      ctx.fillStyle = s1.alive ? `hsl(${160 - t * 30},84%,${45 - t * 15}%)` : "#374151";
-      ctx.beginPath(); ctx.roundRect(s.x * CELL + 2, s.y * CELL + 2, CELL - 4, CELL - 4, 4); ctx.fill();
-    });
+
+    drawFood(ctx, food);
+
+    drawSnake(ctx, s1.snake, s1.dir, PAL_GREEN, s1.alive);
     if (mode !== "1p") {
       const isAI = mode === "ai";
-      s2.snake.forEach((s, i) => {
-        const t = i / Math.max(s2.snake.length - 1, 1);
-        ctx.fillStyle = s2.alive
-          ? isAI ? `hsl(${280 - t * 20},75%,${55 - t * 10}%)` : `hsl(${28 - t * 10},90%,${55 - t * 15}%)`
-          : "#374151";
-        ctx.beginPath(); ctx.roundRect(s.x * CELL + 2, s.y * CELL + 2, CELL - 4, CELL - 4, 4); ctx.fill();
-      });
+      drawSnake(ctx, s2.snake, s2.dir, isAI ? PAL_PURPLE : PAL_ORANGE, s2.alive);
     }
   }, []);
 
@@ -178,11 +342,9 @@ export default function SnakeGame() {
     if (done1p || done2p) { draw(); return; }
     if (now - st.last > st.spd) {
       st.last = now;
-
       if (st.mode === "ai" && st.s2.alive) {
         st.s2.nd = computeAIDir(st.s2, st.s1.snake, st.food, diffRef.current);
       }
-
       const moveSnake = (sn: Snake, other: P[]) => {
         if (!sn.alive) return;
         sn.dir = sn.nd;
@@ -196,12 +358,10 @@ export default function SnakeGame() {
           st.food = rnd([...st.s1.snake, ...st.s2.snake]);
         } else sn.snake.pop();
       };
-
       const p2Body = st.mode !== "1p" ? st.s2.snake : [];
       moveSnake(st.s1, p2Body);
       if (st.mode !== "1p") moveSnake(st.s2, st.s1.snake);
       setP1Score(st.s1.score); setP2Score(st.s2.score);
-
       const isDone = (st.mode === "1p" && !st.s1.alive) || (st.mode !== "1p" && !st.s1.alive && !st.s2.alive);
       if (st.mode === "online") {
         const payload: StatePayload = { s1: st.s1, s2: st.s2, food: st.food, spd: st.spd, done: isDone, p1Score: st.s1.score, p2Score: st.s2.score };
@@ -352,7 +512,10 @@ export default function SnakeGame() {
         )}
       </div>
       <div className="relative">
-        <canvas ref={cv} width={W} height={H} className="rounded-lg border border-slate-700" />
+        <canvas ref={cv} width={W} height={H}
+          className="rounded-lg border border-emerald-900/60"
+          style={{ maxWidth: "min(95vw, 624px)", height: "auto" }}
+        />
         {isOnlineGuest && screen === "game" && (
           <div className="absolute top-2 left-0 right-0 flex justify-center pointer-events-none">
             <span className="bg-orange-500/20 border border-orange-500/40 text-orange-300 text-xs px-3 py-1 rounded-full">You are 🟠 P2 — WASD or Arrows</span>
