@@ -161,7 +161,7 @@ export const GAMES: GameMeta[] = [
     name: "Racing Game",
     icon: "🏎️",
     tier: "🔴",
-    desc: "Top-down racing. Best lap time wins.",
+    desc: "Pseudo-3D cockpit racing. 5 real circuits · split-screen 2P · 3 laps.",
     color: "#818cf8",
     gradient: "from-indigo-950/80 via-indigo-900/30 to-transparent",
     borderColor: "#818cf830",
