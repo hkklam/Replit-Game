@@ -22,9 +22,9 @@ function Shell({ title, controls, children }: { title: string; controls?: string
 }
 
 const GRID = 26; const CELL = 24; const W = GRID * CELL; const H = GRID * CELL;
-const SPEED0 = 140;
+const SPEED0 = 120;
 type P = { x: number; y: number };
-type Snake = { snake: P[]; dir: P; nd: P; alive: boolean; score: number };
+type Snake = { snake: P[]; prevSnake: P[]; dir: P; nd: P; alive: boolean; score: number };
 export type Difficulty = "easy" | "medium" | "hard";
 type GameMode = "1p" | "2p" | "ai" | "online";
 
@@ -98,8 +98,8 @@ function initState(mode: GameMode) {
   const s2Body = [{ x: 21, y: 13 }];
   return {
     mode,
-    s1: { snake: s1Body, dir: { x: 1, y: 0 }, nd: { x: 1, y: 0 }, alive: true, score: 0 } as Snake,
-    s2: { snake: s2Body, dir: { x: -1, y: 0 }, nd: { x: -1, y: 0 }, alive: true, score: 0 } as Snake,
+    s1: { snake: s1Body, prevSnake: [...s1Body], dir: { x: 1, y: 0 }, nd: { x: 1, y: 0 }, alive: true, score: 0 } as Snake,
+    s2: { snake: s2Body, prevSnake: [...s2Body], dir: { x: -1, y: 0 }, nd: { x: -1, y: 0 }, alive: true, score: 0 } as Snake,
     food: rnd([...s1Body, ...s2Body]),
     last: 0, spd: SPEED0,
   };
@@ -119,13 +119,23 @@ function segCol(pal: SnakePalette, t: number): string {
   return `hsl(${hH + (hT - hH) * t},${sH + (sT - sH) * t}%,${lH + (lT - lH) * t}%)`;
 }
 
-function drawSnake(ctx: CanvasRenderingContext2D, segs: P[], dir: P, pal: SnakePalette, alive: boolean) {
+// Linearly interpolate a grid position using prev/curr arrays and frame fraction
+function ipos(segs: P[], prev: P[], i: number, frac: number): { px: number; py: number } {
+  const cur = segs[i];
+  const p   = prev[i] ?? cur;
+  return {
+    px: (p.x + (cur.x - p.x) * frac) * CELL + CELL / 2,
+    py: (p.y + (cur.y - p.y) * frac) * CELL + CELL / 2,
+  };
+}
+
+function drawSnake(ctx: CanvasRenderingContext2D, segs: P[], prev: P[], frac: number, dir: P, pal: SnakePalette, alive: boolean) {
   if (!segs.length) return;
   const r = CELL / 2 - 2;
 
   if (!alive) {
-    segs.forEach(s => {
-      const cx = s.x * CELL + CELL / 2, cy = s.y * CELL + CELL / 2;
+    segs.forEach((_, i) => {
+      const { px: cx, py: cy } = ipos(segs, prev, i, frac);
       ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fillStyle = "#374151"; ctx.fill();
     });
@@ -136,19 +146,19 @@ function drawSnake(ctx: CanvasRenderingContext2D, segs: P[], dir: P, pal: SnakeP
   for (let i = 0; i < segs.length - 1; i++) {
     const t  = i / Math.max(segs.length - 1, 1);
     const t2 = (i + 1) / Math.max(segs.length - 1, 1);
-    const ax = segs[i].x * CELL + CELL / 2,     ay = segs[i].y * CELL + CELL / 2;
-    const bx = segs[i+1].x * CELL + CELL / 2,   by = segs[i+1].y * CELL + CELL / 2;
+    const { px: ax, py: ay } = ipos(segs, prev, i,     frac);
+    const { px: bx, py: by } = ipos(segs, prev, i + 1, frac);
     const dx = bx - ax, dy = by - ay;
     const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    const px = (-dy / len) * r, py = (dx / len) * r;
+    const px2 = (-dy / len) * r, py2 = (dx / len) * r;
     const r2 = i === segs.length - 2 ? r * 0.45 : r; // taper near tail
     const grd = ctx.createLinearGradient(ax, ay, bx, by);
     grd.addColorStop(0, segCol(pal, t)); grd.addColorStop(1, segCol(pal, t2));
     ctx.beginPath();
-    ctx.moveTo(ax + px,  ay + py);
+    ctx.moveTo(ax + px2,  ay + py2);
     ctx.lineTo(bx + ((-dy/len)*r2), by + ((dx/len)*r2));
     ctx.lineTo(bx - ((-dy/len)*r2), by - ((dx/len)*r2));
-    ctx.lineTo(ax - px,  ay - py);
+    ctx.lineTo(ax - px2,  ay - py2);
     ctx.closePath();
     ctx.fillStyle = grd; ctx.fill();
   }
@@ -156,7 +166,7 @@ function drawSnake(ctx: CanvasRenderingContext2D, segs: P[], dir: P, pal: SnakeP
   // 2. Circles (tail → head so head paints on top)
   for (let i = segs.length - 1; i >= 1; i--) {
     const t  = i / Math.max(segs.length - 1, 1);
-    const cx = segs[i].x * CELL + CELL / 2, cy = segs[i].y * CELL + CELL / 2;
+    const { px: cx, py: cy } = ipos(segs, prev, i, frac);
     const isTail = i === segs.length - 1;
     const segR = isTail ? r * 0.45 : r;
 
@@ -165,10 +175,11 @@ function drawSnake(ctx: CanvasRenderingContext2D, segs: P[], dir: P, pal: SnakeP
 
     // Scale marks: small perpendicular arc every 3rd segment
     if (!isTail && i % 3 === 0 && i < segs.length - 1) {
-      const prev = segs[i - 1], next = segs[i + 1];
-      const mdx = prev.x - next.x, mdy = prev.y - next.y;
+      const { px: ppx, py: ppy } = ipos(segs, prev, i - 1, frac);
+      const { px: npx, py: npy } = ipos(segs, prev, i + 1, frac);
+      const mdx = ppx - npx, mdy = ppy - npy;
       const mlen = Math.sqrt(mdx*mdx + mdy*mdy) || 1;
-      const scx = -mdy / mlen, scy = mdx / mlen; // perpendicular
+      const scx = -mdy / mlen, scy = mdx / mlen;
       ctx.save();
       ctx.globalAlpha = 0.22;
       ctx.strokeStyle = segCol(pal, Math.min(t + 0.15, 1));
@@ -189,7 +200,7 @@ function drawSnake(ctx: CanvasRenderingContext2D, segs: P[], dir: P, pal: SnakeP
 
   // 3. Head
   if (segs.length > 0) {
-    const hx = segs[0].x * CELL + CELL / 2, hy = segs[0].y * CELL + CELL / 2;
+    const { px: hx, py: hy } = ipos(segs, prev, 0, frac);
     const hr = r + 1.5;
     const dx = dir.x, dy = dir.y;
 
@@ -324,14 +335,15 @@ export default function SnakeGame() {
     ctx.strokeStyle = "rgba(52,211,153,0.12)"; ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, W - 2, H - 2);
 
-    const { s1, s2, food, mode } = g.current;
+    const { s1, s2, food, mode, last, spd } = g.current;
+    const frac = spd > 0 ? Math.min(1, (performance.now() - last) / spd) : 1;
 
     drawFood(ctx, food);
 
-    drawSnake(ctx, s1.snake, s1.dir, PAL_GREEN, s1.alive);
+    drawSnake(ctx, s1.snake, s1.prevSnake, frac, s1.dir, PAL_GREEN, s1.alive);
     if (mode !== "1p") {
       const isAI = mode === "ai";
-      drawSnake(ctx, s2.snake, s2.dir, isAI ? PAL_PURPLE : PAL_ORANGE, s2.alive);
+      drawSnake(ctx, s2.snake, s2.prevSnake, frac, s2.dir, isAI ? PAL_PURPLE : PAL_ORANGE, s2.alive);
     }
   }, []);
 
@@ -347,6 +359,7 @@ export default function SnakeGame() {
       }
       const moveSnake = (sn: Snake, other: P[]) => {
         if (!sn.alive) return;
+        sn.prevSnake = sn.snake.map(p => ({ x: p.x, y: p.y }));
         sn.dir = sn.nd;
         const h = { x: sn.snake[0].x + sn.dir.x, y: sn.snake[0].y + sn.dir.y };
         if (h.x < 0 || h.x >= GRID || h.y < 0 || h.y >= GRID ||
