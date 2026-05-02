@@ -26,10 +26,10 @@ const B1X = 98; const B2X = 128;
 type Theme = "sky" | "city" | "cave" | "space";
 
 const THEMES: Record<Theme, { name: string; icon: string; spd: number; gap: number; interval: number; groundH: number; gravity: number; desc: string; diff: string; birdColors: [string, string] }> = {
-  sky:   { name: "Sunny Day",  icon: "☀️",  spd: 2.5, gap: 158, interval: 95, groundH: 58, gravity: 1.0, desc: "Classic pipes, blue sky",    diff: "Easy",   birdColors: ["#facc15", "#67e8f9"] },
-  city:  { name: "Night City", icon: "🌃",  spd: 3.0, gap: 148, interval: 90, groundH: 52, gravity: 0.8, desc: "Skyscrapers after dark",      diff: "Medium", birdColors: ["#22d3ee", "#f472b6"] },
-  cave:  { name: "Dark Cave",  icon: "🕳️",  spd: 3.0, gap: 140, interval: 88, groundH: 50, gravity: 0.7, desc: "Stalactite tunnels",          diff: "Hard",   birdColors: ["#f97316", "#a78bfa"] },
-  space: { name: "Deep Space", icon: "🚀",  spd: 3.3, gap: 152, interval: 92, groundH: 0,  gravity: 0.5, desc: "Asteroid fields, zero-G",    diff: "Expert", birdColors: ["#c4b5fd", "#6ee7b7"] },
+  sky:   { name: "Sunny Day",  icon: "☀️",  spd: 2.5, gap: 158, interval: 95, groundH: 58, gravity: 0.5,  desc: "Classic pipes, blue sky",    diff: "Easy",   birdColors: ["#facc15", "#67e8f9"] },
+  city:  { name: "Night City", icon: "🌃",  spd: 3.0, gap: 148, interval: 90, groundH: 52, gravity: 0.4,  desc: "Skyscrapers after dark",      diff: "Medium", birdColors: ["#22d3ee", "#f472b6"] },
+  cave:  { name: "Dark Cave",  icon: "🕳️",  spd: 3.0, gap: 140, interval: 88, groundH: 50, gravity: 0.35, desc: "Stalactite tunnels",          diff: "Hard",   birdColors: ["#f97316", "#a78bfa"] },
+  space: { name: "Deep Space", icon: "🚀",  spd: 3.3, gap: 152, interval: 92, groundH: 0,  gravity: 0.25, desc: "Asteroid fields, zero-G",    diff: "Expert", birdColors: ["#c4b5fd", "#6ee7b7"] },
 };
 
 const DIFF_COLORS: Record<string, string> = { Easy: "text-green-400", Medium: "text-amber-400", Hard: "text-red-400", Expert: "text-purple-400" };
