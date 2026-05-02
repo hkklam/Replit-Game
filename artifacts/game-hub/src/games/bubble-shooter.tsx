@@ -106,7 +106,12 @@ export default function BubbleShooter() {
         : [[0,1],[0,-1],[-1,0],[-1,1],[1,0],[1,1]];
       offs.forEach(([dr, dc]) => queue.push([r + dr, c + dc]));
     }
-    if (matched.length >= 2) { matched.forEach(([r, c]) => { grid[r][c] = null; }); return matched.length * 10; }
+    if (matched.length >= 2) {
+      const lowestRow = Math.max(...matched.map(([r]) => r));
+      const toRemove = matched.filter(([r]) => r === lowestRow);
+      toRemove.forEach(([r, c]) => { grid[r][c] = null; });
+      return toRemove.length * 10;
+    }
     return 0;
   }, []);
 
