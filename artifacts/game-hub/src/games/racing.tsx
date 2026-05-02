@@ -416,10 +416,6 @@ function renderView(
   hg.addColorStop(0, "rgba(80,40,160,0)"); hg.addColorStop(0.5, "rgba(80,40,180,0.18)"); hg.addColorStop(1, "rgba(80,40,160,0)");
   ctx.fillStyle = hg; ctx.fillRect(0, yOff + H2 - 20, CW, 40);
 
-  // Mountains on horizon (parallax shift from far curve accumulation)
-  const mxShift = cumX[Math.min(DRAW_N - 1, 180)];
-  drawMountains(ctx, mxShift, yOff, H2);
-
   // Camera
   const camSeg = Math.floor(pz / SEG_LEN) % N_SEGS;
   const camFrac = (pz % SEG_LEN) / SEG_LEN;
@@ -431,6 +427,10 @@ function renderView(
     cumX[n] = cumX[n - 1] + gs.track[si].curve;
     cumY[n] = cumY[n - 1] + gs.track[si].pitch;
   }
+
+  // Mountains on horizon (parallax shift from far curve accumulation)
+  const mxShift = cumX[Math.min(DRAW_N - 1, 180)];
+  drawMountains(ctx, mxShift, yOff, H2);
 
   // Sprites
   type Spr = { n: number; sx: number; sy: number; sc: number; color: string; label: string; kind?: "tree" };
