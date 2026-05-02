@@ -11,6 +11,7 @@ import Battleship from "./battleship";
 import PacMan from "./pac-man";
 import Minecraft from "./minecraft";
 import Racing from "./racing";
+import CandyCrush from "./candy-crush";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -165,6 +166,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-indigo-950/80 via-indigo-900/30 to-transparent",
     borderColor: "#818cf830",
     component: Racing,
+  },
+  {
+    id: "candy-crush",
+    name: "Candy Crush 3D",
+    icon: "💎",
+    tier: "🔴",
+    desc: "Match 3D gems. Special combos, cascades, 10 levels.",
+    color: "#a855f7",
+    gradient: "from-purple-950/80 via-purple-900/30 to-transparent",
+    borderColor: "#a855f730",
+    component: CandyCrush,
   },
 ];
 
