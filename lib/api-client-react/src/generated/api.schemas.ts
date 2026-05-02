@@ -8,3 +8,40 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface TranscriptSegment {
+  start: number;
+  end: number;
+  text: string;
+}
+
+export interface Meeting {
+  id: number;
+  meetingName: string;
+  fileId: string;
+  transcript: string;
+  segments?: TranscriptSegment[];
+  durationSec: number;
+  costUsd: number;
+  createdAt: string;
+}
+
+export interface MeetingStats {
+  totalMeetings: number;
+  totalDurationSec: number;
+  totalCostUsd: number;
+  avgDurationSec: number;
+}
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export interface SuccessResponse {
+  success: boolean;
+}
+
+export type UploadAudioBody = {
+  audio_blob: Blob;
+  meeting_name: string;
+};

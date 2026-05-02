@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: meetings
+    description: Meeting recording and transcription operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,151 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /meetings:
+    get:
+      operationId: listMeetings
+      tags: [meetings]
+      summary: List all meetings
+      description: Returns all saved meeting transcriptions
+      responses:
+        "200":
+          description: List of meetings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Meeting"
+
+  /meetings/{id}:
+    get:
+      operationId: getMeeting
+      tags: [meetings]
+      summary: Get a meeting by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Meeting details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteMeeting
+      tags: [meetings]
+      summary: Delete a meeting
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /meetings/upload:
+    post:
+      operationId: uploadAudio
+      tags: [meetings]
+      summary: Upload audio for transcription
+      description: Accepts a WebM audio blob and meeting name, converts to WAV, transcribes via Whisper, saves meeting record
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                audio_blob:
+                  type: string
+                  format: binary
+                meeting_name:
+                  type: string
+              required:
+                - audio_blob
+                - meeting_name
+      responses:
+        "200":
+          description: Transcription complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /meetings/{id}/download:
+    get:
+      operationId: downloadTranscript
+      tags: [meetings]
+      summary: Download transcript as markdown
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Markdown file
+          content:
+            text/markdown:
+              schema:
+                type: string
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /meetings/stats:
+    get:
+      operationId: getMeetingStats
+      tags: [meetings]
+      summary: Get aggregated meeting statistics
+      description: Total meetings, total duration, total cost, average duration
+      responses:
+        "200":
+          description: Meeting stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeetingStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +181,80 @@ components:
       required:
         - status
 
+    Meeting:
+      type: object
+      properties:
+        id:
+          type: integer
+        meetingName:
+          type: string
+        fileId:
+          type: string
+        transcript:
+          type: string
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranscriptSegment"
+        durationSec:
+          type: number
+        costUsd:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - meetingName
+        - fileId
+        - transcript
+        - durationSec
+        - costUsd
+        - createdAt
+
+    TranscriptSegment:
+      type: object
+      properties:
+        start:
+          type: number
+        end:
+          type: number
+        text:
+          type: string
+      required:
+        - start
+        - end
+        - text
+
+    MeetingStats:
+      type: object
+      properties:
+        totalMeetings:
+          type: integer
+        totalDurationSec:
+          type: number
+        totalCostUsd:
+          type: number
+        avgDurationSec:
+          type: number
+      required:
+        - totalMeetings
+        - totalDurationSec
+        - totalCostUsd
+        - avgDurationSec
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success

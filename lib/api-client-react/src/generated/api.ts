@@ -5,18 +5,28 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  ErrorResponse,
+  HealthStatus,
+  Meeting,
+  MeetingStats,
+  SuccessResponse,
+  UploadAudioBody,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -92,6 +102,506 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns all saved meeting transcriptions
+ * @summary List all meetings
+ */
+export const getListMeetingsUrl = () => {
+  return `/api/meetings`;
+};
+
+export const listMeetings = async (
+  options?: RequestInit,
+): Promise<Meeting[]> => {
+  return customFetch<Meeting[]>(getListMeetingsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMeetingsQueryKey = () => {
+  return [`/api/meetings`] as const;
+};
+
+export const getListMeetingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMeetings>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMeetings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMeetingsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMeetings>>> = ({
+    signal,
+  }) => listMeetings({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMeetings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMeetingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMeetings>>
+>;
+export type ListMeetingsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all meetings
+ */
+
+export function useListMeetings<
+  TData = Awaited<ReturnType<typeof listMeetings>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMeetings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMeetingsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a meeting by ID
+ */
+export const getGetMeetingUrl = (id: number) => {
+  return `/api/meetings/${id}`;
+};
+
+export const getMeeting = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Meeting> => {
+  return customFetch<Meeting>(getGetMeetingUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMeetingQueryKey = (id: number) => {
+  return [`/api/meetings/${id}`] as const;
+};
+
+export const getGetMeetingQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMeeting>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMeeting>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMeetingQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMeeting>>> = ({
+    signal,
+  }) => getMeeting(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMeeting>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMeetingQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMeeting>>
+>;
+export type GetMeetingQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get a meeting by ID
+ */
+
+export function useGetMeeting<
+  TData = Awaited<ReturnType<typeof getMeeting>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMeeting>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMeetingQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Delete a meeting
+ */
+export const getDeleteMeetingUrl = (id: number) => {
+  return `/api/meetings/${id}`;
+};
+
+export const deleteMeeting = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteMeetingUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteMeetingMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMeeting>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteMeeting>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteMeeting"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteMeeting>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteMeeting(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteMeetingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteMeeting>>
+>;
+
+export type DeleteMeetingMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Delete a meeting
+ */
+export const useDeleteMeeting = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMeeting>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteMeeting>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteMeetingMutationOptions(options));
+};
+
+/**
+ * Accepts a WebM audio blob and meeting name, converts to WAV, transcribes via Whisper, saves meeting record
+ * @summary Upload audio for transcription
+ */
+export const getUploadAudioUrl = () => {
+  return `/api/meetings/upload`;
+};
+
+export const uploadAudio = async (
+  uploadAudioBody: UploadAudioBody,
+  options?: RequestInit,
+): Promise<Meeting> => {
+  const formData = new FormData();
+  formData.append(`audio_blob`, uploadAudioBody.audio_blob);
+  formData.append(`meeting_name`, uploadAudioBody.meeting_name);
+
+  return customFetch<Meeting>(getUploadAudioUrl(), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const getUploadAudioMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadAudio>>,
+    TError,
+    { data: BodyType<UploadAudioBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadAudio>>,
+  TError,
+  { data: BodyType<UploadAudioBody> },
+  TContext
+> => {
+  const mutationKey = ["uploadAudio"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadAudio>>,
+    { data: BodyType<UploadAudioBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return uploadAudio(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadAudioMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadAudio>>
+>;
+export type UploadAudioMutationBody = BodyType<UploadAudioBody>;
+export type UploadAudioMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Upload audio for transcription
+ */
+export const useUploadAudio = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadAudio>>,
+    TError,
+    { data: BodyType<UploadAudioBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadAudio>>,
+  TError,
+  { data: BodyType<UploadAudioBody> },
+  TContext
+> => {
+  return useMutation(getUploadAudioMutationOptions(options));
+};
+
+/**
+ * @summary Download transcript as markdown
+ */
+export const getDownloadTranscriptUrl = (id: number) => {
+  return `/api/meetings/${id}/download`;
+};
+
+export const downloadTranscript = async (
+  id: number,
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getDownloadTranscriptUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getDownloadTranscriptQueryKey = (id: number) => {
+  return [`/api/meetings/${id}/download`] as const;
+};
+
+export const getDownloadTranscriptQueryOptions = <
+  TData = Awaited<ReturnType<typeof downloadTranscript>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadTranscript>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getDownloadTranscriptQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof downloadTranscript>>
+  > = ({ signal }) => downloadTranscript(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof downloadTranscript>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type DownloadTranscriptQueryResult = NonNullable<
+  Awaited<ReturnType<typeof downloadTranscript>>
+>;
+export type DownloadTranscriptQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Download transcript as markdown
+ */
+
+export function useDownloadTranscript<
+  TData = Awaited<ReturnType<typeof downloadTranscript>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadTranscript>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getDownloadTranscriptQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Total meetings, total duration, total cost, average duration
+ * @summary Get aggregated meeting statistics
+ */
+export const getGetMeetingStatsUrl = () => {
+  return `/api/meetings/stats`;
+};
+
+export const getMeetingStats = async (
+  options?: RequestInit,
+): Promise<MeetingStats> => {
+  return customFetch<MeetingStats>(getGetMeetingStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMeetingStatsQueryKey = () => {
+  return [`/api/meetings/stats`] as const;
+};
+
+export const getGetMeetingStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMeetingStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMeetingStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMeetingStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMeetingStats>>> = ({
+    signal,
+  }) => getMeetingStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMeetingStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMeetingStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMeetingStats>>
+>;
+export type GetMeetingStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get aggregated meeting statistics
+ */
+
+export function useGetMeetingStats<
+  TData = Awaited<ReturnType<typeof getMeetingStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMeetingStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMeetingStatsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

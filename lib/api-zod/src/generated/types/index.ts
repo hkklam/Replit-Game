@@ -6,4 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./errorResponse";
 export * from "./healthStatus";
+export * from "./meeting";
+export * from "./meetingStats";
+export * from "./successResponse";
+export * from "./transcriptSegment";
+export * from "./uploadAudioBody";

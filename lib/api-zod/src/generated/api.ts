@@ -14,3 +14,110 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Returns all saved meeting transcriptions
+ * @summary List all meetings
+ */
+export const ListMeetingsResponseItem = zod.object({
+  id: zod.number(),
+  meetingName: zod.string(),
+  fileId: zod.string(),
+  transcript: zod.string(),
+  segments: zod
+    .array(
+      zod.object({
+        start: zod.number(),
+        end: zod.number(),
+        text: zod.string(),
+      }),
+    )
+    .optional(),
+  durationSec: zod.number(),
+  costUsd: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+export const ListMeetingsResponse = zod.array(ListMeetingsResponseItem);
+
+/**
+ * @summary Get a meeting by ID
+ */
+export const GetMeetingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetMeetingResponse = zod.object({
+  id: zod.number(),
+  meetingName: zod.string(),
+  fileId: zod.string(),
+  transcript: zod.string(),
+  segments: zod
+    .array(
+      zod.object({
+        start: zod.number(),
+        end: zod.number(),
+        text: zod.string(),
+      }),
+    )
+    .optional(),
+  durationSec: zod.number(),
+  costUsd: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a meeting
+ */
+export const DeleteMeetingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteMeetingResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * Accepts a WebM audio blob and meeting name, converts to WAV, transcribes via Whisper, saves meeting record
+ * @summary Upload audio for transcription
+ */
+export const UploadAudioBody = zod.object({
+  audio_blob: zod.instanceof(File),
+  meeting_name: zod.string(),
+});
+
+export const UploadAudioResponse = zod.object({
+  id: zod.number(),
+  meetingName: zod.string(),
+  fileId: zod.string(),
+  transcript: zod.string(),
+  segments: zod
+    .array(
+      zod.object({
+        start: zod.number(),
+        end: zod.number(),
+        text: zod.string(),
+      }),
+    )
+    .optional(),
+  durationSec: zod.number(),
+  costUsd: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Download transcript as markdown
+ */
+export const DownloadTranscriptParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * Total meetings, total duration, total cost, average duration
+ * @summary Get aggregated meeting statistics
+ */
+export const GetMeetingStatsResponse = zod.object({
+  totalMeetings: zod.number(),
+  totalDurationSec: zod.number(),
+  totalCostUsd: zod.number(),
+  avgDurationSec: zod.number(),
+});
