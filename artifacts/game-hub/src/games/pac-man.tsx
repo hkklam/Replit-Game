@@ -123,7 +123,7 @@ export default function PacMan() {
     s.frame = frame;
     const movePac = (pac: PacState) => {
       if (!pac.alive) return;
-      if (frame % 6 === 0) {
+      if (frame % 9 === 0) {
         const nr = pac.r + pac.nd.y, nc = pac.c + pac.nd.x;
         if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && s.grid[nr][nc] !== "#") { pac.dir = pac.nd; pac.r = nr; pac.c = nc; }
         else { const mr = pac.r + pac.dir.y, mc = pac.c + pac.dir.x; if (mr >= 0 && mr < ROWS && mc >= 0 && mc < COLS && s.grid[mr][mc] !== "#") { pac.r = mr; pac.c = mc; } }
@@ -139,7 +139,7 @@ export default function PacMan() {
     movePac(s.p1); if (s.mode === "2p") movePac(s.p2);
     if (s.dots.size === 0) { setGameState("win"); draw(); return; }
     if (s.scared > 0) { s.scared--; if (s.scared === 0) s.ghosts.forEach(gh => gh.scared = false); }
-    if (frame % 10 === 0) {
+    if (frame % 15 === 0) {
       s.ghosts.forEach(gh => {
         const dirs: Dir[] = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
         const valid = dirs.filter(d => { const nr = gh.r + d.y, nc = gh.c + d.x; return nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && s.grid[nr][nc] !== "#" && !(d.x === -gh.dir.x && d.y === -gh.dir.y); });
