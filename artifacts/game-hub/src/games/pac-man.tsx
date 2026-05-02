@@ -245,9 +245,11 @@ function ghostTarget(gh: Ghost, p1: Pac, frame: number, diff: Diff): { tr: numbe
   }
 }
 
-// FIX: `decided` flag ensures we make exactly ONE direction decision per cell-center
-// visit. Without it, the ghost gets snapped back to center every frame while within
-// the threshold distance, oscillating ±speed px and never actually progressing.
+// Ghost movement with proper wall constraints:
+// 1. Decisions are made once per cell-center arrival (`decided` flag prevents oscillation)
+// 2. Reverse allowed only as a last resort (dead-end)
+// 3. Current direction validated before moving — catches any invalid state
+// 4. Hard wall-clamp after move — ghost is snapped back if it would enter a wall cell
 function moveGhost(gh: Ghost, p1: Pac, grid: string[][], frame: number, ghostSpd: number, diff: Diff) {
   const c = cellCol(gh.px), r = cellRow(gh.py);
   const cx = ccx(c), cy = ccy(r);
@@ -255,33 +257,49 @@ function moveGhost(gh: Ghost, p1: Pac, grid: string[][], frame: number, ghostSpd
   const nearCenter = Math.abs(gh.px - cx) < THRESH && Math.abs(gh.py - cy) < THRESH;
 
   if (nearCenter && !gh.decided) {
-    // First frame arriving near this cell center: make decision + snap for clean turn
     gh.decided = true;
     gh.px = cx; gh.py = cy;
 
     const { tr, tc } = ghostTarget(gh, p1, frame, diff);
     const oppD = opp(gh.dir);
-    const valid = [0, 1, 2, 3].filter(d => {
-      if (d === oppD) return false;
-      return passable(grid, r + DY[d], c + DX[d], true);
-    });
+
+    // Prefer not to reverse — but allow it as the only fallback at a dead-end
+    let valid = [0, 1, 2, 3].filter(d => d !== oppD && passable(grid, r + DY[d], c + DX[d], true));
+    if (!valid.length) valid = [oppD].filter(d => passable(grid, r + DY[d], c + DX[d], true));
+
     if (valid.length) {
-      if (gh.scared) {
-        gh.dir = valid[Math.floor(Math.random() * valid.length)];
-      } else {
-        gh.dir = valid.reduce((best, d) => {
-          const an = (c + DX[d] - tc) ** 2 + (r + DY[d] - tr) ** 2;
-          const ab = (c + DX[best] - tc) ** 2 + (r + DY[best] - tr) ** 2;
-          return an < ab ? d : best;
-        });
-      }
+      gh.dir = gh.scared
+        ? valid[Math.floor(Math.random() * valid.length)]
+        : valid.reduce((best, d) => {
+            const an = (c + DX[d] - tc) ** 2 + (r + DY[d] - tr) ** 2;
+            const ab = (c + DX[best] - tc) ** 2 + (r + DY[best] - tr) ** 2;
+            return an < ab ? d : best;
+          });
     }
   } else if (!nearCenter) {
-    gh.decided = false; // reset when fully clear of center
+    gh.decided = false;
   }
 
-  gh.px += DX[gh.dir] * ghostSpd;
-  gh.py += DY[gh.dir] * ghostSpd;
+  // Safety valve: if somehow the current direction is blocked, find any open direction
+  // This prevents the ghost from tunnelling through walls in any edge-case state.
+  if (!passable(grid, r + DY[gh.dir], c + DX[gh.dir], true)) {
+    const rescue = [0, 1, 2, 3].find(d => passable(grid, r + DY[d], c + DX[d], true));
+    if (rescue !== undefined) { gh.dir = rescue; }
+    gh.px = cx; gh.py = cy; gh.decided = false;
+    return;
+  }
+
+  const npx = gh.px + DX[gh.dir] * ghostSpd;
+  const npy = gh.py + DY[gh.dir] * ghostSpd;
+
+  // Hard wall-clamp: reject the move if the new pixel position falls inside a wall cell
+  if (!passable(grid, cellRow(npy), cellCol(npx), true)) {
+    gh.px = cx; gh.py = cy; gh.decided = false;
+    return;
+  }
+
+  gh.px = npx;
+  gh.py = npy;
 }
 
 /* ── Drawing ─────────────────────────────────────────────── */
