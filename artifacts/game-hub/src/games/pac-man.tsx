@@ -20,68 +20,190 @@ function Shell({ title, controls, children }: { title: string; controls?: string
 }
 
 const CELL = 22;
-const MAP_RAW = [
-  "####################",
-  "#........#.........#",
-  "#.##.###.#.###.##.##",
-  "#P##.###.#.###.##.##",
-  "#.................##",
-  "#.##.#.#####.#.##.##",
-  "#....#...#...#....##",
-  "####.### # ###.####",
-  "#####.#  G  #.#####",
-  "#####.# ### #.#####",
-  "#####.# ### #.#####",
-  "#####.#G   G#.#####",
-  "#####.# ### #.#####",
-  "#####.#     #.#####",
-  "#####.# ####.#.####",
-  "#....#...#...#....#",
-  "#.##.#.#####.#.##.#",
-  "#...#...........#.#",
-  "##.###.###.###.###.#",
-  "##.###.###.###.###.#",
-  "#..................#",
-  "####################",
-].map(r => r.split(""));
+const COLS = 20;
+const ROWS = 22;
+const W = COLS * CELL;
+const H = ROWS * CELL;
 
-const COLS = MAP_RAW[0].length; const ROWS = MAP_RAW.length;
-const W = COLS * CELL; const H = ROWS * CELL;
+type MapConfig = { raw: string[]; ghosts: [number, number][]; name: string };
+
+const MAPS: MapConfig[] = [
+  {
+    name: "Classic",
+    ghosts: [[8,8],[8,9],[11,10],[11,11]],
+    raw: [
+      "####################",
+      "#p.......#.......p.#",
+      "#.######.#.######..#",
+      "#P.................#",
+      "#.######.#.######..#",
+      "#..................#",
+      "#.##.#...#...#.##..#",
+      "####.###   ###.#####",
+      "#####.# GG   #.#####",
+      "#####.# #### #.#####",
+      "#####.#      #.#####",
+      "#####.#   GG #.#####",
+      "#####.# #### #.#####",
+      "#####.#      #.#####",
+      "####.###   ###.#####",
+      "#.##.#...#...#.##..#",
+      "#..................#",
+      "#.######.#.######..#",
+      "#...............p..#",
+      "##.###.###.###.###.#",
+      "#p.................#",
+      "####################",
+    ],
+  },
+  {
+    name: "Corridors",
+    ghosts: [[8,8],[8,9],[11,10],[11,11]],
+    raw: [
+      "####################",
+      "#p.....#.....#....p#",
+      "#.#####.....#####..#",
+      "#P.................#",
+      "#..#####.....#####.#",
+      "#..................#",
+      "#.####.#...#.####..#",
+      "####.###   ###.#####",
+      "#####.# GG   #.#####",
+      "#####.# #### #.#####",
+      "#####.#      #.#####",
+      "#####.#   GG #.#####",
+      "#####.# #### #.#####",
+      "#####.#      #.#####",
+      "####.###   ###.#####",
+      "#.####.#...#.####..#",
+      "#..................#",
+      "#..#####.....#####.#",
+      "#p.................#",
+      "#.#####.....#####..#",
+      "#.....#.....#......#",
+      "####################",
+    ],
+  },
+  {
+    name: "Grid",
+    ghosts: [[8,8],[8,9],[11,10],[11,11]],
+    raw: [
+      "####################",
+      "#p.#...#...#...#.p.#",
+      "#.##.##.#.#.##.##..#",
+      "#P.................#",
+      "#.##.##.#.#.##.##..#",
+      "#..................#",
+      "#.#.#....##.#.#.#..#",
+      "####.###   ###.#####",
+      "#####.# GG   #.#####",
+      "#####.# #### #.#####",
+      "#####.#      #.#####",
+      "#####.#   GG #.#####",
+      "#####.# #### #.#####",
+      "#####.#      #.#####",
+      "####.###   ###.#####",
+      "#.#.#....##.#.#.#..#",
+      "#..................#",
+      "#.##.##.#.#.##.##..#",
+      "#.#...........#...p#",
+      "#.##.##.#.#.##.##..#",
+      "#p.#...#...#...#...#",
+      "####################",
+    ],
+  },
+  {
+    name: "Open",
+    ghosts: [[8,8],[8,9],[11,10],[11,11]],
+    raw: [
+      "####################",
+      "#p.................#",
+      "#..##.......##.....#",
+      "#P.................#",
+      "#..............##..#",
+      "#..................#",
+      "#....#.#...#.#.....#",
+      "####.###   ###.#####",
+      "#####.# GG   #.#####",
+      "#####.# #### #.#####",
+      "#####.#      #.#####",
+      "#####.#   GG #.#####",
+      "#####.# #### #.#####",
+      "#####.#      #.#####",
+      "####.###   ###.#####",
+      "#....#.#...#.#.....#",
+      "#..................#",
+      "#..............##..#",
+      "#...p..........p...#",
+      "#..##.......##.....#",
+      "#..................#",
+      "####################",
+    ],
+  },
+  {
+    name: "Channels",
+    ghosts: [[8,8],[8,9],[11,10],[11,11]],
+    raw: [
+      "####################",
+      "#p..#.....#.....#p.#",
+      "#.###.###.###.###..#",
+      "#P..#.....#.....#..#",
+      "#...#.###.###.#....#",
+      "#..........#.......#",
+      "#.##.....#.....##..#",
+      "####.###   ###.#####",
+      "#####.# GG   #.#####",
+      "#####.# #### #.#####",
+      "#####.#      #.#####",
+      "#####.#   GG #.#####",
+      "#####.# #### #.#####",
+      "#####.#      #.#####",
+      "####.###   ###.#####",
+      "#.##.....#.....##..#",
+      "#..........#.......#",
+      "#...#.###.###.#....#",
+      "#p..#.....#.....#p.#",
+      "#.###.###.###.###..#",
+      "#..................#",
+      "####################",
+    ],
+  },
+];
 
 type Dir = { x: number; y: number };
 type Ghost = { r: number; c: number; color: string; dir: Dir; scared: boolean };
 type PacState = { r: number; c: number; dir: Dir; nd: Dir; alive: boolean; lives: number; score: number };
 
-function initGame(mode: "1p" | "2p") {
-  let p1r = 0, p1c = 0, p2r = 0, p2c = 0;
+function initGame(mode: "1p" | "2p", mapIdx: number) {
+  const cfg = MAPS[mapIdx % MAPS.length];
+  let p1r = 0, p1c = 0;
   const dots = new Set<string>(); const pellets = new Set<string>();
-  const grid = MAP_RAW.map((row, r) => row.map((ch, c) => {
+  const grid = cfg.raw.map((row, r) => row.split("").map((ch, c) => {
     if (ch === "P") { p1r = r; p1c = c; return "."; }
     if (ch === ".") { dots.add(`${r},${c}`); return "."; }
     if (ch === "p") { pellets.add(`${r},${c}`); dots.add(`${r},${c}`); return "."; }
     return ch;
   }));
-  // P2 starts at bottom of map in open area
-  if (mode === "2p") { p2r = 20; p2c = 10; }
-  const ghosts: Ghost[] = [
-    { r: 8, c: 9, color: "#f43f5e", dir: { x: 1, y: 0 }, scared: false },
-    { r: 11, c: 9, color: "#fb923c", dir: { x: -1, y: 0 }, scared: false },
-    { r: 11, c: 11, color: "#a78bfa", dir: { x: 0, y: 1 }, scared: false },
-    { r: 8, c: 11, color: "#34d399", dir: { x: 0, y: -1 }, scared: false },
-  ];
+  const ghostColors = ["#f43f5e", "#fb923c", "#a78bfa", "#34d399"];
+  const ghosts: Ghost[] = cfg.ghosts.map(([gr, gc], i) => ({
+    r: gr, c: gc, color: ghostColors[i % ghostColors.length],
+    dir: { x: i % 2 === 0 ? 1 : -1, y: 0 }, scared: false,
+  }));
   const p1: PacState = { r: p1r, c: p1c, dir: { x: 1, y: 0 }, nd: { x: 1, y: 0 }, alive: true, lives: 3, score: 0 };
-  const p2: PacState = { r: p2r, c: p2c, dir: { x: -1, y: 0 }, nd: { x: -1, y: 0 }, alive: true, lives: 3, score: 0 };
-  return { mode, grid, p1, p2, dots, pellets, ghosts, scared: 0, frame: 0 };
+  const p2: PacState = { r: 20, c: 10, dir: { x: -1, y: 0 }, nd: { x: -1, y: 0 }, alive: true, lives: 3, score: 0 };
+  return { mode, grid, p1, p2, dots, pellets, ghosts, scared: 0, frame: 0, mapName: cfg.name };
 }
 
 export default function PacMan() {
   const cv = useRef<HTMLCanvasElement>(null);
-  const g = useRef(initGame("1p"));
+  const g = useRef(initGame("1p", 0));
+  const mapIdxRef = useRef(0);
   const [screen, setScreen] = useState<"menu" | "game">("menu");
   const [p1Score, setP1Score] = useState(0); const [p2Score, setP2Score] = useState(0);
   const [p1Lives, setP1Lives] = useState(3); const [p2Lives, setP2Lives] = useState(3);
   const [gameState, setGameState] = useState<"idle" | "playing" | "dead" | "win">("idle");
   const [gameMode, setGameMode] = useState<"1p" | "2p">("1p");
+  const [mapName, setMapName] = useState("Classic");
   const raf = useRef(0);
 
   const drawPac = useCallback((ctx: CanvasRenderingContext2D, r: number, c: number, dir: Dir, frame: number, color: string, alive: boolean) => {
@@ -123,10 +245,10 @@ export default function PacMan() {
     s.frame = frame;
     const movePac = (pac: PacState) => {
       if (!pac.alive) return;
-      if (frame % 9 === 0) {
+      if (frame % 12 === 0) {
         const nr = pac.r + pac.nd.y, nc = pac.c + pac.nd.x;
-        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && s.grid[nr][nc] !== "#") { pac.dir = pac.nd; pac.r = nr; pac.c = nc; }
-        else { const mr = pac.r + pac.dir.y, mc = pac.c + pac.dir.x; if (mr >= 0 && mr < ROWS && mc >= 0 && mc < COLS && s.grid[mr][mc] !== "#") { pac.r = mr; pac.c = mc; } }
+        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && s.grid[nr]?.[nc] !== "#") { pac.dir = pac.nd; pac.r = nr; pac.c = nc; }
+        else { const mr = pac.r + pac.dir.y, mc = pac.c + pac.dir.x; if (mr >= 0 && mr < ROWS && mc >= 0 && mc < COLS && s.grid[mr]?.[mc] !== "#") { pac.r = mr; pac.c = mc; } }
         const key = `${pac.r},${pac.c}`;
         if (s.dots.has(key)) {
           s.dots.delete(key); pac.score += s.pellets.has(key) ? 50 : 10;
@@ -139,10 +261,10 @@ export default function PacMan() {
     movePac(s.p1); if (s.mode === "2p") movePac(s.p2);
     if (s.dots.size === 0) { setGameState("win"); draw(); return; }
     if (s.scared > 0) { s.scared--; if (s.scared === 0) s.ghosts.forEach(gh => gh.scared = false); }
-    if (frame % 15 === 0) {
+    if (frame % 20 === 0) {
       s.ghosts.forEach(gh => {
         const dirs: Dir[] = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
-        const valid = dirs.filter(d => { const nr = gh.r + d.y, nc = gh.c + d.x; return nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && s.grid[nr][nc] !== "#" && !(d.x === -gh.dir.x && d.y === -gh.dir.y); });
+        const valid = dirs.filter(d => { const nr = gh.r + d.y, nc = gh.c + d.x; return nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && s.grid[nr]?.[nc] !== "#" && !(d.x === -gh.dir.x && d.y === -gh.dir.y); });
         if (!valid.length) return;
         const target = s.mode === "2p" && Math.random() > 0.5 ? s.p2 : s.p1;
         const best = gh.scared ? valid[Math.floor(Math.random() * valid.length)] : (Math.random() > 0.3 ? valid.reduce((a, b) => { const da = (a.x + gh.c - target.c) ** 2 + (a.y + gh.r - target.r) ** 2; const db = (b.x + gh.c - target.c) ** 2 + (b.y + gh.r - target.r) ** 2; return da < db ? a : b; }) : valid[Math.floor(Math.random() * valid.length)]);
@@ -154,7 +276,7 @@ export default function PacMan() {
       const hit = s.ghosts.some(gh => gh.r === pac.r && gh.c === pac.c);
       if (hit) {
         const scared = s.ghosts.find(gh => gh.scared && gh.r === pac.r && gh.c === pac.c);
-        if (scared) { scared.r = 9; scared.c = 10; pac.score += 200; setP1Score(s.p1.score); setP2Score(s.p2.score); }
+        if (scared) { scared.r = 10; scared.c = 9; pac.score += 200; setP1Score(s.p1.score); setP2Score(s.p2.score); }
         else { pac.lives--; setP1Lives(s.p1.lives); setP2Lives(s.p2.lives); if (pac.lives <= 0) { pac.alive = false; } pac.r = pac === s.p1 ? 3 : 20; pac.c = pac === s.p1 ? 1 : 10; pac.dir = { x: 1, y: 0 }; }
       }
     };
@@ -165,7 +287,11 @@ export default function PacMan() {
   }, [draw]);
 
   const startGame = useCallback((m: "1p" | "2p") => {
-    g.current = initGame(m); setGameMode(m); setP1Score(0); setP2Score(0); setP1Lives(3); setP2Lives(3); setGameState("playing");
+    const idx = mapIdxRef.current;
+    mapIdxRef.current = (idx + 1) % MAPS.length;
+    g.current = initGame(m, idx);
+    setMapName(MAPS[idx % MAPS.length].name);
+    setGameMode(m); setP1Score(0); setP2Score(0); setP1Lives(3); setP2Lives(3); setGameState("playing");
     cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(() => loop(0));
   }, [loop]);
 
@@ -188,6 +314,7 @@ export default function PacMan() {
       <div className="flex flex-col items-center gap-8 text-center max-w-sm">
         <div className="text-6xl select-none">👾</div>
         <h2 className="text-2xl font-black text-amber-400">Select Mode</h2>
+        <p className="text-xs text-muted-foreground -mt-4">5 rotating maps · Classic · Corridors · Grid · Open · Channels</p>
         <div className="flex gap-4 w-full">
           <button onClick={() => { setScreen("game"); startGame("1p"); }} className="flex-1 py-4 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-400 font-black rounded-2xl transition-colors">
             👤<br /><span className="text-sm font-semibold">1 Player</span><br /><span className="text-xs font-normal text-muted-foreground">Arrow keys</span>
@@ -201,7 +328,7 @@ export default function PacMan() {
   );
 
   return (
-    <Shell title="Pac-Man" controls={gameMode === "2p" ? "🟡 P1: Arrows · 🩷 P2: WASD" : "Arrow keys to move"}>
+    <Shell title={`Pac-Man · ${mapName}`} controls={gameMode === "2p" ? "🟡 P1: Arrows · 🩷 P2: WASD" : "Arrow keys to move"}>
       <div className="flex gap-6 font-mono text-sm">
         <span className="text-yellow-400">🟡 P1: {p1Score} {"❤️".repeat(Math.max(0, p1Lives))}</span>
         {gameMode === "2p" && <span className="text-pink-400">🩷 P2: {p2Score} {"❤️".repeat(Math.max(0, p2Lives))}</span>}
@@ -213,6 +340,7 @@ export default function PacMan() {
             {gameState === "win" && <p className="text-2xl font-black text-yellow-400">{winner2p ?? "You Win! 🎉"}</p>}
             {gameState === "dead" && <p className="text-2xl font-black text-red-400">{winner2p ?? "Game Over!"}</p>}
             <p className="font-mono text-sm text-muted-foreground">{gameMode === "2p" ? `P1: ${p1Score} · P2: ${p2Score}` : `Score: ${p1Score}`}</p>
+            <p className="text-xs text-muted-foreground">Next map on restart</p>
             <div className="flex gap-3">
               <button onClick={() => startGame(gameMode)} className="px-8 py-2 bg-yellow-400 text-black font-bold rounded-xl">Play Again</button>
               <button onClick={() => setScreen("menu")} className="px-6 py-2 bg-secondary text-foreground font-bold rounded-xl">Menu</button>
