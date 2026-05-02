@@ -37,39 +37,80 @@ const BLOCK_COLORS: Record<BlockType, { top:number; side:number; bottom:number }
 
 const BLOCK_TYPES = Object.keys(BLOCK_COLORS) as BlockType[];
 
-// ─── World setup ──────────────────────────────────────────────────────────────
-const WORLD_W = 28, WORLD_H = 10, WORLD_D = 28;
+// ─── World dimensions (10× the original surface area) ─────────────────────────
+const WORLD_W = 90, WORLD_H = 20, WORLD_D = 90;
 
+// Multi-octave terrain — richer hills, valleys and ridges across the larger map
 function terrainHeight(x: number, z: number): number {
-  return Math.floor(3 + Math.sin(x * 0.28) * 1.8 + Math.cos(z * 0.24) * 1.6 + Math.sin((x+z)*0.18)*0.8);
+  return Math.floor(
+    5
+    + Math.sin(x * 0.13) * 3   + Math.cos(z * 0.11) * 3
+    + Math.sin(x * 0.27 + 0.9) * 2   + Math.cos(z * 0.24 + 0.5) * 2
+    + Math.sin((x + z) * 0.09) * 2.5
+    + Math.sin(x * 0.06) * Math.cos(z * 0.07) * 4
+    + Math.sin(x * 0.42 + z * 0.37) * 0.8
+  );
+}
+
+// Choose surface block type by height for a biome effect
+function surfaceBlock(h: number): BlockType {
+  if (h <= 3)  return "sand";
+  if (h >= 15) return "snow";
+  return "grass";
+}
+
+function subSurfaceBlock(depth: number, h: number): BlockType {
+  if (h <= 3) return "sand";
+  if (depth <= 2) return "dirt";
+  return "stone";
+}
+
+// Occlusion check — only blocks with at least one exposed face need a mesh
+function hasExposedFace(w: (BlockType|null)[][][], x: number, y: number, z: number): boolean {
+  const dirs = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]] as const;
+  for (const [dx,dy,dz] of dirs) {
+    const nx=x+dx, ny=y+dy, nz=z+dz;
+    if (nx<0||nx>=WORLD_W||ny<0||ny>=WORLD_H||nz<0||nz>=WORLD_D) return true;
+    if (!w[nx][ny][nz]) return true;
+  }
+  return false;
 }
 
 function initWorld(): (BlockType|null)[][][] {
   const w: (BlockType|null)[][][] = Array.from({length:WORLD_W},()=>
     Array.from({length:WORLD_H},()=>Array(WORLD_D).fill(null) as (BlockType|null)[])
   );
+
   for (let x=0;x<WORLD_W;x++) for(let z=0;z<WORLD_D;z++){
-    const h=terrainHeight(x,z);
-    for(let y=0;y<=h&&y<WORLD_H;y++){
-      if(y===h) w[x][y][z]="grass";
-      else if(y>=h-2) w[x][y][z]="dirt";
-      else w[x][y][z]="stone";
+    const h = Math.max(1, Math.min(WORLD_H-2, terrainHeight(x,z)));
+    for(let y=0;y<=h;y++){
+      if(y===h)   w[x][y][z] = surfaceBlock(h);
+      else        w[x][y][z] = subSurfaceBlock(h-y, h);
     }
   }
-  // Trees
-  const treeSites:number[][]= [[4,4],[8,20],[18,6],[22,18],[12,12],[6,14],[20,10]];
-  treeSites.forEach(([tx,tz])=>{
-    if(tx<WORLD_W&&tz<WORLD_D){
-      const base=terrainHeight(tx,tz)+1;
-      for(let y=base;y<base+4&&y<WORLD_H;y++) w[tx][y][tz]="wood";
-      const lh=base+4;
+
+  // Procedural tree placement — skip sand/snow biomes, avoid edges
+  for(let tx=4; tx<WORLD_W-4; tx+=7){
+    for(let tz=4; tz<WORLD_D-4; tz+=7){
+      // Deterministic jitter so trees look natural
+      const jx = Math.round((Math.sin(tx*2.3+tz*1.1)*0.5+0.5)*5);
+      const jz = Math.round((Math.cos(tx*0.9+tz*2.7)*0.5+0.5)*5);
+      const fx=tx+jx, fz=tz+jz;
+      if(fx<=0||fx>=WORLD_W-1||fz<=0||fz>=WORLD_D-1) continue;
+      const h = Math.max(1, Math.min(WORLD_H-2, terrainHeight(fx,fz)));
+      if(h<4||h>13) continue; // only in grassy biome
+      const base=h+1;
+      const trunkH = 3+Math.floor((Math.sin(fx+fz)*0.5+0.5)*2); // 3 or 4 tall
+      for(let y=base;y<base+trunkH&&y<WORLD_H;y++) w[fx][y][fz]="wood";
+      const lh=base+trunkH;
       for(let dx=-2;dx<=2;dx++) for(let dz=-2;dz<=2;dz++) for(let dy=-1;dy<=1;dy++){
-        const nx=tx+dx,ny=lh+dy,nz=tz+dz;
-        if(nx>=0&&nx<WORLD_W&&ny>=0&&ny<WORLD_H&&nz>=0&&nz<WORLD_D&&!w[nx][ny][nz])
-          w[nx][ny][nz]="leaves";
+        if(Math.abs(dx)===2&&Math.abs(dz)===2) continue; // trim corners
+        const nx2=fx+dx,ny2=lh+dy,nz2=fz+dz;
+        if(nx2>=0&&nx2<WORLD_W&&ny2>=0&&ny2<WORLD_H&&nz2>=0&&nz2<WORLD_D&&!w[nx2][ny2][nz2])
+          w[nx2][ny2][nz2]="leaves";
       }
     }
-  });
+  }
   return w;
 }
 
@@ -87,12 +128,12 @@ function makeMaterials(): Record<BlockType, THREE.MeshLambertMaterial[]> {
       result[bt] = [mat,mat,mat,mat,mat,mat];
     } else {
       result[bt] = [
-        new THREE.MeshLambertMaterial({color:cols.side}),   // +x
-        new THREE.MeshLambertMaterial({color:cols.side}),   // -x
-        new THREE.MeshLambertMaterial({color:cols.top}),    // +y (top)
-        new THREE.MeshLambertMaterial({color:cols.bottom}), // -y
-        new THREE.MeshLambertMaterial({color:cols.side}),   // +z
-        new THREE.MeshLambertMaterial({color:cols.side}),   // -z
+        new THREE.MeshLambertMaterial({color:cols.side}),
+        new THREE.MeshLambertMaterial({color:cols.side}),
+        new THREE.MeshLambertMaterial({color:cols.top}),
+        new THREE.MeshLambertMaterial({color:cols.bottom}),
+        new THREE.MeshLambertMaterial({color:cols.side}),
+        new THREE.MeshLambertMaterial({color:cols.side}),
       ];
     }
   }
@@ -102,7 +143,8 @@ function makeMaterials(): Record<BlockType, THREE.MeshLambertMaterial[]> {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Minecraft() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const worldRef = useRef<(BlockType|null)[][][]>(initWorld());
+  // World is built inside the effect so constants are always current (avoids stale-ref on HMR)
+  const worldRef = useRef<(BlockType|null)[][][]>([]);
   const [selectedBlock, setSelectedBlock] = useState<BlockType>("grass");
   const [locked, setLocked] = useState(false);
   const selectedRef = useRef<BlockType>("grass");
@@ -111,78 +153,87 @@ export default function Minecraft() {
 
   useEffect(()=>{
     const canvas = canvasRef.current!;
+    worldRef.current = initWorld();
     const W = 800, H = 500;
 
-    // Test WebGL availability using an off-screen canvas (don't consume the main canvas context)
     const testCanvas = document.createElement("canvas");
     const testCtx = testCanvas.getContext("webgl2") || testCanvas.getContext("webgl");
-    if (!testCtx) {
-      setLocked(false); // ensure overlay is shown with message
-      return;
-    }
+    if (!testCtx) { setLocked(false); return; }
 
     // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb);
-    scene.fog = new THREE.FogExp2(0x87ceeb, 0.035);
+    scene.fog = new THREE.FogExp2(0x87ceeb, 0.012); // less dense fog for bigger world
 
-    // Camera
-    const camera = new THREE.PerspectiveCamera(75, W/H, 0.1, 80);
+    // Camera — far plane extended for the larger world
+    const camera = new THREE.PerspectiveCamera(75, W/H, 0.1, 220);
     const sx=WORLD_W/2, sz=WORLD_D/2;
-    const sy=terrainHeight(Math.floor(sx),Math.floor(sz))+2.7;
+    const sy=terrainHeight(Math.floor(sx),Math.floor(sz))+3;
     camera.position.set(sx, sy, sz);
 
-    // Renderer (with try-catch for environments without GPU)
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-    } catch {
-      return;
-    }
+    } catch { return; }
     renderer.setSize(W, H); renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
     renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFShadowMap;
 
     // Lights
     const ambient = new THREE.AmbientLight(0xffffff, 0.55); scene.add(ambient);
     const sun = new THREE.DirectionalLight(0xfff5e0, 1.1);
-    sun.position.set(20,40,15); sun.castShadow=true;
-    sun.shadow.mapSize.width=1024; sun.shadow.mapSize.height=1024;
+    sun.position.set(60, 90, 45); sun.castShadow=true;
+    sun.shadow.mapSize.width=2048; sun.shadow.mapSize.height=2048;
+    sun.shadow.camera.near=0.5; sun.shadow.camera.far=300;
+    sun.shadow.camera.left=-80; sun.shadow.camera.right=80;
+    sun.shadow.camera.top=80; sun.shadow.camera.bottom=-80;
     scene.add(sun);
     const fill = new THREE.DirectionalLight(0xadd8e6,0.25);
-    fill.position.set(-10,5,-10); scene.add(fill);
+    fill.position.set(-30,10,-30); scene.add(fill);
 
-    // Geometry (shared)
+    // Geometry (shared box)
     const boxGeo = new THREE.BoxGeometry(1,1,1);
     const materials = makeMaterials();
-
-    // Block mesh map
     const meshMap = new Map<string, THREE.Mesh>();
 
-    const addBlock = (x:number,y:number,z:number,type:BlockType)=>{
+    // addMesh — only adds a visual, does NOT modify worldRef
+    const addMesh = (x:number,y:number,z:number,type:BlockType)=>{
       const key=`${x},${y},${z}`;
-      if(meshMap.has(key))return;
+      if(meshMap.has(key)) return;
       const mesh = new THREE.Mesh(boxGeo, materials[type]);
       mesh.position.set(x+0.5, y+0.5, z+0.5);
       mesh.castShadow=true; mesh.receiveShadow=true;
       mesh.userData={pos:[x,y,z],type};
       scene.add(mesh); meshMap.set(key, mesh);
-      worldRef.current[x][y][z]=type;
     };
 
+    // addBlock — places a block into world data AND scene
+    const addBlock = (x:number,y:number,z:number,type:BlockType)=>{
+      worldRef.current[x][y][z]=type;
+      addMesh(x,y,z,type);
+    };
+
+    // removeBlock — removes from scene & world, then reveals any now-exposed neighbors
     const removeBlock = (x:number,y:number,z:number)=>{
       const key=`${x},${y},${z}`;
       const mesh=meshMap.get(key); if(!mesh)return;
       scene.remove(mesh); meshMap.delete(key);
       worldRef.current[x][y][z]=null;
+      const dirs=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]] as const;
+      for(const [dx,dy,dz] of dirs){
+        const nx=x+dx,ny=y+dy,nz=z+dz;
+        if(!isValidPos(nx,ny,nz)) continue;
+        const bt=worldRef.current[nx][ny][nz];
+        if(bt && !meshMap.has(`${nx},${ny},${nz}`)) addMesh(nx,ny,nz,bt);
+      }
     };
 
-    // Build initial world
+    // Build initial world — occlusion culling: skip fully buried blocks
     const w=worldRef.current;
     for(let x=0;x<WORLD_W;x++) for(let y=0;y<WORLD_H;y++) for(let z=0;z<WORLD_D;z++){
-      if(w[x][y][z]) addBlock(x,y,z,w[x][y][z]!);
+      if(w[x][y][z] && hasExposedFace(w,x,y,z)) addMesh(x,y,z,w[x][y][z]!);
     }
 
-    // Selection highlight box
+    // Selection highlight
     const selGeo = new THREE.BoxGeometry(1.02,1.02,1.02);
     const selMat = new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:0.5});
     const selBox = new THREE.Mesh(selGeo,selMat);
@@ -192,10 +243,7 @@ export default function Minecraft() {
     let pitch=0, yaw=Math.PI, isLocked=false;
     const keys=new Set<string>();
 
-    const onPLChange=()=>{
-      isLocked=document.pointerLockElement===canvas;
-      setLocked(isLocked);
-    };
+    const onPLChange=()=>{ isLocked=document.pointerLockElement===canvas; setLocked(isLocked); };
     const onMouseMove=(e:MouseEvent)=>{
       if(!isLocked)return;
       yaw-=e.movementX*0.002;
@@ -216,7 +264,7 @@ export default function Minecraft() {
     const getTarget=()=>{
       raycaster.setFromCamera(center,camera);
       const hits=raycaster.intersectObjects(Array.from(meshMap.values()));
-      if(hits.length>0&&hits[0].distance<7){
+      if(hits.length>0&&hits[0].distance<8){
         const mesh=hits[0].object as THREE.Mesh;
         const [bx,by,bz]=mesh.userData.pos as number[];
         const face=hits[0].face!.normal.clone();
@@ -230,11 +278,9 @@ export default function Minecraft() {
       const t=getTarget();
       if(!t)return;
       if(e.button===0){
-        // Break
         removeBlock(t.bx,t.by,t.bz);
         selBox.visible=false;
       } else if(e.button===2){
-        // Place
         const nx=t.bx+t.nx, ny=t.by+t.ny, nz=t.bz+t.nz;
         if(isValidPos(nx,ny,nz)&&!worldRef.current[nx][ny][nz]){
           addBlock(nx,ny,nz,selectedRef.current);
@@ -242,35 +288,28 @@ export default function Minecraft() {
       }
     };
     const onContextMenu=(e:Event)=>e.preventDefault();
-
     canvas.addEventListener("mousedown",onMouseDown);
     canvas.addEventListener("contextmenu",onContextMenu);
 
-    // Block selector via keyboard 1-9
+    // Block selector 1–0
     const onKeyBlock=(e:KeyboardEvent)=>{
       const idx=parseInt(e.key)-1;
-      if(idx>=0&&idx<BLOCK_TYPES.length){
-        selectedRef.current=BLOCK_TYPES[idx];
-        setSelectedBlock(BLOCK_TYPES[idx]);
-      }
+      if(idx>=0&&idx<BLOCK_TYPES.length){ selectedRef.current=BLOCK_TYPES[idx]; setSelectedBlock(BLOCK_TYPES[idx]); }
     };
     document.addEventListener("keydown",onKeyBlock);
 
-    // Animation
-    let lastTime=performance.now();
-    let rafId=0;
+    // Animation loop
+    let lastTime=performance.now(), rafId=0;
     const animate=()=>{
       rafId=requestAnimationFrame(animate);
       const now=performance.now();
       const dt=Math.min((now-lastTime)/1000,0.05);
       lastTime=now;
 
-      // Camera rotation
       camera.rotation.order="YXZ";
       camera.rotation.y=yaw; camera.rotation.x=pitch;
 
-      // Movement
-      const speed=5.5;
+      const speed=7;
       const mv=new THREE.Vector3();
       if(keys.has("KeyW"))mv.z-=1;
       if(keys.has("KeyS"))mv.z+=1;
@@ -285,16 +324,13 @@ export default function Minecraft() {
         camera.position.addScaledVector(mv,speed*dt);
       }
       camera.position.clamp(
-        new THREE.Vector3(0.5,0.5,0.5),
-        new THREE.Vector3(WORLD_W-0.5,WORLD_H+4,WORLD_D-0.5)
+        new THREE.Vector3(0.5, 0.5, 0.5),
+        new THREE.Vector3(WORLD_W-0.5, WORLD_H+6, WORLD_D-0.5)
       );
 
-      // Update selection highlight
       const t=getTarget();
-      if(t&&isLocked){
-        selBox.position.set(t.bx+0.5,t.by+0.5,t.bz+0.5);
-        selBox.visible=true;
-      } else { selBox.visible=false; }
+      if(t&&isLocked){ selBox.position.set(t.bx+0.5,t.by+0.5,t.bz+0.5); selBox.visible=true; }
+      else { selBox.visible=false; }
 
       renderer.render(scene,camera);
     };
@@ -311,10 +347,8 @@ export default function Minecraft() {
       canvas.removeEventListener("contextmenu",onContextMenu);
       if(document.pointerLockElement===canvas)document.exitPointerLock();
       renderer.dispose();
-      meshMap.forEach(m=>{ scene.remove(m); });
-      for(const mats of Object.values(materials)){
-        mats.forEach(m=>m.dispose());
-      }
+      meshMap.forEach(m=>scene.remove(m));
+      for(const mats of Object.values(materials)) mats.forEach(m=>m.dispose());
       boxGeo.dispose(); selGeo.dispose(); selMat.dispose();
     };
   },[]);
@@ -326,14 +360,10 @@ export default function Minecraft() {
           className="block rounded-xl w-full cursor-crosshair"
           style={{maxWidth:"95vw",height:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.6)"}}
         />
-        {/* Click-to-enter overlay */}
         {!locked && (
           <div
             className="absolute inset-0 flex flex-col items-center justify-center bg-black/65 rounded-xl gap-3 cursor-pointer select-none"
-            onClick={() => {
-              setLocked(true);
-              canvasRef.current?.requestPointerLock();
-            }}
+            onClick={() => { setLocked(true); canvasRef.current?.requestPointerLock(); }}
           >
             <div className="text-6xl">⛏️</div>
             <p className="text-white text-xl font-black">Click to Enter World</p>
@@ -345,7 +375,6 @@ export default function Minecraft() {
             </div>
           </div>
         )}
-        {/* Crosshair */}
         {locked && (
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
             <div className="relative w-8 h-8">
@@ -354,7 +383,6 @@ export default function Minecraft() {
             </div>
           </div>
         )}
-        {/* HUD - selected block */}
         {locked && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 border border-white/20 rounded-lg px-4 py-1.5 text-white text-xs font-bold">
             Selected: {selectedBlock} [{BLOCK_TYPES.indexOf(selectedBlock)+1}]
@@ -362,7 +390,6 @@ export default function Minecraft() {
         )}
       </div>
 
-      {/* Block palette */}
       <div className="flex gap-1.5 flex-wrap justify-center">
         {BLOCK_TYPES.map((bt,i)=>{
           const col=BLOCK_COLORS[bt];
@@ -378,7 +405,7 @@ export default function Minecraft() {
         })}
       </div>
       <p className="text-xs text-muted-foreground text-center">
-        Free-flight mode · {WORLD_W}×{WORLD_H}×{WORLD_D} voxel world with terrain, hills and trees
+        Free-flight mode · {WORLD_W}×{WORLD_H}×{WORLD_D} voxel world — biomes: sand, grass, stone & snow peaks
       </p>
     </Shell>
   );
