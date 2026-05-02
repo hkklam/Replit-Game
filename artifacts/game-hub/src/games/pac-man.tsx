@@ -18,19 +18,23 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
+/* ── Difficulty config ───────────────────────────────────── */
+type Diff = "easy" | "normal" | "hard";
+const DIFF_CFG: Record<Diff, {
+  pacSpd: number; ghostSpd: number; chaseChance: number;
+  label: string; emoji: string; desc: string; color: string;
+}> = {
+  easy:   { pacSpd: 2.3,  ghostSpd: 1.1,  chaseChance: 0.30, label: "Easy",   emoji: "🟢", desc: "Slow ghosts · mostly random",  color: "#34d399" },
+  normal: { pacSpd: 2.65, ghostSpd: 1.75, chaseChance: 0.72, label: "Normal", emoji: "🟡", desc: "Balanced · smart hunters",       color: "#facc15" },
+  hard:   { pacSpd: 3.1,  ghostSpd: 2.45, chaseChance: 1.00, label: "Hard",   emoji: "🔴", desc: "Full speed · always hunting",    color: "#ef4444" },
+};
+
 /* ── Constants ───────────────────────────────────────────── */
 const CELL = 24, COLS = 20, ROWS = 22;
-const CW = COLS * CELL, CH = ROWS * CELL;   // 480 × 528
-const PAC_SPD   = 1.9;
-const GHOST_SPD = 1.45;
-const SNAP      = PAC_SPD + 1.3;
+const CW = COLS * CELL, CH = ROWS * CELL;
 const SCARED_TOTAL = 310;
-
-// right / down / left / up
 const DX = [1, 0, -1, 0] as const;
 const DY = [0, 1, 0, -1] as const;
-
-// Classic arcade ghost colors + names
 const GHOST_CLRS  = ["#ef4444", "#f472b6", "#22d3ee", "#fb923c"] as const;
 const GHOST_NAMES = ["Blinky",  "Pinky",   "Inky",    "Clyde"  ] as const;
 
@@ -117,11 +121,14 @@ type Pac = {
 };
 type Ghost = {
   px: number; py: number; dir: number; scared: boolean;
+  // `decided` prevents the oscillation bug: ghost only makes one decision per
+  // cell-center visit instead of being snapped back every frame
+  decided: boolean;
   color: string; name: string; personality: number;
   spawnPx: number; spawnPy: number;
 };
 type GS = {
-  mode: "1p" | "2p"; grid: string[][];
+  mode: "1p" | "2p"; diff: Diff; grid: string[][];
   p1: Pac; p2: Pac;
   ghosts: Ghost[];
   dots: Set<string>; pellets: Set<string>;
@@ -129,7 +136,7 @@ type GS = {
 };
 
 /* ── Init ────────────────────────────────────────────────── */
-function initGame(mode: "1p" | "2p", mapIdx: number): GS {
+function initGame(mode: "1p" | "2p", mapIdx: number, diff: Diff): GS {
   const cfg = MAPS[mapIdx % MAPS.length];
   const dots = new Set<string>(), pellets = new Set<string>();
   let p1r = 3, p1c = 1;
@@ -145,7 +152,8 @@ function initGame(mode: "1p" | "2p", mapIdx: number): GS {
 
   const ghosts: Ghost[] = cfg.ghosts.map(([gr, gc], i) => ({
     px: ccx(gc), py: ccy(gr), dir: i % 2 === 0 ? 0 : 2,
-    scared: false, color: GHOST_CLRS[i], name: GHOST_NAMES[i],
+    scared: false, decided: false,
+    color: GHOST_CLRS[i], name: GHOST_NAMES[i],
     personality: i, spawnPx: ccx(gc), spawnPy: ccy(gr),
   }));
 
@@ -155,7 +163,7 @@ function initGame(mode: "1p" | "2p", mapIdx: number): GS {
   });
 
   return {
-    mode, grid, dots, pellets, scared: 0, mapName: cfg.name,
+    mode, diff, grid, dots, pellets, scared: 0, mapName: cfg.name,
     p1: mkPac(p1r, p1c, 0),
     p2: mkPac(20, 10, 2),
     ghosts,
@@ -163,22 +171,22 @@ function initGame(mode: "1p" | "2p", mapIdx: number): GS {
 }
 
 /* ── Smooth movement ─────────────────────────────────────── */
+// SNAP threshold scales with speed so turning feels the same at all difficulties
 function moveEntity(
   px: number, py: number, dir: number, want: number,
   speed: number, grid: string[][], ghost = false
 ): { px: number; py: number; dir: number } {
+  const THRESH = speed + 1.3;
   const c = cellCol(px), r = cellRow(py);
   const cx = ccx(c), cy = ccy(r);
 
-  if (Math.abs(px - cx) < SNAP && Math.abs(py - cy) < SNAP) {
-    // Try queued direction
+  if (Math.abs(px - cx) < THRESH && Math.abs(py - cy) < THRESH) {
     if (want !== dir) {
       const nc = c + DX[want], nr = r + DY[want];
       if (passable(grid, nr, nc, ghost)) {
         dir = want; px = cx; py = cy;
       }
     }
-    // Stop if wall ahead
     const fc = c + DX[dir], fr = r + DY[dir];
     if (!passable(grid, fr, fc, ghost)) return { px: cx, py: cy, dir };
   }
@@ -191,35 +199,67 @@ function moveEntity(
 }
 
 /* ── Ghost AI ────────────────────────────────────────────── */
-function ghostTarget(gh: Ghost, p1: Pac, frame: number): { tr: number; tc: number } {
+function ghostTarget(gh: Ghost, p1: Pac, frame: number, diff: Diff): { tr: number; tc: number } {
   const pr = cellRow(p1.py), pc = cellCol(p1.px);
+
   if (gh.scared) {
     return { tr: pr > ROWS / 2 ? 0 : ROWS - 1, tc: pc > COLS / 2 ? 0 : COLS - 1 };
   }
+
+  // Randomise below chaseChance threshold (easy/normal only)
+  if (Math.random() >= DIFF_CFG[diff].chaseChance) {
+    return { tr: Math.floor(Math.random() * ROWS), tc: Math.floor(Math.random() * COLS) };
+  }
+
+  const lookAhead = diff === "hard" ? 6 : 4;
+
   switch (gh.personality) {
-    case 0: // Blinky – direct chase
+    case 0: // Blinky – always direct chase
       return { tr: pr, tc: pc };
-    case 1: // Pinky – 4 cells ahead of pac
-      return { tr: Math.max(0, Math.min(ROWS - 1, pr + DY[p1.dir] * 4)), tc: Math.max(0, Math.min(COLS - 1, pc + DX[p1.dir] * 4)) };
-    case 2: // Inky – erratic, flips side occasionally
+
+    case 1: // Pinky – intercept ahead of pac
+      return {
+        tr: Math.max(0, Math.min(ROWS - 1, pr + DY[p1.dir] * lookAhead)),
+        tc: Math.max(0, Math.min(COLS - 1, pc + DX[p1.dir] * lookAhead)),
+      };
+
+    case 2: // Inky – erratic on easy/normal; flanks from opposite side on hard
+      if (diff === "hard") {
+        const midR = Math.floor(ROWS / 2), midC = Math.floor(COLS / 2);
+        return {
+          tr: Math.max(0, Math.min(ROWS - 1, midR * 2 - pr)),
+          tc: Math.max(0, Math.min(COLS - 1, midC * 2 - pc)),
+        };
+      }
       return Math.sin(frame * 0.07) > 0
         ? { tr: pr, tc: pc }
         : { tr: ROWS - 1 - pr, tc: COLS - 1 - pc };
-    case 3: { // Clyde – scatter when close, chase when far
+
+    case 3: { // Clyde – scatter to corner when very close, chase when far
       const dist = (cellRow(gh.py) - pr) ** 2 + (cellCol(gh.px) - pc) ** 2;
-      return dist < 64 ? { tr: ROWS - 1, tc: 0 } : { tr: pr, tc: pc };
+      const thresh = diff === "hard" ? 9 : 64; // hard = rarely scatters
+      return dist < thresh ? { tr: ROWS - 1, tc: 0 } : { tr: pr, tc: pc };
     }
+
     default: return { tr: pr, tc: pc };
   }
 }
 
-function moveGhost(gh: Ghost, p1: Pac, grid: string[][], frame: number) {
+// FIX: `decided` flag ensures we make exactly ONE direction decision per cell-center
+// visit. Without it, the ghost gets snapped back to center every frame while within
+// the threshold distance, oscillating ±speed px and never actually progressing.
+function moveGhost(gh: Ghost, p1: Pac, grid: string[][], frame: number, ghostSpd: number, diff: Diff) {
   const c = cellCol(gh.px), r = cellRow(gh.py);
   const cx = ccx(c), cy = ccy(r);
+  const THRESH = ghostSpd + 1.3;
+  const nearCenter = Math.abs(gh.px - cx) < THRESH && Math.abs(gh.py - cy) < THRESH;
 
-  if (Math.abs(gh.px - cx) < GHOST_SPD + 1.3 && Math.abs(gh.py - cy) < GHOST_SPD + 1.3) {
+  if (nearCenter && !gh.decided) {
+    // First frame arriving near this cell center: make decision + snap for clean turn
+    gh.decided = true;
     gh.px = cx; gh.py = cy;
-    const { tr, tc } = ghostTarget(gh, p1, frame);
+
+    const { tr, tc } = ghostTarget(gh, p1, frame, diff);
     const oppD = opp(gh.dir);
     const valid = [0, 1, 2, 3].filter(d => {
       if (d === oppD) return false;
@@ -236,24 +276,24 @@ function moveGhost(gh: Ghost, p1: Pac, grid: string[][], frame: number) {
         });
       }
     }
+  } else if (!nearCenter) {
+    gh.decided = false; // reset when fully clear of center
   }
-  gh.px += DX[gh.dir] * GHOST_SPD;
-  gh.py += DY[gh.dir] * GHOST_SPD;
+
+  gh.px += DX[gh.dir] * ghostSpd;
+  gh.py += DY[gh.dir] * ghostSpd;
 }
 
 /* ── Drawing ─────────────────────────────────────────────── */
 function drawAll(ctx: CanvasRenderingContext2D, s: GS, frame: number) {
-  // Background
   ctx.fillStyle = "#03040f";
   ctx.fillRect(0, 0, CW, CH);
 
-  // Subtle grid
   ctx.strokeStyle = "rgba(255,255,255,0.018)";
   ctx.lineWidth = 0.5;
   for (let c = 0; c <= COLS; c++) { ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, CH); ctx.stroke(); }
   for (let r = 0; r <= ROWS; r++) { ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(CW, r * CELL); ctx.stroke(); }
 
-  // Dots & pellets
   s.grid.forEach((row, r) => row.forEach((_, c) => {
     const key = `${r},${c}`;
     if (!s.dots.has(key)) return;
@@ -276,54 +316,49 @@ function drawAll(ctx: CanvasRenderingContext2D, s: GS, frame: number) {
     }
   }));
 
-  // Wall fill
   s.grid.forEach((row, r) => row.forEach((cell, c) => {
     if (cell !== "#") return;
     ctx.fillStyle = "#0d1540";
     ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
   }));
 
-  // Wall neon edge lines (interior-facing only)
   s.grid.forEach((row, r) => row.forEach((cell, c) => {
     if (cell !== "#") return;
     const x = c * CELL, y = r * CELL;
     ctx.save();
     ctx.shadowColor = "#818cf8"; ctx.shadowBlur = 7;
     ctx.strokeStyle = "#4f46e5"; ctx.lineWidth = 2;
-    const draw = (x1: number, y1: number, x2: number, y2: number) => {
+    const line = (x1: number, y1: number, x2: number, y2: number) => {
       ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
     };
-    if (s.grid[r - 1]?.[c] !== "#") draw(x + 1, y + 1, x + CELL - 1, y + 1);
-    if (s.grid[r + 1]?.[c] !== "#") draw(x + 1, y + CELL - 1, x + CELL - 1, y + CELL - 1);
-    if (s.grid[r]?.[c - 1] !== "#") draw(x + 1, y + 1, x + 1, y + CELL - 1);
-    if (s.grid[r]?.[c + 1] !== "#") draw(x + CELL - 1, y + 1, x + CELL - 1, y + CELL - 1);
+    if (s.grid[r - 1]?.[c] !== "#") line(x + 1, y + 1, x + CELL - 1, y + 1);
+    if (s.grid[r + 1]?.[c] !== "#") line(x + 1, y + CELL - 1, x + CELL - 1, y + CELL - 1);
+    if (s.grid[r]?.[c - 1] !== "#") line(x + 1, y + 1, x + 1, y + CELL - 1);
+    if (s.grid[r]?.[c + 1] !== "#") line(x + CELL - 1, y + 1, x + CELL - 1, y + CELL - 1);
     ctx.restore();
   }));
 
   // Ghosts
   s.ghosts.forEach(gh => {
     const { px, py, dir, scared, color } = gh;
-    const R = CELL / 2 - 2;     // ~10
+    const R = CELL / 2 - 2;
     const BUMPS = 3;
     const bumpW = (R * 2) / BUMPS;
     const bumpH = 3.8;
     const phase = frame * 0.14;
     const skirtY = py + R - 1;
 
-    const fillColor = scared
-      ? frame % 40 < 22 ? "#312e81" : "#4c1d95"
-      : color;
+    const fillColor = scared ? (frame % 40 < 22 ? "#312e81" : "#4c1d95") : color;
 
     ctx.save();
     ctx.shadowColor = scared ? "#4f46e5" : color;
     ctx.shadowBlur = 14;
     ctx.fillStyle = fillColor;
 
-    // Body path
     ctx.beginPath();
-    ctx.arc(px, py - 2, R, Math.PI, 0);       // top dome
-    ctx.lineTo(px + R, skirtY);                // right side
-    for (let i = 0; i < BUMPS; i++) {          // wavy bottom (right→left)
+    ctx.arc(px, py - 2, R, Math.PI, 0);
+    ctx.lineTo(px + R, skirtY);
+    for (let i = 0; i < BUMPS; i++) {
       const bx = px + R - bumpW * (i + 0.5);
       const by = skirtY - bumpH * (1 + 0.4 * Math.sin(phase + i * 1.15));
       const ex = px + R - bumpW * (i + 1);
@@ -333,23 +368,18 @@ function drawAll(ctx: CanvasRenderingContext2D, s: GS, frame: number) {
     ctx.fill();
     ctx.restore();
 
-    // Eyes
     if (!scared) {
       const ex = DX[dir] * 1.5, ey = DY[dir] * 1.5;
-      // Sclera
       ctx.fillStyle = "#ffffff";
       ctx.beginPath(); ctx.ellipse(px - 3.5, py - 3, 3.2, 4.5, 0, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.ellipse(px + 3.5, py - 3, 3.2, 4.5, 0, 0, Math.PI * 2); ctx.fill();
-      // Iris
       ctx.fillStyle = "#1e3a8a";
       ctx.beginPath(); ctx.arc(px - 3.5 + ex, py - 3 + ey, 2.3, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(px + 3.5 + ex, py - 3 + ey, 2.3, 0, Math.PI * 2); ctx.fill();
-      // Pupil highlight
       ctx.fillStyle = "#bfdbfe";
       ctx.beginPath(); ctx.arc(px - 3.5 + ex + 0.8, py - 3 + ey - 0.8, 0.9, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.arc(px + 3.5 + ex + 0.8, py - 3 + ey - 0.8, 0.9, 0, Math.PI * 2); ctx.fill();
     } else {
-      // Scared face: zigzag mouth, X eyes
       ctx.strokeStyle = "#a5b4fc"; ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(px - 5, py - 1);
@@ -357,7 +387,6 @@ function drawAll(ctx: CanvasRenderingContext2D, s: GS, frame: number) {
       ctx.stroke();
     }
 
-    // Ghost name tag (small, only when not scared)
     if (!scared) {
       ctx.save();
       ctx.globalAlpha = 0.45;
@@ -369,7 +398,7 @@ function drawAll(ctx: CanvasRenderingContext2D, s: GS, frame: number) {
     }
   });
 
-  // Pac-man helper
+  // Pac-man
   const drawPac = (pac: Pac, baseColor: string, hiColor: string) => {
     if (!pac.alive) return;
     const { px, py, dir } = pac;
@@ -390,7 +419,6 @@ function drawAll(ctx: CanvasRenderingContext2D, s: GS, frame: number) {
     ctx.arc(px, py, R, angle + mouthOpen, angle + Math.PI * 2 - mouthOpen);
     ctx.closePath();
     ctx.fill();
-    // Eye dot
     const eyeAngle = angle - Math.PI * 0.42;
     ctx.fillStyle = "#1a1a2e";
     ctx.beginPath();
@@ -418,7 +446,7 @@ function DPadBtn({ label, onStart, className }: { label: string; onStart: () => 
 /* ── Component ───────────────────────────────────────────── */
 export default function PacMan() {
   const cv       = useRef<HTMLCanvasElement>(null);
-  const gs       = useRef<GS>(initGame("1p", 0));
+  const gs       = useRef<GS>(initGame("1p", 0, "normal"));
   const mapIdx   = useRef(0);
   const frameRef = useRef(0);
   const raf      = useRef(0);
@@ -427,6 +455,7 @@ export default function PacMan() {
   const [screen,   setScreen]   = useState<"menu" | "game">("menu");
   const [result,   setResult]   = useState<"idle" | "dead" | "win">("idle");
   const [gMode,    setGMode]    = useState<"1p" | "2p">("1p");
+  const [diff,     setDiff]     = useState<Diff>("normal");
   const [mapName,  setMapName]  = useState("Classic");
   const [p1Score,  setP1Score]  = useState(0);
   const [p2Score,  setP2Score]  = useState(0);
@@ -435,12 +464,13 @@ export default function PacMan() {
 
   const loop = useCallback(() => {
     const s = gs.current;
+    const cfg = DIFF_CFG[s.diff];
     const frame = ++frameRef.current;
     const ctx = cv.current?.getContext("2d");
 
     const movePac = (pac: Pac) => {
       if (!pac.alive) return;
-      const mv = moveEntity(pac.px, pac.py, pac.dir, pac.want, PAC_SPD, s.grid);
+      const mv = moveEntity(pac.px, pac.py, pac.dir, pac.want, cfg.pacSpd, s.grid);
       pac.px = mv.px; pac.py = mv.py; pac.dir = mv.dir;
 
       const key = `${cellRow(pac.py)},${cellCol(pac.px)}`;
@@ -465,19 +495,16 @@ export default function PacMan() {
       setResult("win"); return;
     }
 
-    // Scared countdown
     if (s.scared > 0) { s.scared--; if (s.scared === 0) s.ghosts.forEach(gh => { gh.scared = false; }); }
 
-    // Move ghosts
-    s.ghosts.forEach(gh => moveGhost(gh, s.p1, s.grid, frame));
+    s.ghosts.forEach(gh => moveGhost(gh, s.p1, s.grid, frame, cfg.ghostSpd, s.diff));
 
-    // Collision
     const checkHit = (pac: Pac) => {
       if (!pac.alive) return;
       s.ghosts.forEach(gh => {
         if (cellRow(gh.py) !== cellRow(pac.py) || cellCol(gh.px) !== cellCol(pac.px)) return;
         if (gh.scared) {
-          gh.px = gh.spawnPx; gh.py = gh.spawnPy; gh.scared = false;
+          gh.px = gh.spawnPx; gh.py = gh.spawnPy; gh.scared = false; gh.decided = false;
           pac.score += 200;
           if (pac === s.p1) setP1Score(s.p1.score); else setP2Score(s.p2.score);
         } else {
@@ -500,14 +527,14 @@ export default function PacMan() {
     raf.current = requestAnimationFrame(loop);
   }, []);
 
-  const startGame = useCallback((m: "1p" | "2p") => {
+  const startGame = useCallback((m: "1p" | "2p", d: Diff) => {
     cancelAnimationFrame(raf.current);
     const idx = mapIdx.current;
     mapIdx.current = (idx + 1) % MAPS.length;
-    gs.current = initGame(m, idx);
+    gs.current = initGame(m, idx, d);
     frameRef.current = 0;
     setMapName(gs.current.mapName);
-    setGMode(m);
+    setGMode(m); setDiff(d);
     setP1Score(0); setP2Score(0);
     setP1Lives(3); setP2Lives(3);
     setResult("idle");
@@ -556,49 +583,79 @@ export default function PacMan() {
     ? p1Score > p2Score ? "🟡 P1 Wins!" : p2Score > p1Score ? "🩷 P2 Wins!" : "🤝 Tie!"
     : null;
 
-  /* ── Ghost legend pill ─ */
-  const GhostPill = ({ color, name }: { color: string; name: string }) => (
-    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-mono" style={{ background: `${color}22`, color, border: `1px solid ${color}55` }}>
-      <span className="text-base leading-none">●</span>{name}
-    </span>
-  );
+  const diffCfg = DIFF_CFG[diff];
 
   if (screen === "menu") return (
     <Shell title="Pac-Man">
-      <div className="flex flex-col items-center gap-6 text-center max-w-sm">
+      <div className="flex flex-col items-center gap-5 text-center max-w-sm w-full px-2">
         <div className="text-7xl select-none" style={{ filter: "drop-shadow(0 0 18px #fbbf24)" }}>👾</div>
-        <h2 className="text-2xl font-black text-amber-400 tracking-wide">Select Mode</h2>
-        <p className="text-xs text-muted-foreground -mt-3">5 rotating maps · Swipe or D-pad on mobile</p>
 
-        <div className="flex gap-3 flex-wrap justify-center">
-          {GHOST_CLRS.map((c, i) => <GhostPill key={i} color={c} name={GHOST_NAMES[i]} />)}
+        {/* Ghost legend */}
+        <div className="flex gap-2 flex-wrap justify-center">
+          {GHOST_CLRS.map((c, i) => (
+            <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-mono"
+              style={{ background: `${c}22`, color: c, border: `1px solid ${c}55` }}>
+              <span className="text-sm leading-none">●</span>{GHOST_NAMES[i]}
+            </span>
+          ))}
         </div>
 
-        <div className="flex gap-4 w-full">
-          <button onClick={() => { setScreen("game"); startGame("1p"); }}
-            className="flex-1 py-4 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-400 font-black rounded-2xl transition-colors touch-manipulation">
+        {/* Difficulty picker */}
+        <div className="w-full">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Difficulty</p>
+          <div className="flex gap-2 w-full">
+            {(["easy", "normal", "hard"] as Diff[]).map(d => {
+              const dc = DIFF_CFG[d];
+              const sel = diff === d;
+              return (
+                <button key={d} onClick={() => setDiff(d)}
+                  className="flex-1 py-3 rounded-xl border text-xs font-bold transition-all touch-manipulation"
+                  style={{
+                    background: sel ? `${dc.color}22` : "transparent",
+                    borderColor: sel ? dc.color : "#334155",
+                    color: sel ? dc.color : "#64748b",
+                    boxShadow: sel ? `0 0 12px ${dc.color}44` : "none",
+                  }}>
+                  <div className="text-lg mb-0.5">{dc.emoji}</div>
+                  <div className="font-black">{dc.label}</div>
+                  <div className="text-[10px] opacity-75 font-normal leading-tight mt-0.5">{dc.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Mode buttons */}
+        <div className="flex gap-3 w-full">
+          <button onClick={() => { setScreen("game"); startGame("1p", diff); }}
+            className="flex-1 py-4 border rounded-2xl font-black transition-colors touch-manipulation"
+            style={{ background: `${diffCfg.color}18`, borderColor: `${diffCfg.color}55`, color: diffCfg.color }}>
             👤<br /><span className="text-sm font-semibold">1 Player</span><br />
             <span className="text-xs font-normal text-muted-foreground">Arrows / Swipe</span>
           </button>
-          <button onClick={() => { setScreen("game"); startGame("2p"); }}
-            className="flex-1 py-4 bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/50 text-pink-400 font-black rounded-2xl transition-colors touch-manipulation">
+          <button onClick={() => { setScreen("game"); startGame("2p", diff); }}
+            className="flex-1 py-4 bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/40 text-pink-400 font-black rounded-2xl transition-colors touch-manipulation">
             👥<br /><span className="text-sm font-semibold">2 Players</span><br />
             <span className="text-xs font-normal text-muted-foreground">P1: Arrows · P2: WASD</span>
           </button>
         </div>
+
+        <p className="text-xs text-muted-foreground -mt-2">5 rotating maps · Swipe or D-pad on mobile</p>
       </div>
     </Shell>
   );
 
   return (
-    <Shell title={`Pac-Man · ${mapName}`}>
-      {/* HUD */}
+    <Shell title={`Pac-Man · ${mapName} · ${DIFF_CFG[diff].label}`}>
       <div className="flex gap-6 font-mono text-sm items-center">
         <span className="text-yellow-400 font-bold">🟡 {p1Score} {"❤️".repeat(Math.max(0, p1Lives))}</span>
         {gMode === "2p" && <span className="text-pink-400 font-bold">🩷 {p2Score} {"❤️".repeat(Math.max(0, p2Lives))}</span>}
+        <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+          style={{ background: `${diffCfg.color}20`, color: diffCfg.color, border: `1px solid ${diffCfg.color}50` }}>
+          {diffCfg.emoji} {diffCfg.label}
+        </span>
       </div>
 
-      {/* Canvas */}
       <div className="relative w-full flex justify-center">
         <canvas ref={cv} width={CW} height={CH}
           className="rounded-xl touch-none"
@@ -613,7 +670,7 @@ export default function PacMan() {
             </p>
             <p className="text-xs text-muted-foreground">Next map on restart</p>
             <div className="flex gap-3">
-              <button onClick={() => startGame(gMode)}
+              <button onClick={() => startGame(gMode, diff)}
                 className="px-8 py-3 bg-yellow-400 text-black font-bold rounded-xl touch-manipulation">
                 Play Again
               </button>
@@ -626,7 +683,6 @@ export default function PacMan() {
         )}
       </div>
 
-      {/* Mobile D-pad */}
       {gMode === "1p" && (
         <div className="flex flex-col items-center gap-1 sm:hidden select-none mt-1">
           <DPadBtn label="▲" onStart={() => setWant(3)} />
