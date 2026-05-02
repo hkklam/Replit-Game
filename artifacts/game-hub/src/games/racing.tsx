@@ -266,6 +266,54 @@ function drawCarSprite(ctx: CanvasRenderingContext2D, sx: number, sy: number, sc
   }
 }
 
+function drawTree(ctx: CanvasRenderingContext2D, sx: number, sy: number, scale: number, fog: number) {
+  const h = scale * 1800 * (CH / 2);
+  const w = h * 0.55;
+  if (h < 3) return;
+  const alpha = Math.max(0, 1 - fog * 1.15);
+  if (alpha <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  if (h > 10) {
+    ctx.fillStyle = "#3b2410";
+    ctx.fillRect(sx - w * 0.07, sy - h * 0.18, w * 0.14, h * 0.18);
+  }
+  ctx.fillStyle = "#17520f";
+  ctx.beginPath(); ctx.moveTo(sx, sy - h * 0.54); ctx.lineTo(sx - w, sy - h * 0.05); ctx.lineTo(sx + w, sy - h * 0.05); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#1d6414";
+  ctx.beginPath(); ctx.moveTo(sx, sy - h * 0.76); ctx.lineTo(sx - w * 0.74, sy - h * 0.32); ctx.lineTo(sx + w * 0.74, sy - h * 0.32); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#237a1a";
+  ctx.beginPath(); ctx.moveTo(sx, sy - h); ctx.lineTo(sx - w * 0.5, sy - h * 0.58); ctx.lineTo(sx + w * 0.5, sy - h * 0.58); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawMountains(ctx: CanvasRenderingContext2D, xShift: number, yOff: number, H2: number) {
+  const hy = yOff + H2 + 2;
+  ctx.fillStyle = "#0d0520";
+  ctx.beginPath(); ctx.moveTo(0, hy);
+  for (let px = 0; px <= CW; px += 3) {
+    const h = Math.abs(Math.sin(px * 0.0038 + xShift * 0.00028) * 90 + Math.sin(px * 0.0082 + xShift * 0.00038) * 34);
+    ctx.lineTo(px, hy - h);
+  }
+  ctx.lineTo(CW, hy); ctx.closePath(); ctx.fill();
+
+  ctx.fillStyle = "#140a2c";
+  ctx.beginPath(); ctx.moveTo(0, hy);
+  for (let px = 0; px <= CW; px += 3) {
+    const h = Math.abs(Math.sin(px * 0.0068 + xShift * 0.00048) * 62 + Math.sin(px * 0.013 + xShift * 0.00066) * 24);
+    ctx.lineTo(px, hy - h + 14);
+  }
+  ctx.lineTo(CW, hy); ctx.closePath(); ctx.fill();
+
+  ctx.fillStyle = "#1b0f3e";
+  ctx.beginPath(); ctx.moveTo(0, hy);
+  for (let px = 0; px <= CW; px += 3) {
+    const h = Math.abs(Math.sin(px * 0.011 + xShift * 0.00072) * 44 + Math.sin(px * 0.019 + xShift * 0.0009) * 18);
+    ctx.lineTo(px, hy - h + 26);
+  }
+  ctx.lineTo(CW, hy); ctx.closePath(); ctx.fill();
+}
+
 function drawCockpit(ctx: CanvasRenderingContext2D, speed: number, steer: number, yOff: number, vH: number) {
   const W = CW;
   const dashY = yOff + vH * 0.76;
@@ -368,6 +416,10 @@ function renderView(
   hg.addColorStop(0, "rgba(80,40,160,0)"); hg.addColorStop(0.5, "rgba(80,40,180,0.18)"); hg.addColorStop(1, "rgba(80,40,160,0)");
   ctx.fillStyle = hg; ctx.fillRect(0, yOff + H2 - 20, CW, 40);
 
+  // Mountains on horizon (parallax shift from far curve accumulation)
+  const mxShift = cumX[Math.min(DRAW_N - 1, 180)];
+  drawMountains(ctx, mxShift, yOff, H2);
+
   // Camera
   const camSeg = Math.floor(pz / SEG_LEN) % N_SEGS;
   const camFrac = (pz % SEG_LEN) / SEG_LEN;
@@ -381,7 +433,7 @@ function renderView(
   }
 
   // Sprites
-  type Spr = { n: number; sx: number; sy: number; sc: number; color: string; label: string };
+  type Spr = { n: number; sx: number; sy: number; sc: number; color: string; label: string; kind?: "tree" };
   const sprites: Spr[] = [];
   for (const car of otherCars) {
     const diff = (car.lap * TRACK_LEN + car.z) - (player.lap * TRACK_LEN + pz);
@@ -397,6 +449,22 @@ function renderView(
       sy: yOff + H2 + sc * (CAM_H - cumY[n]) * H2,
       sc, color: car.color, label: car.label,
     });
+  }
+  // Tree sprites on both sides of the road
+  for (let n = 2; n < DRAW_N - 1; n++) {
+    const si = (camSeg + n) % N_SEGS;
+    const wz = PL_Z + n * SEG_LEN - camFrac * SEG_LEN;
+    if (wz <= 0) continue;
+    const sc = CAM_D / wz;
+    const sy = yOff + H2 + sc * (CAM_H - cumY[n]) * H2;
+    if (si % 8 === 0) {
+      const spread = 460 + (si * 113) % 380;
+      sprites.push({ n, kind: "tree", sx: W2 + sc * (cumX[n] - (ROAD_H + spread) - px) * W2, sy, sc, color: "", label: "" });
+    }
+    if (si % 8 === 4) {
+      const spread = 440 + (si * 179) % 400;
+      sprites.push({ n, kind: "tree", sx: W2 + sc * (cumX[n] + (ROAD_H + spread) - px) * W2, sy, sc, color: "", label: "" });
+    }
   }
   sprites.sort((a, b) => b.n - a.n);
 
@@ -456,10 +524,21 @@ function renderView(
       ctx.fillRect(0, cyf, CW, cn - cyf);
     }
 
+    // Road edge lines (white)
+    if (hwf > 6) {
+      const elw = { f: hwf * 0.022, n: hwn * 0.022 };
+      ctx.fillStyle = "rgba(255,255,255,0.82)";
+      trap(ctx, cxf - hwf, cyf, elw.f, cxn - hwn, cn, elw.n);
+      trap(ctx, cxf + hwf - elw.f, cyf, elw.f, cxn + hwn - elw.n, cn, elw.n);
+    }
+
     // Sprites at this depth
     while (sprI < sprites.length && sprites[sprI].n >= n) {
       const sp = sprites[sprI++];
-      if (sp.n === n) drawCarSprite(ctx, sp.sx, sp.sy, sp.sc, sp.color, sp.label);
+      if (sp.n === n) {
+        if (sp.kind === "tree") drawTree(ctx, sp.sx, sp.sy, sp.sc, fog);
+        else drawCarSprite(ctx, sp.sx, sp.sy, sp.sc, sp.color, sp.label);
+      }
     }
     maxy = Math.min(maxy, cn);
   }
