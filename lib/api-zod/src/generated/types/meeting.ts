@@ -24,4 +24,7 @@ export interface Meeting {
   openQuestions?: string[] | null;
   analysisCostUsd?: number | null;
   speakerSegments?: SpeakerSegment[] | null;
+  originalTranscript?: string | null;
+  detectedLanguage?: string | null;
+  translationCostUsd?: number | null;
 }

@@ -215,6 +215,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get application settings
+      responses:
+        "200":
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    put:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update application settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Settings"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
   /meetings/stats:
     get:
       operationId: getMeetingStats
@@ -305,6 +335,15 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/SpeakerSegment"
+        originalTranscript:
+          type: string
+          nullable: true
+        detectedLanguage:
+          type: string
+          nullable: true
+        translationCostUsd:
+          type: number
+          nullable: true
       required:
         - id
         - meetingName
@@ -355,6 +394,27 @@ components:
         - totalDurationSec
         - totalCostUsd
         - avgDurationSec
+
+    Settings:
+      type: object
+      properties:
+        transcriptionProvider:
+          type: string
+          enum: [whisper, deepgram, assemblyai]
+        transcriptionApiKey:
+          type: string
+          nullable: true
+        translationEnabled:
+          type: boolean
+        translationApiKey:
+          type: string
+          nullable: true
+        translationLanguageHint:
+          type: string
+          nullable: true
+      required:
+        - transcriptionProvider
+        - translationEnabled
 
     ErrorResponse:
       type: object

@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Meetings from "@/pages/meetings";
 import MeetingDetail from "@/pages/meeting-detail";
+import SettingsPage from "@/pages/settings";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/meetings" component={Meetings} />
       <Route path="/meetings/:id" component={MeetingDetail} />
+      <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );

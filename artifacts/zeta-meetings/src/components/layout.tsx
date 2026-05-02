@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Mic, History } from "lucide-react";
+import { Mic, History, Settings } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -20,8 +20,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <History className="h-4 w-4" /> History
           </Link>
         </nav>
+        <div className="px-4 pb-4">
+          <Link href="/settings" className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${location === "/settings" ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
+            <Settings className="h-4 w-4" /> Settings
+          </Link>
+        </div>
       </aside>
-      
+
       {/* Mobile nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card z-10 flex">
         <Link href="/" className={`flex-1 flex flex-col items-center justify-center py-3 ${location === "/" ? "text-primary" : "text-muted-foreground"}`}>
@@ -31,6 +36,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Link href="/meetings" className={`flex-1 flex flex-col items-center justify-center py-3 ${location.startsWith("/meetings") ? "text-primary" : "text-muted-foreground"}`}>
           <History className="h-5 w-5" />
           <span className="text-xs mt-1">History</span>
+        </Link>
+        <Link href="/settings" className={`flex-1 flex flex-col items-center justify-center py-3 ${location === "/settings" ? "text-primary" : "text-muted-foreground"}`}>
+          <Settings className="h-5 w-5" />
+          <span className="text-xs mt-1">Settings</span>
         </Link>
       </div>
 

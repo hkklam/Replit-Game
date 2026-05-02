@@ -51,6 +51,9 @@ export interface Meeting {
   openQuestions?: string[] | null;
   analysisCostUsd?: number | null;
   speakerSegments?: SpeakerSegment[] | null;
+  originalTranscript?: string | null;
+  detectedLanguage?: string | null;
+  translationCostUsd?: number | null;
 }
 
 export interface MeetingStats {
@@ -58,6 +61,23 @@ export interface MeetingStats {
   totalDurationSec: number;
   totalCostUsd: number;
   avgDurationSec: number;
+}
+
+export type SettingsTranscriptionProvider =
+  (typeof SettingsTranscriptionProvider)[keyof typeof SettingsTranscriptionProvider];
+
+export const SettingsTranscriptionProvider = {
+  whisper: "whisper",
+  deepgram: "deepgram",
+  assemblyai: "assemblyai",
+} as const;
+
+export interface Settings {
+  transcriptionProvider: SettingsTranscriptionProvider;
+  transcriptionApiKey?: string | null;
+  translationEnabled: boolean;
+  translationApiKey?: string | null;
+  translationLanguageHint?: string | null;
 }
 
 export interface ErrorResponse {

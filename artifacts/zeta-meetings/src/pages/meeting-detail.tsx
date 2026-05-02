@@ -7,7 +7,7 @@ import { formatDuration, formatCurrency, formatTimestamp } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Trash2, ArrowLeft, FileSpreadsheet, Sparkles, RefreshCw } from "lucide-react";
+import { Download, Trash2, ArrowLeft, FileSpreadsheet, Sparkles, RefreshCw, Globe } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,6 +20,7 @@ export default function MeetingDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [analyzing, setAnalyzing] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
 
   const { data: meeting, isLoading, refetch } = useGetMeeting(id, { query: { enabled: !!id } });
   const deleteMutation = useDeleteMeeting();
@@ -117,7 +118,18 @@ export default function MeetingDetail() {
   const speakerMap = new Map<number, string>(speakerSegments.map((s) => [s.index, s.speaker]));
   const uniqueSpeakers = [...new Set(speakerSegments.map((s) => s.speaker))];
   const hasAnalysis = !!meeting.summary;
-  const totalCost = meeting.costUsd + (meeting.analysisCostUsd ?? 0);
+  const isTranslated = !!meeting.originalTranscript && !!meeting.detectedLanguage;
+  const totalCost = meeting.costUsd + (meeting.analysisCostUsd ?? 0) + (meeting.translationCostUsd ?? 0);
+
+  const LANG_NAMES: Record<string, string> = {
+    zh: "Mandarin Chinese", es: "Spanish", pt: "Brazilian Portuguese", sv: "Swedish",
+    "zh-CN": "Mandarin Chinese", "zh-TW": "Traditional Chinese",
+    fr: "French", de: "German", ja: "Japanese", ko: "Korean", ar: "Arabic",
+    ru: "Russian", it: "Italian", nl: "Dutch", pl: "Polish",
+  };
+  const detectedLangName = meeting.detectedLanguage
+    ? (LANG_NAMES[meeting.detectedLanguage] ?? meeting.detectedLanguage.toUpperCase())
+    : null;
 
   return (
     <Layout>
@@ -134,16 +146,26 @@ export default function MeetingDetail() {
               <span>·</span>
               <span>{formatDuration(meeting.durationSec)}</span>
               <span>·</span>
-              <span>Whisper: {formatCurrency(meeting.costUsd)}</span>
+              <span>Transcription: {formatCurrency(meeting.costUsd)}</span>
               {meeting.analysisCostUsd != null && (
                 <>
                   <span>·</span>
                   <span>Analysis: {formatCurrency(meeting.analysisCostUsd)}</span>
+                </>
+              )}
+              {(meeting.analysisCostUsd != null || isTranslated) && (
+                <>
                   <span>·</span>
                   <span className="text-primary font-medium">Total: {formatCurrency(totalCost)}</span>
                 </>
               )}
             </div>
+            {isTranslated && (
+              <div className="flex items-center gap-1.5 mt-2 text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded-full px-3 py-1 w-fit">
+                <Globe className="h-3.5 w-3.5 flex-shrink-0" />
+                Translated from {detectedLangName} — original transcript preserved
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {!hasAnalysis && (
@@ -262,18 +284,38 @@ export default function MeetingDetail() {
           </TabsContent>
 
           <TabsContent value="transcript">
-            {speakerSegments.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {uniqueSpeakers.map((speaker) => (
-                  <span key={speaker} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${speakerColor(speaker, uniqueSpeakers)}`}>
-                    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
-                    {speaker}
-                  </span>
-                ))}
-              </div>
-            )}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              {speakerSegments.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {uniqueSpeakers.map((speaker) => (
+                    <span key={speaker} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${speakerColor(speaker, uniqueSpeakers)}`}>
+                      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+                      {speaker}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {isTranslated && (
+                <div className="flex items-center gap-2 text-xs ml-auto">
+                  <button
+                    onClick={() => setShowOriginal(false)}
+                    className={`px-3 py-1.5 rounded-l-md border border-r-0 transition-colors ${!showOriginal ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-secondary"}`}
+                  >
+                    English (Translated)
+                  </button>
+                  <button
+                    onClick={() => setShowOriginal(true)}
+                    className={`px-3 py-1.5 rounded-r-md border transition-colors ${showOriginal ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-secondary"}`}
+                  >
+                    {detectedLangName} (Original)
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="bg-card border border-border rounded-lg p-6 md:p-8 font-serif text-[15px] leading-loose text-card-foreground shadow-sm">
-              {meeting.segments && (meeting.segments as unknown[]).length > 0 ? (
+              {showOriginal && isTranslated ? (
+                <div className="whitespace-pre-wrap">{meeting.originalTranscript}</div>
+              ) : meeting.segments && (meeting.segments as unknown[]).length > 0 ? (
                 <div className="space-y-3">
                   {(meeting.segments as Array<{ start: number; end: number; text: string }>).map((seg, i) => {
                     const speaker = speakerMap.get(i);

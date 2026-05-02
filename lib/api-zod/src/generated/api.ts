@@ -58,6 +58,9 @@ export const ListMeetingsResponseItem = zod.object({
       }),
     )
     .nullish(),
+  originalTranscript: zod.string().nullish(),
+  detectedLanguage: zod.string().nullish(),
+  translationCostUsd: zod.number().nullish(),
 });
 export const ListMeetingsResponse = zod.array(ListMeetingsResponseItem);
 
@@ -107,6 +110,9 @@ export const GetMeetingResponse = zod.object({
       }),
     )
     .nullish(),
+  originalTranscript: zod.string().nullish(),
+  detectedLanguage: zod.string().nullish(),
+  translationCostUsd: zod.number().nullish(),
 });
 
 /**
@@ -168,6 +174,9 @@ export const UploadAudioResponse = zod.object({
       }),
     )
     .nullish(),
+  originalTranscript: zod.string().nullish(),
+  detectedLanguage: zod.string().nullish(),
+  translationCostUsd: zod.number().nullish(),
 });
 
 /**
@@ -224,6 +233,9 @@ export const AnalyzeMeetingResponse = zod.object({
       }),
     )
     .nullish(),
+  originalTranscript: zod.string().nullish(),
+  detectedLanguage: zod.string().nullish(),
+  translationCostUsd: zod.number().nullish(),
 });
 
 /**
@@ -231,6 +243,36 @@ export const AnalyzeMeetingResponse = zod.object({
  */
 export const ExportMeetingParams = zod.object({
   id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get application settings
+ */
+export const GetSettingsResponse = zod.object({
+  transcriptionProvider: zod.enum(["whisper", "deepgram", "assemblyai"]),
+  transcriptionApiKey: zod.string().nullish(),
+  translationEnabled: zod.boolean(),
+  translationApiKey: zod.string().nullish(),
+  translationLanguageHint: zod.string().nullish(),
+});
+
+/**
+ * @summary Update application settings
+ */
+export const UpdateSettingsBody = zod.object({
+  transcriptionProvider: zod.enum(["whisper", "deepgram", "assemblyai"]),
+  transcriptionApiKey: zod.string().nullish(),
+  translationEnabled: zod.boolean(),
+  translationApiKey: zod.string().nullish(),
+  translationLanguageHint: zod.string().nullish(),
+});
+
+export const UpdateSettingsResponse = zod.object({
+  transcriptionProvider: zod.enum(["whisper", "deepgram", "assemblyai"]),
+  transcriptionApiKey: zod.string().nullish(),
+  translationEnabled: zod.boolean(),
+  translationApiKey: zod.string().nullish(),
+  translationLanguageHint: zod.string().nullish(),
 });
 
 /**

@@ -12,6 +12,8 @@ export * from "./errorResponse";
 export * from "./healthStatus";
 export * from "./meeting";
 export * from "./meetingStats";
+export * from "./settings";
+export * from "./settingsTranscriptionProvider";
 export * from "./speakerSegment";
 export * from "./successResponse";
 export * from "./transcriptSegment";
