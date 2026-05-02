@@ -316,12 +316,19 @@ function drawAll(ctx: CanvasRenderingContext2D, s: GS, frame: number) {
     }
   }));
 
+  // Wall fill — "#" = maze wall, " "/"G" = ghost pen (also impassable for pac-man)
   s.grid.forEach((row, r) => row.forEach((cell, c) => {
-    if (cell !== "#") return;
-    ctx.fillStyle = "#0d1540";
-    ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
+    if (cell === "#") {
+      ctx.fillStyle = "#0d1540";
+      ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
+    } else if (cell === " " || cell === "G") {
+      // Ghost pen interior — slightly different shade so it's visually distinct from open space
+      ctx.fillStyle = "#07112e";
+      ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
+    }
   }));
 
+  // Wall neon edge lines for "#" cells
   s.grid.forEach((row, r) => row.forEach((cell, c) => {
     if (cell !== "#") return;
     const x = c * CELL, y = r * CELL;
@@ -335,6 +342,26 @@ function drawAll(ctx: CanvasRenderingContext2D, s: GS, frame: number) {
     if (s.grid[r + 1]?.[c] !== "#") line(x + 1, y + CELL - 1, x + CELL - 1, y + CELL - 1);
     if (s.grid[r]?.[c - 1] !== "#") line(x + 1, y + 1, x + 1, y + CELL - 1);
     if (s.grid[r]?.[c + 1] !== "#") line(x + CELL - 1, y + 1, x + CELL - 1, y + CELL - 1);
+    ctx.restore();
+  }));
+
+  // Ghost-house gate — pink glowing line at every edge between the ghost pen and open corridor.
+  // This makes the entrance visible so players know pac-man can't pass through it.
+  s.grid.forEach((row, r) => row.forEach((cell, c) => {
+    if (cell !== " " && cell !== "G") return;
+    const x = c * CELL, y = r * CELL;
+    ctx.save();
+    ctx.strokeStyle = "#f472b6"; ctx.lineWidth = 2.5;
+    ctx.shadowColor = "#ec4899"; ctx.shadowBlur = 8;
+    const isPen = (nr: number, nc: number) => {
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) return true;
+      return s.grid[nr][nc] === "#" || s.grid[nr][nc] === " " || s.grid[nr][nc] === "G";
+    };
+    // Draw a gate segment on any edge that faces open (passable) space
+    if (!isPen(r - 1, c)) { ctx.beginPath(); ctx.moveTo(x + 1, y);        ctx.lineTo(x + CELL - 1, y);        ctx.stroke(); }
+    if (!isPen(r + 1, c)) { ctx.beginPath(); ctx.moveTo(x + 1, y + CELL); ctx.lineTo(x + CELL - 1, y + CELL); ctx.stroke(); }
+    if (!isPen(r, c - 1)) { ctx.beginPath(); ctx.moveTo(x, y + 1);        ctx.lineTo(x, y + CELL - 1);        ctx.stroke(); }
+    if (!isPen(r, c + 1)) { ctx.beginPath(); ctx.moveTo(x + CELL, y + 1); ctx.lineTo(x + CELL, y + CELL - 1); ctx.stroke(); }
     ctx.restore();
   }));
 
