@@ -119,6 +119,21 @@ function isOnTrack(x: number, y: number, wps: WP[], halfW: number): boolean {
   return false;
 }
 
+// Returns the nearest point on the track centreline and distance to it
+function nearestOnTrack(x: number, y: number, wps: WP[]): { nx: number; ny: number; dist: number } {
+  let best = Infinity, bnx = wps[0].x, bny = wps[0].y;
+  for (let i = 0; i < wps.length; i++) {
+    const a = wps[i], b = wps[(i + 1) % wps.length];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len2 = dx * dx + dy * dy;
+    const t = len2 < 1 ? 0 : Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / len2));
+    const px = a.x + t * dx, py = a.y + t * dy;
+    const d2 = (x - px) ** 2 + (y - py) ** 2;
+    if (d2 < best) { best = d2; bnx = px; bny = py; }
+  }
+  return { nx: bnx, ny: bny, dist: Math.sqrt(best) };
+}
+
 function drawTrack(ctx: CanvasRenderingContext2D, track: TrackDef) {
   const { wps, trackW } = track;
   ctx.fillStyle = "#166534"; ctx.fillRect(0, 0, W, H);
@@ -128,8 +143,31 @@ function drawTrack(ctx: CanvasRenderingContext2D, track: TrackDef) {
     if (close) ctx.closePath();
   };
   ctx.lineJoin = "round"; ctx.lineCap = "round";
-  tracePath(); ctx.strokeStyle = "#555"; ctx.lineWidth = trackW * 2 + 10; ctx.stroke();
-  tracePath(); ctx.strokeStyle = "#2a2a2a"; ctx.lineWidth = trackW * 2; ctx.stroke();
+
+  // Outer shadow/ground
+  tracePath(); ctx.strokeStyle = "#111"; ctx.lineWidth = trackW * 2 + 22; ctx.stroke();
+
+  // ── Kerb / wall stripe (red-white alternating) ──────────────────────────
+  // Draw the kerb as a thick stroke, then clip the track surface over it.
+  // The 8 px visible rim becomes the wall.
+  const KERB_W = trackW * 2 + 14;
+  const TRACK_W = trackW * 2;
+  // White base for the kerb band
+  tracePath(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = KERB_W; ctx.stroke();
+  // Red dashes over the white to create the classic red/white kerb pattern
+  ctx.setLineDash([18, 18]);
+  tracePath(); ctx.strokeStyle = "#dc2626"; ctx.lineWidth = KERB_W; ctx.stroke();
+  ctx.setLineDash([]);
+  // A thin bright inner highlight to make it pop
+  tracePath(); ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth = KERB_W - 2; ctx.stroke();
+
+  // Track surface on top (covers the kerb centre, leaving only the rim visible)
+  tracePath(); ctx.strokeStyle = "#2a2a2a"; ctx.lineWidth = TRACK_W; ctx.stroke();
+
+  // Subtle track texture / sheen
+  tracePath(); ctx.strokeStyle = "rgba(255,255,255,0.03)"; ctx.lineWidth = TRACK_W - 4; ctx.stroke();
+
+  // Centre dashes
   ctx.setLineDash([16, 22]); ctx.strokeStyle = "rgba(251,191,36,0.55)"; ctx.lineWidth = 2;
   tracePath(); ctx.stroke(); ctx.setLineDash([]);
   const w0 = wps[0], w1 = wps[1];
@@ -222,16 +260,37 @@ export default function Racing() {
   const loop = useCallback(() => {
     const s = g.current; s.frame++;
     const { wps, trackW, wpR } = s.track;
-    const accel = 0.18, brake = 0.22, turnSpd = 0.055, friction = 0.96, offRoad = 0.88;
+    const accel = 0.18, brake = 0.22, turnSpd = 0.055, friction = 0.96;
     const updateCar = (c: Car, left: boolean, right: boolean, up: boolean, down: boolean, maxSpd = 5.5): boolean => {
       if (left)  c.angle -= turnSpd * Math.max(0.2, c.speed / 5);
       if (right) c.angle += turnSpd * Math.max(0.2, c.speed / 5);
       if (up)   c.speed = Math.min(c.speed + accel, maxSpd);
       else if (down) c.speed = Math.max(c.speed - brake, -2);
-      const nx = c.x + Math.cos(c.angle) * c.speed, ny = c.y + Math.sin(c.angle) * c.speed;
-      c.speed *= isOnTrack(nx, ny, wps, trackW / 2) ? friction : offRoad;
+
+      const halfW = trackW / 2;
+      const propX = c.x + Math.cos(c.angle) * c.speed;
+      const propY = c.y + Math.sin(c.angle) * c.speed;
+
+      if (isOnTrack(propX, propY, wps, halfW)) {
+        // Normal on-track movement
+        c.speed *= friction;
+        c.x = propX; c.y = propY;
+      } else {
+        // Wall hit — clamp position to track edge and apply heavy penalty
+        c.speed *= 0.28; // heavy wall-impact slow
+        const { nx: cnx, ny: cny, dist } = nearestOnTrack(propX, propY, wps);
+        if (dist > 0.5) {
+          // Push car back so it sits just inside the kerb edge
+          const clampR = halfW - 3;
+          const ratio = clampR / dist;
+          c.x = cnx + (propX - cnx) * ratio;
+          c.y = cny + (propY - cny) * ratio;
+        } else {
+          c.x = propX; c.y = propY;
+        }
+      }
+
       if (Math.abs(c.speed) < 0.01) c.speed = 0;
-      c.x += Math.cos(c.angle) * c.speed; c.y += Math.sin(c.angle) * c.speed;
       c.x = Math.max(5, Math.min(W - 5, c.x)); c.y = Math.max(5, Math.min(H - 5, c.y));
       const wp = wps[c.wpIdx];
       if (Math.sqrt((c.x - wp.x) ** 2 + (c.y - wp.y) ** 2) < wpR) {

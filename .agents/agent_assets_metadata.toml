@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "YwEi7l1YLJvbZJ8sIiuk6"
+uri = "file://candy-crush-3d-prd.md"
+type = "text"
+title = "Candy Crush 3D — Product Requirements Document"
