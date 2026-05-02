@@ -49,8 +49,10 @@ function initGrid(rows: number): (string | null)[][] {
   return Array.from({ length: rows }, () => makeRow());
 }
 
+// Only 4-directional neighbours — bubbles only "physically touch" when directly adjacent
+// (diagonal cells are ~51 px apart; circles with R=18 don't reach each other)
 function cellNbrs(r: number, c: number): [number, number][] {
-  return ([ [-1,-1],[-1,0],[-1,1], [0,-1],[0,1], [1,-1],[1,0],[1,1] ] as [number,number][])
+  return ([ [-1,0],[1,0],[0,-1],[0,1] ] as [number,number][])
     .map(([dr, dc]) => [r + dr, c + dc] as [number, number])
     .filter(([nr, nc]) => nr >= 0 && nc >= 0 && nc < COLS);
 }
@@ -158,12 +160,26 @@ export default function BubbleShooter() {
       ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 2; ctx.stroke();
     }
 
-    // Aim guide
+    // Aim arrow — solid line + arrowhead pointing from the shooter ball
     if (!s.proj && s.state === "playing") {
-      ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.lineWidth = 1; ctx.setLineDash([3, 6]);
-      ctx.beginPath(); ctx.moveTo(SHOOTER_X, SHOOTER_Y);
-      ctx.lineTo(SHOOTER_X + Math.cos(s.angle) * 65, SHOOTER_Y + Math.sin(s.angle) * 65);
-      ctx.stroke(); ctx.setLineDash([]);
+      const aimLen = 62;
+      const ax = SHOOTER_X + Math.cos(s.angle) * (R + 4);
+      const ay = SHOOTER_Y + Math.sin(s.angle) * (R + 4);
+      const bx2 = SHOOTER_X + Math.cos(s.angle) * (R + 4 + aimLen);
+      const by2 = SHOOTER_Y + Math.sin(s.angle) * (R + 4 + aimLen);
+
+      // Shaft
+      ctx.strokeStyle = "rgba(255,255,255,0.55)"; ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx2, by2); ctx.stroke();
+
+      // Arrowhead
+      const headLen = 10, headAngle = Math.PI / 6;
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.beginPath();
+      ctx.moveTo(bx2, by2);
+      ctx.lineTo(bx2 - headLen * Math.cos(s.angle - headAngle), by2 - headLen * Math.sin(s.angle - headAngle));
+      ctx.lineTo(bx2 - headLen * Math.cos(s.angle + headAngle), by2 - headLen * Math.sin(s.angle + headAngle));
+      ctx.closePath(); ctx.fill();
     }
 
     // Shooter circle
