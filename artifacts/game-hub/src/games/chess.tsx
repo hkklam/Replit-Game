@@ -1,10 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
-import { useOnlineMultiplayer } from "../lib/multiplayer";
-import { OnlineLobby } from "../components/OnlineLobby";
 
-function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
+function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center gap-4 px-4 py-3 border-b border-violet-500/30 bg-gradient-to-r from-violet-950/60 to-transparent">
@@ -14,619 +12,474 @@ function Shell({ title, controls, children }: { title: string; controls?: string
         </Link>
         <span className="text-2xl select-none" style={{ filter: "drop-shadow(0 0 8px #a78bfa80)" }}>♟️</span>
         <h1 className="text-lg font-bold text-violet-400">{title}</h1>
-        {controls && <span className="text-xs text-muted-foreground ml-auto hidden sm:block">{controls}</span>}
       </header>
-      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">{children}</div>
+      <div className="flex-1 flex flex-col items-center justify-center p-3 gap-3">{children}</div>
     </div>
   );
 }
 
-// ─── types ────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 type PType = "P" | "N" | "B" | "R" | "Q" | "K";
 type Color = "w" | "b";
 type Piece = { type: PType; color: Color };
-type Square = Piece | null;
-type Board = Square[][];
+type Board = (Piece | null)[][];
 type Castling = { wK: boolean; wQ: boolean; bK: boolean; bQ: boolean };
-type Move = { from: [number, number]; to: [number, number]; promo?: PType; castle?: "K" | "Q"; ep?: boolean };
+type Move = { from: [number, number]; to: [number, number]; promo?: PType };
 type AIDiff = "easy" | "medium" | "hard";
-type Mode = "ai" | "local" | "online";
-type Screen = "menu" | "setup" | "online-lobby" | "game";
+type Mode = "ai" | "local";
 
-// ─── constants ────────────────────────────────────────────────────────────────
-const INIT_BOARD: Board = (() => {
-  const b: Board = Array.from({ length: 8 }, () => Array(8).fill(null));
-  const order: PType[] = ["R", "N", "B", "Q", "K", "B", "N", "R"];
-  order.forEach((t, c) => { b[0][c] = { type: t, color: "b" }; b[7][c] = { type: t, color: "w" }; });
-  for (let c = 0; c < 8; c++) { b[1][c] = { type: "P", color: "b" }; b[6][c] = { type: "P", color: "w" }; }
-  return b;
-})();
-const INIT_CASTLING: Castling = { wK: true, wQ: true, bK: true, bQ: true };
+// ─── Canvas constants ─────────────────────────────────────────────────────────
+const SQ = 62;
+const BORDER = 34;
+const CW = SQ * 8 + BORDER * 2;
+const CH = SQ * 8 + BORDER * 2;
 
-const PIECE_VALS: Record<PType, number> = { P: 100, N: 320, B: 330, R: 500, Q: 900, K: 20000 };
 const SYMBOLS: Record<Color, Record<PType, string>> = {
   w: { K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙" },
   b: { K: "♚", Q: "♛", R: "♜", B: "♝", N: "♞", P: "♟" },
 };
 
-const PST: Record<PType, number[][]> = {
-  P: [[0,0,0,0,0,0,0,0],[50,50,50,50,50,50,50,50],[10,10,20,30,30,20,10,10],[5,5,10,25,25,10,5,5],[0,0,0,20,20,0,0,0],[5,-5,-10,0,0,-10,-5,5],[5,10,10,-20,-20,10,10,5],[0,0,0,0,0,0,0,0]],
-  N: [[-50,-40,-30,-30,-30,-30,-40,-50],[-40,-20,0,0,0,0,-20,-40],[-30,0,10,15,15,10,0,-30],[-30,5,15,20,20,15,5,-30],[-30,0,15,20,20,15,0,-30],[-30,5,10,15,15,10,5,-30],[-40,-20,0,5,5,0,-20,-40],[-50,-40,-30,-30,-30,-30,-40,-50]],
-  B: [[-20,-10,-10,-10,-10,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,10,10,5,0,-10],[-10,5,5,10,10,5,5,-10],[-10,0,10,10,10,10,0,-10],[-10,10,10,10,10,10,10,-10],[-10,5,0,0,0,0,5,-10],[-20,-10,-10,-10,-10,-10,-10,-20]],
-  R: [[0,0,0,0,0,0,0,0],[5,10,10,10,10,10,10,5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[0,0,0,5,5,0,0,0]],
-  Q: [[-20,-10,-10,-5,-5,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,5,5,5,0,-10],[-5,0,5,5,5,5,0,-5],[0,0,5,5,5,5,0,-5],[-10,5,5,5,5,5,0,-10],[-10,0,5,0,0,0,0,-10],[-20,-10,-10,-5,-5,-10,-10,-20]],
-  K: [[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-20,-30,-30,-40,-40,-30,-30,-20],[-10,-20,-20,-20,-20,-20,-20,-10],[20,20,0,0,0,0,20,20],[20,30,10,0,0,10,30,20]],
-};
-
-const TIME_CONTROLS = [
-  { label: "Bullet", icon: "⚡", secs: 60,  desc: "1 min" },
-  { label: "Blitz",  icon: "🔥", secs: 300, desc: "5 min" },
-  { label: "Rapid",  icon: "⏱",  secs: 600, desc: "10 min" },
-  { label: "∞ Free", icon: "♾️",  secs: 0,   desc: "No clock" },
-];
-
-// ─── board helpers ────────────────────────────────────────────────────────────
+// ─── Board helpers ────────────────────────────────────────────────────────────
 function cloneBoard(b: Board): Board { return b.map(r => r.map(sq => sq ? { ...sq } : null)); }
-function findKing(b: Board, color: Color): [number, number] {
-  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (b[r][c]?.type === "K" && b[r][c]?.color === color) return [r, c];
-  return [-1, -1];
+function inb(r: number, c: number) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+function findKing(b: Board, col: Color): [number, number] | null {
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++)
+    if (b[r][c]?.type === "K" && b[r][c]?.color === col) return [r, c];
+  return null;
 }
 
-// ─── fast check detection ─────────────────────────────────────────────────────
-function isSquareAttacked(board: Board, r: number, c: number, byColor: Color): boolean {
-  const opp = byColor;
-  for (const [dr, dc] of [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]]) {
-    const rr = r+dr, cc = c+dc;
-    if (rr >= 0 && rr < 8 && cc >= 0 && cc < 8 && board[rr][cc]?.type === "N" && board[rr][cc]?.color === opp) return true;
-  }
-  for (const [dr, dc] of [[1,1],[1,-1],[-1,1],[-1,-1]]) {
-    for (let i = 1; i < 8; i++) {
-      const rr = r+dr*i, cc = c+dc*i;
-      if (rr < 0 || rr >= 8 || cc < 0 || cc >= 8) break;
-      const p = board[rr][cc]; if (!p) continue;
-      if (p.color === opp && (p.type === "B" || p.type === "Q")) return true;
-      break;
-    }
-  }
-  for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1]]) {
-    for (let i = 1; i < 8; i++) {
-      const rr = r+dr*i, cc = c+dc*i;
-      if (rr < 0 || rr >= 8 || cc < 0 || cc >= 8) break;
-      const p = board[rr][cc]; if (!p) continue;
-      if (p.color === opp && (p.type === "R" || p.type === "Q")) return true;
-      break;
-    }
-  }
-  const pawnRow = byColor === "w" ? r + 1 : r - 1;
-  if (pawnRow >= 0 && pawnRow < 8) for (const dc of [-1, 1]) {
-    const cc = c + dc;
-    if (cc >= 0 && cc < 8 && board[pawnRow][cc]?.type === "P" && board[pawnRow][cc]?.color === opp) return true;
-  }
-  for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
-    const rr = r+dr, cc = c+dc;
-    if (rr >= 0 && rr < 8 && cc >= 0 && cc < 8 && board[rr][cc]?.type === "K" && board[rr][cc]?.color === opp) return true;
-  }
-  return false;
-}
-
-function isInCheck(board: Board, color: Color): boolean {
-  const [kr, kc] = findKing(board, color);
-  if (kr < 0) return true;
-  return isSquareAttacked(board, kr, kc, color === "w" ? "b" : "w");
-}
-
-// ─── move generation ──────────────────────────────────────────────────────────
+// ─── Move generation ──────────────────────────────────────────────────────────
 function pseudoMoves(board: Board, r: number, c: number, castling: Castling, ep: [number, number] | null): Move[] {
-  const p = board[r][c]; if (!p) return [];
-  const { type, color } = p;
-  const opp: Color = color === "w" ? "b" : "w";
+  const sq = board[r][c]; if (!sq) return [];
+  const { type, color } = sq;
   const moves: Move[] = [];
-  const inb = (rr: number, cc: number) => rr >= 0 && rr < 8 && cc >= 0 && cc < 8;
-  const tryAdd = (tr: number, tc: number) => { if (inb(tr, tc) && board[tr][tc]?.color !== color) moves.push({ from: [r, c], to: [tr, tc] }); };
+  const tryAdd = (tr: number, tc: number) => {
+    if (inb(tr, tc) && board[tr][tc]?.color !== color) moves.push({ from: [r, c], to: [tr, tc] });
+  };
   const slide = (dr: number, dc: number) => {
     for (let i = 1; i < 8; i++) {
-      const rr = r+dr*i, cc = c+dc*i;
+      const rr = r + dr * i, cc = c + dc * i;
       if (!inb(rr, cc)) break;
       if (board[rr][cc]?.color === color) break;
       moves.push({ from: [r, c], to: [rr, cc] });
       if (board[rr][cc]) break;
     }
   };
-
   if (type === "P") {
-    const dir = color === "w" ? -1 : 1;
-    const startRow = color === "w" ? 6 : 1;
-    const promoRow = color === "w" ? 0 : 7;
-    if (inb(r+dir, c) && !board[r+dir][c]) {
-      if (r+dir === promoRow) { (["Q","R","B","N"] as PType[]).forEach(pr => moves.push({ from:[r,c], to:[r+dir,c], promo:pr })); }
-      else {
-        moves.push({ from:[r,c], to:[r+dir,c] });
-        if (r === startRow && !board[r+dir*2][c]) moves.push({ from:[r,c], to:[r+dir*2,c] });
-      }
+    const dir = color === "w" ? -1 : 1, startRow = color === "w" ? 6 : 1, promoRow = color === "w" ? 0 : 7;
+    const addPawn = (tr: number, tc: number) => {
+      if (tr === promoRow) { for (const p of ["Q","R","B","N"] as PType[]) moves.push({ from:[r,c], to:[tr,tc], promo:p }); }
+      else moves.push({ from:[r,c], to:[tr,tc] });
+    };
+    if (inb(r+dir,c) && !board[r+dir][c]) {
+      addPawn(r+dir, c);
+      if (r === startRow && !board[r+dir*2][c]) addPawn(r+dir*2, c);
     }
-    for (const dc of [-1, 1]) {
+    for (const dc of [-1,1]) {
       if (!inb(r+dir, c+dc)) continue;
-      if (board[r+dir][c+dc]?.color === opp) {
-        if (r+dir === promoRow) (["Q","R","B","N"] as PType[]).forEach(pr => moves.push({ from:[r,c], to:[r+dir,c+dc], promo:pr }));
-        else moves.push({ from:[r,c], to:[r+dir,c+dc] });
-      }
-      if (ep && ep[0] === r+dir && ep[1] === c+dc) moves.push({ from:[r,c], to:[r+dir,c+dc], ep:true });
+      if (board[r+dir][c+dc]?.color !== color && board[r+dir][c+dc]) addPawn(r+dir, c+dc);
+      if (ep && ep[0] === r+dir && ep[1] === c+dc) moves.push({ from:[r,c], to:[r+dir,c+dc] });
     }
-  } else if (type === "N") {
-    [[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]].forEach(([dr,dc]) => tryAdd(r+dr, c+dc));
-  } else if (type === "B") {
-    [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr,dc]) => slide(dr, dc));
-  } else if (type === "R") {
-    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc]) => slide(dr, dc));
-  } else if (type === "Q") {
-    [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr,dc]) => slide(dr, dc));
-  } else if (type === "K") {
-    [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr,dc]) => tryAdd(r+dr, c+dc));
-    if (color === "w" && r === 7 && c === 4) {
-      if (castling.wK && !board[7][5] && !board[7][6] && board[7][7]?.type === "R" && board[7][7]?.color === "w") moves.push({ from:[7,4], to:[7,6], castle:"K" });
-      if (castling.wQ && !board[7][3] && !board[7][2] && !board[7][1] && board[7][0]?.type === "R" && board[7][0]?.color === "w") moves.push({ from:[7,4], to:[7,2], castle:"Q" });
-    }
-    if (color === "b" && r === 0 && c === 4) {
-      if (castling.bK && !board[0][5] && !board[0][6] && board[0][7]?.type === "R" && board[0][7]?.color === "b") moves.push({ from:[0,4], to:[0,6], castle:"K" });
-      if (castling.bQ && !board[0][3] && !board[0][2] && !board[0][1] && board[0][0]?.type === "R" && board[0][0]?.color === "b") moves.push({ from:[0,4], to:[0,2], castle:"Q" });
+  }
+  if (type === "N") { for (const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) tryAdd(r+dr,c+dc); }
+  if (type === "B" || type === "Q") { slide(-1,-1); slide(-1,1); slide(1,-1); slide(1,1); }
+  if (type === "R" || type === "Q") { slide(-1,0); slide(1,0); slide(0,-1); slide(0,1); }
+  if (type === "K") {
+    for (const [dr,dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) tryAdd(r+dr,c+dc);
+    if (color === "w") {
+      if (castling.wK && !board[7][5] && !board[7][6]) moves.push({ from:[7,4], to:[7,6] });
+      if (castling.wQ && !board[7][3] && !board[7][2] && !board[7][1]) moves.push({ from:[7,4], to:[7,2] });
+    } else {
+      if (castling.bK && !board[0][5] && !board[0][6]) moves.push({ from:[0,4], to:[0,6] });
+      if (castling.bQ && !board[0][3] && !board[0][2] && !board[0][1]) moves.push({ from:[0,4], to:[0,2] });
     }
   }
   return moves;
 }
 
-function applyMove(board: Board, move: Move, castling: Castling, ep: [number, number] | null): { board: Board; castling: Castling; ep: [number, number] | null } {
-  const nb = cloneBoard(board);
-  const [fr, fc] = move.from; const [tr, tc] = move.to;
-  const p = nb[fr][fc]!;
-  const nc = { ...castling };
-  if (p.type === "K") { if (p.color === "w") { nc.wK = false; nc.wQ = false; } else { nc.bK = false; nc.bQ = false; } }
-  if (fr === 7 && fc === 7) nc.wK = false; if (fr === 7 && fc === 0) nc.wQ = false;
-  if (fr === 0 && fc === 7) nc.bK = false; if (fr === 0 && fc === 0) nc.bQ = false;
-  if (tr === 7 && tc === 7) nc.wK = false; if (tr === 7 && tc === 0) nc.wQ = false;
-  if (tr === 0 && tc === 7) nc.bK = false; if (tr === 0 && tc === 0) nc.bQ = false;
-  if (move.ep && ep) nb[fr][ep[1]] = null;
-  if (move.castle) { if (move.castle === "K") { nb[fr][5] = nb[fr][7]; nb[fr][7] = null; } else { nb[fr][3] = nb[fr][0]; nb[fr][0] = null; } }
-  nb[tr][tc] = move.promo ? { type: move.promo, color: p.color } : { ...p };
-  nb[fr][fc] = null;
-  let nep: [number, number] | null = null;
-  if (p.type === "P" && Math.abs(tr - fr) === 2) nep = [(fr + tr) / 2, fc];
-  return { board: nb, castling: nc, ep: nep };
+function isAttacked(board: Board, r: number, c: number, by: Color): boolean {
+  const pDir = by === "w" ? 1 : -1;
+  for (const dc of [-1,1]) { const pr=r+pDir,pc=c+dc; if (inb(pr,pc)&&board[pr][pc]?.type==="P"&&board[pr][pc]?.color===by) return true; }
+  for (const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) { const rr=r+dr,cc=c+dc; if(inb(rr,cc)&&board[rr][cc]?.type==="N"&&board[rr][cc]?.color===by) return true; }
+  for (const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]) { for(let i=1;i<8;i++){const rr=r+dr*i,cc=c+dc*i;if(!inb(rr,cc))break;if(board[rr][cc]){if(board[rr][cc]!.color===by&&(board[rr][cc]!.type==="R"||board[rr][cc]!.type==="Q"))return true;break;}}}
+  for (const [dr,dc] of [[1,1],[1,-1],[-1,1],[-1,-1]]) { for(let i=1;i<8;i++){const rr=r+dr*i,cc=c+dc*i;if(!inb(rr,cc))break;if(board[rr][cc]){if(board[rr][cc]!.color===by&&(board[rr][cc]!.type==="B"||board[rr][cc]!.type==="Q"))return true;break;}}}
+  for (const [dr,dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) { const rr=r+dr,cc=c+dc; if(inb(rr,cc)&&board[rr][cc]?.type==="K"&&board[rr][cc]?.color===by) return true; }
+  return false;
 }
 
-function legalMoves(board: Board, color: Color, castling: Castling, ep: [number, number] | null): Move[] {
+function isInCheck(b: Board, col: Color): boolean {
+  const kp = findKing(b, col); if (!kp) return false;
+  return isAttacked(b, kp[0], kp[1], col === "w" ? "b" : "w");
+}
+
+function applyMove(board: Board, move: Move, castling: Castling, ep: [number,number]|null) {
+  const nb = cloneBoard(board); const nc = {...castling};
+  const [fr,fc]=move.from, [tr,tc]=move.to; const p=nb[fr][fc]!;
+  let newEp: [number,number]|null = null;
+  if (p.type==="P"&&ep&&tr===ep[0]&&tc===ep[1]) nb[fr][tc]=null;
+  if (p.type==="P"&&Math.abs(tr-fr)===2) newEp=[(fr+tr)>>1,fc];
+  if (p.type==="K"&&Math.abs(tc-fc)===2) {
+    if(tc===6){nb[fr][5]=nb[fr][7];nb[fr][7]=null;}
+    else{nb[fr][3]=nb[fr][0];nb[fr][0]=null;}
+  }
+  nb[tr][tc]=move.promo?{type:move.promo,color:p.color}:{...p};
+  nb[fr][fc]=null;
+  if(p.type==="K"){if(p.color==="w"){nc.wK=false;nc.wQ=false;}else{nc.bK=false;nc.bQ=false;}}
+  if(fr===7&&fc===7)nc.wK=false; if(fr===7&&fc===0)nc.wQ=false;
+  if(fr===0&&fc===7)nc.bK=false; if(fr===0&&fc===0)nc.bQ=false;
+  return {board:nb,castling:nc,ep:newEp};
+}
+
+function legalMoves(board: Board, color: Color, castling: Castling, ep: [number,number]|null): Move[] {
   const moves: Move[] = [];
-  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-    if (board[r][c]?.color !== color) continue;
-    for (const m of pseudoMoves(board, r, c, castling, ep)) {
-      if (m.castle) {
-        const passC = m.castle === "K" ? 5 : 3;
-        if (isSquareAttacked(board, r, 4, color === "w" ? "b" : "w")) continue;
-        if (isSquareAttacked(board, r, passC, color === "w" ? "b" : "w")) continue;
-      }
-      const { board: nb } = applyMove(board, m, castling, ep);
-      if (!isInCheck(nb, color)) moves.push(m);
+  for (let r=0;r<8;r++) for(let c=0;c<8;c++) {
+    if(board[r][c]?.color!==color)continue;
+    for(const m of pseudoMoves(board,r,c,castling,ep)){
+      const{board:nb}=applyMove(board,m,castling,ep);
+      if(!isInCheck(nb,color))moves.push(m);
     }
   }
   return moves;
 }
 
 // ─── AI ───────────────────────────────────────────────────────────────────────
-function evalBoard(board: Board): number {
-  let s = 0;
-  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-    const p = board[r][c]; if (!p) continue;
-    const pr = p.color === "w" ? r : 7 - r;
-    s += p.color === "w" ? PIECE_VALS[p.type] + PST[p.type][pr][c] : -(PIECE_VALS[p.type] + PST[p.type][pr][c]);
-  }
+const PIECE_VAL: Record<PType,number>={P:100,N:320,B:330,R:500,Q:900,K:20000};
+function evalBoard(board: Board, col: Color): number {
+  let s=0;
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=board[r][c];if(!p)continue;s+=p.color===col?PIECE_VAL[p.type]:-PIECE_VAL[p.type];}
   return s;
 }
-
-function minimax(board: Board, castling: Castling, ep: [number, number] | null, depth: number, alpha: number, beta: number, maximizing: boolean): number {
-  if (depth === 0) return evalBoard(board);
-  const color: Color = maximizing ? "w" : "b";
-  const moves = legalMoves(board, color, castling, ep);
-  if (!moves.length) return isInCheck(board, color) ? (maximizing ? -99999 : 99999) : 0;
-  let best = maximizing ? -Infinity : Infinity;
-  for (const m of moves) {
-    const { board: nb, castling: nc, ep: nep } = applyMove(board, m, castling, ep);
-    const val = minimax(nb, nc, nep, depth - 1, alpha, beta, !maximizing);
-    if (maximizing) { best = Math.max(best, val); alpha = Math.max(alpha, val); }
-    else { best = Math.min(best, val); beta = Math.min(beta, val); }
-    if (beta <= alpha) break;
-  }
+function minimax(b: Board,col:Color,cast:Castling,ep:[number,number]|null,depth:number,alpha:number,beta:number,max:boolean,aiCol:Color):number{
+  if(depth===0)return evalBoard(b,aiCol);
+  const mvs=legalMoves(b,col,cast,ep);
+  if(!mvs.length)return isInCheck(b,col)?(max?-9999:9999):0;
+  const opp=col==="w"?"b":"w";
+  if(max){let best=-Infinity;for(const m of mvs){const{board:nb,castling:nc,ep:ne}=applyMove(b,m,cast,ep);const v=minimax(nb,opp,nc,ne,depth-1,alpha,beta,false,aiCol);best=Math.max(best,v);alpha=Math.max(alpha,v);if(beta<=alpha)break;}return best;}
+  else{let best=Infinity;for(const m of mvs){const{board:nb,castling:nc,ep:ne}=applyMove(b,m,cast,ep);const v=minimax(nb,opp,nc,ne,depth-1,alpha,beta,true,aiCol);best=Math.min(best,v);beta=Math.min(beta,v);if(beta<=alpha)break;}return best;}
+}
+function getBestMove(board:Board,color:Color,castling:Castling,ep:[number,number]|null,depth:number):Move|null{
+  const mvs=legalMoves(board,color,castling,ep);
+  if(!mvs.length)return null;
+  if(depth===0)return mvs[Math.floor(Math.random()*mvs.length)];
+  let best:Move|null=null,bestV=-Infinity;
+  const opp=color==="w"?"b":"w";
+  for(const m of mvs){const{board:nb,castling:nc,ep:ne}=applyMove(board,m,castling,ep);const v=minimax(nb,opp,nc,ne,depth-1,-Infinity,Infinity,false,color);if(v>bestV){bestV=v;best=m;}}
   return best;
 }
 
-function getBestMove(board: Board, castling: Castling, ep: [number, number] | null, depth: number, color: Color): Move | null {
-  const moves = legalMoves(board, color, castling, ep);
-  if (!moves.length) return null;
-  if (depth === 0) return moves[Math.floor(Math.random() * moves.length)];
-  const shuffled = [...moves].sort(() => Math.random() - 0.5);
-  let best: Move | null = null;
-  let bestVal = color === "b" ? Infinity : -Infinity;
-  for (const m of shuffled) {
-    const { board: nb, castling: nc, ep: nep } = applyMove(board, m, castling, ep);
-    const val = minimax(nb, nc, nep, depth - 1, -Infinity, Infinity, color === "b");
-    if ((color === "b" && val < bestVal) || (color === "w" && val > bestVal)) { bestVal = val; best = m; }
-  }
-  return best;
+// ─── Initial board ────────────────────────────────────────────────────────────
+function makeInitBoard(): Board {
+  const b: Board = Array.from({length:8},()=>Array(8).fill(null));
+  const order: PType[]=["R","N","B","Q","K","B","N","R"];
+  order.forEach((t,c)=>{b[0][c]={type:t,color:"b"};b[7][c]={type:t,color:"w"};});
+  for(let c=0;c<8;c++){b[1][c]={type:"P",color:"b"};b[6][c]={type:"P",color:"w"};}
+  return b;
 }
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
-function fmtTime(s: number): string { const m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, "0")}`; }
+// ─── Canvas drawing ───────────────────────────────────────────────────────────
+function drawPiece3D(ctx: CanvasRenderingContext2D, piece: Piece, cx: number, cy: number) {
+  const isW = piece.color === "w";
+  const r = SQ * 0.39;
+  // Shadow
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.beginPath(); ctx.ellipse(cx+3, cy+r*0.22+6, r*0.92, r*0.27, 0, 0, Math.PI*2); ctx.fill();
+  // Base disc — radial gradient for 3D sphere feel
+  const g = ctx.createRadialGradient(cx-r*0.28, cy-r*0.3, r*0.04, cx+r*0.12, cy+r*0.12, r*1.12);
+  if (isW) {
+    g.addColorStop(0,"#fffff8"); g.addColorStop(0.18,"#f5eccc"); g.addColorStop(0.5,"#d8b878"); g.addColorStop(0.8,"#b8905a"); g.addColorStop(1,"#7a5030");
+  } else {
+    g.addColorStop(0,"#808080"); g.addColorStop(0.18,"#3c3c3c"); g.addColorStop(0.5,"#181818"); g.addColorStop(0.8,"#0c0c0c"); g.addColorStop(1,"#030303");
+  }
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  // Edge ring
+  ctx.strokeStyle = isW ? "rgba(255,240,180,0.55)" : "rgba(140,140,140,0.45)"; ctx.lineWidth = 1.5; ctx.stroke();
+  // Specular arc (top-left)
+  ctx.strokeStyle = isW ? "rgba(255,255,255,0.75)" : "rgba(220,220,220,0.22)"; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.arc(cx-r*0.18, cy-r*0.2, r*0.66, Math.PI*1.08, Math.PI*1.88); ctx.stroke();
+  // Symbol
+  ctx.font = `bold ${Math.round(SQ*0.46)}px serif`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  // text shadow
+  ctx.fillStyle = isW ? "rgba(60,30,0,0.3)" : "rgba(255,230,80,0.2)";
+  ctx.fillText(SYMBOLS[piece.color][piece.type], cx+1, cy+2);
+  ctx.fillStyle = isW ? "#3c1e00" : "#f5d860";
+  ctx.fillText(SYMBOLS[piece.color][piece.type], cx, cy+1);
+}
 
-// ─── component ────────────────────────────────────────────────────────────────
+function drawBoard(
+  ctx: CanvasRenderingContext2D,
+  board: Board,
+  selected: [number,number]|null,
+  legalMs: Move[],
+  lastMove: Move|null,
+  checkSq: [number,number]|null,
+) {
+  // ── Outer wooden frame ──
+  const fg = ctx.createLinearGradient(0,0,CW,CH);
+  fg.addColorStop(0,"#a07035"); fg.addColorStop(0.45,"#7a4e18"); fg.addColorStop(0.7,"#6b4311"); fg.addColorStop(1,"#4e2e0a");
+  ctx.fillStyle = fg; ctx.fillRect(0,0,CW,CH);
+  // Bevel highlights
+  ctx.fillStyle = "rgba(255,200,100,0.22)"; ctx.fillRect(0,0,CW,5); ctx.fillRect(0,0,5,CH);
+  ctx.fillStyle = "rgba(0,0,0,0.38)"; ctx.fillRect(0,CH-5,CW,5); ctx.fillRect(CW-5,0,5,CH);
+  // Inner frame bevel
+  ctx.strokeStyle = "rgba(255,190,60,0.45)"; ctx.lineWidth = 1.5;
+  ctx.strokeRect(BORDER-5,BORDER-5,SQ*8+10,SQ*8+10);
+  ctx.strokeStyle = "rgba(0,0,0,0.5)"; ctx.lineWidth = 1;
+  ctx.strokeRect(BORDER-7,BORDER-7,SQ*8+14,SQ*8+14);
+
+  // ── Squares ──
+  for (let ri=0;ri<8;ri++) for (let ci=0;ci<8;ci++) {
+    const x=BORDER+ci*SQ, y=BORDER+ri*SQ;
+    const boardR = ri, boardC = ci;
+    const isLight = (ri+ci)%2===0;
+    let baseLight = isLight ? "#f0d9b5" : "#b58863";
+
+    // Last move tint
+    if (lastMove && ((lastMove.from[0]===boardR&&lastMove.from[1]===boardC)||(lastMove.to[0]===boardR&&lastMove.to[1]===boardC)))
+      baseLight = isLight ? "#cdd16f" : "#a9a030";
+    // Selected
+    if (selected && selected[0]===boardR && selected[1]===boardC)
+      baseLight = isLight ? "#f8f870" : "#d0d020";
+
+    ctx.fillStyle = baseLight; ctx.fillRect(x,y,SQ,SQ);
+
+    // Check glow
+    if (checkSq && checkSq[0]===boardR && checkSq[1]===boardC) {
+      const g=ctx.createRadialGradient(x+SQ/2,y+SQ/2,2,x+SQ/2,y+SQ/2,SQ/2);
+      g.addColorStop(0,"rgba(230,0,0,0.92)"); g.addColorStop(0.55,"rgba(200,0,0,0.45)"); g.addColorStop(1,"rgba(0,0,0,0)");
+      ctx.fillStyle=g; ctx.fillRect(x,y,SQ,SQ);
+    }
+
+    // Legal moves
+    const isLegal = legalMs.some(m=>m.to[0]===boardR&&m.to[1]===boardC);
+    if (isLegal) {
+      const hasCapture = !!board[boardR][boardC];
+      if (hasCapture) {
+        ctx.strokeStyle="rgba(0,0,0,0.52)"; ctx.lineWidth=4.5;
+        ctx.beginPath(); ctx.arc(x+SQ/2,y+SQ/2,SQ/2-3,0,Math.PI*2); ctx.stroke();
+      } else {
+        ctx.fillStyle="rgba(0,0,0,0.21)";
+        ctx.beginPath(); ctx.arc(x+SQ/2,y+SQ/2,SQ*0.175,0,Math.PI*2); ctx.fill();
+      }
+    }
+  }
+
+  // ── Coordinates ──
+  ctx.font = `bold 11px Georgia, serif`;
+  for (let i=0;i<8;i++) {
+    const rank = 8-i, file = "abcdefgh"[i];
+    const col = i%2===0 ? "#c8a248" : "#d4b460";
+    ctx.fillStyle=col; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(String(rank), BORDER/2, BORDER+i*SQ+SQ/2);
+    ctx.fillText(String(rank), CW-BORDER/2, BORDER+i*SQ+SQ/2);
+    ctx.fillText(file, BORDER+i*SQ+SQ/2, BORDER/2);
+    ctx.fillText(file, BORDER+i*SQ+SQ/2, CH-BORDER/2);
+  }
+
+  // ── Pieces ──
+  for (let ri=0;ri<8;ri++) for(let ci=0;ci<8;ci++) {
+    const p=board[ri][ci]; if(!p)continue;
+    drawPiece3D(ctx,p,BORDER+ci*SQ+SQ/2,BORDER+ri*SQ+SQ/2);
+  }
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function Chess() {
-  const [screen, setScreen] = useState<Screen>("menu");
+  const cv = useRef<HTMLCanvasElement>(null);
+  // Game state in refs (no re-render needed for canvas)
+  const boardRef = useRef<Board>(makeInitBoard());
+  const castlingRef = useRef<Castling>({wK:true,wQ:true,bK:true,bQ:true});
+  const epRef = useRef<[number,number]|null>(null);
+  const turnRef = useRef<Color>("w");
+  const selectedRef = useRef<[number,number]|null>(null);
+  const legalMsRef = useRef<Move[]>([]);
+  const lastMoveRef = useRef<Move|null>(null);
+  const promoRef = useRef<{from:[number,number];to:[number,number]}|null>(null);
+  const gameOverRef = useRef(false);
+  const aiThinking = useRef(false);
+
   const [mode, setMode] = useState<Mode>("ai");
   const [aiDiff, setAiDiff] = useState<AIDiff>("medium");
-  const [timeSecs, setTimeSecs] = useState(300);
+  const [screen, setScreen] = useState<"menu"|"game">("menu");
+  const [status, setStatus] = useState("White's turn");
+  const [promoVisible, setPromoVisible] = useState(false);
+  const [result, setResult] = useState<string|null>(null);
+  const [, forceUpdate] = useState(0);
 
-  const [board, setBoard] = useState<Board>(cloneBoard(INIT_BOARD));
-  const [turn, setTurn] = useState<Color>("w");
-  const [castling, setCastling] = useState<Castling>(INIT_CASTLING);
-  const [ep, setEp] = useState<[number, number] | null>(null);
-  const [selected, setSelected] = useState<[number, number] | null>(null);
-  const [legalMs, setLegalMs] = useState<Move[]>([]);
-  const [lastMove, setLastMove] = useState<Move | null>(null);
-  const [inCheck, setInCheck] = useState(false);
-  const [status, setStatus] = useState("⬜ White's turn");
-  const [gameOver, setGameOver] = useState(false);
-  const [captured, setCaptured] = useState<{ w: Piece[]; b: Piece[] }>({ w: [], b: [] });
-  const [promoTarget, setPromoTarget] = useState<[number, number] | null>(null);
-  const [wTime, setWTime] = useState(300);
-  const [bTime, setBTime] = useState(300);
-
-  // Refs for AI / online callbacks (avoid stale closures)
-  const boardRef = useRef(board); boardRef.current = board;
-  const turnRef = useRef(turn); turnRef.current = turn;
-  const castlingRef = useRef(castling); castlingRef.current = castling;
-  const epRef = useRef(ep); epRef.current = ep;
-  const capturedRef = useRef(captured); capturedRef.current = captured;
-  const gameOverRef = useRef(gameOver); gameOverRef.current = gameOver;
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // ─── online multiplayer ───────────────────────────────────────────────────
-  const performMoveRef = useRef<((b: Board, t: Color, c: Castling, e: [number,number]|null, cap: {w:Piece[];b:Piece[]}, m: Move) => void) | null>(null);
-
-  const mp = useOnlineMultiplayer({
-    onGuestJoined: useCallback(() => setScreen("game"), []),
-    onInput: useCallback((data: unknown) => {
-      const inp = data as { from: [number,number]; to: [number,number]; promo?: PType };
-      if (!inp?.from || !inp?.to) return;
-      const move: Move = { from: inp.from, to: inp.to, promo: inp.promo };
-      performMoveRef.current?.(boardRef.current, turnRef.current, castlingRef.current, epRef.current, capturedRef.current, move);
-    }, []),
-    onGameState: useCallback((data: unknown) => {
-      const s = data as { board: Board; castling: Castling };
-      if (s?.board) { setBoard(s.board); setCastling(s.castling ?? INIT_CASTLING); }
-    }, []),
-    onOpponentLeft: useCallback(() => { setStatus("Opponent disconnected"); setGameOver(true); }, []),
-  });
-
-  // ─── core move function ───────────────────────────────────────────────────
-  const performMove = useCallback((b: Board, t: Color, c: Castling, e: [number,number]|null, cap: {w:Piece[];b:Piece[]}, move: Move) => {
-    const { board: nb, castling: nc, ep: nep } = applyMove(b, move, c, e);
-    const opp: Color = t === "w" ? "b" : "w";
-    const nc2 = { w: [...cap.w], b: [...cap.b] };
-    const capPiece = b[move.to[0]][move.to[1]];
-    if (capPiece) nc2[t === "w" ? "b" : "w"].push(capPiece);
-    if (move.ep && e) { const epc = b[move.from[0]][e[1]]; if (epc) nc2[t === "w" ? "b" : "w"].push(epc); }
-    const oppMs = legalMoves(nb, opp, nc, nep);
-    const oppCheck = isInCheck(nb, opp);
-    let st = ""; let over = false;
-    if (!oppMs.length) { over = true; st = oppCheck ? `${t === "w" ? "White" : "Black"} wins by checkmate! 🏆` : "Stalemate — Draw! 🤝"; }
-    else if (oppCheck) st = "Check! ♟";
-    else st = `${opp === "w" ? "⬜ White" : "⬛ Black"}'s turn`;
-    setBoard(nb); setCastling(nc); setEp(nep); setTurn(opp);
-    setCaptured(nc2); setLastMove(move); setSelected(null); setLegalMs([]);
-    setInCheck(oppCheck); setStatus(st); setGameOver(over); setPromoTarget(null);
+  const redraw = useCallback(() => {
+    const c = cv.current; if(!c)return;
+    const ctx = c.getContext("2d")!;
+    const checkSq = isInCheck(boardRef.current, turnRef.current) ? findKing(boardRef.current, turnRef.current) : null;
+    drawBoard(ctx, boardRef.current, selectedRef.current, legalMsRef.current, lastMoveRef.current, checkSq);
   }, []);
-  performMoveRef.current = performMove;
 
-  // ─── timer ────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (screen !== "game" || gameOver || timeSecs === 0) return;
-    timerRef.current = setInterval(() => {
-      if (gameOverRef.current) { clearInterval(timerRef.current!); return; }
-      if (turnRef.current === "w") {
-        setWTime(t => {
-          if (t <= 1) { setStatus("⬛ Black wins on time! ⏰"); setGameOver(true); gameOverRef.current = true; return 0; }
-          return t - 1;
-        });
+  const checkGameOver = useCallback(() => {
+    const col = turnRef.current;
+    const mvs = legalMoves(boardRef.current, col, castlingRef.current, epRef.current);
+    if (mvs.length===0) {
+      gameOverRef.current = true;
+      if (isInCheck(boardRef.current, col)) {
+        const winner = col==="w"?"Black":"White";
+        setResult(`${winner} wins by checkmate! 🏆`);
       } else {
-        setBTime(t => {
-          if (t <= 1) { setStatus("⬜ White wins on time! ⏰"); setGameOver(true); gameOverRef.current = true; return 0; }
-          return t - 1;
-        });
+        setResult("Draw by stalemate 🤝");
       }
-    }, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [turn, screen, gameOver, timeSecs]);
-
-  // ─── AI ───────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (mode !== "ai" || turn !== "b" || gameOver || screen !== "game") return;
-    const depth = aiDiff === "easy" ? 0 : aiDiff === "medium" ? 2 : 3;
-    const delay = aiDiff === "easy" ? 300 : aiDiff === "medium" ? 500 : 800;
-    const t = setTimeout(() => {
-      if (gameOverRef.current || turnRef.current !== "b") return;
-      const m = getBestMove(boardRef.current, castlingRef.current, epRef.current, depth, "b");
-      if (m) performMoveRef.current?.(boardRef.current, turnRef.current, castlingRef.current, epRef.current, capturedRef.current, m);
-    }, delay);
-    return () => clearTimeout(t);
-  }, [turn, gameOver, mode, aiDiff, screen]);
-
-  // ─── start game ───────────────────────────────────────────────────────────
-  const startGame = useCallback((m: Mode, diff?: AIDiff) => {
-    const b = cloneBoard(INIT_BOARD);
-    setBoard(b); setCastling(INIT_CASTLING); setEp(null); setTurn("w");
-    setSelected(null); setLegalMs([]); setLastMove(null); setInCheck(false);
-    setStatus("⬜ White's turn"); setGameOver(false); setCaptured({ w: [], b: [] });
-    setPromoTarget(null); setWTime(timeSecs); setBTime(timeSecs);
-    if (diff) setAiDiff(diff);
-    if (m) setMode(m);
-    setScreen("game");
-    if (m === "online" && mp.role === "host") {
-      setTimeout(() => mp.sendGameState({ board: b, castling: INIT_CASTLING }), 400);
+      return true;
     }
-  }, [timeSecs, mp]);
+    const inChk = isInCheck(boardRef.current, col);
+    setStatus(`${col==="w"?"White":"Black"}'s turn${inChk?" — CHECK!":""}`);
+    return false;
+  }, []);
 
-  // ─── click handler ────────────────────────────────────────────────────────
-  const handleClick = useCallback((r: number, c: number) => {
-    if (gameOver) return;
-    if (mode === "ai" && turn === "b") return;
-    if (mode === "online") {
-      const myColor = mp.role === "host" ? "w" : "b";
-      if (turn !== myColor) return;
-    }
-    if (selected) {
-      const match = legalMs.find(m => m.to[0] === r && m.to[1] === c);
-      if (match) {
-        const promoOptions = legalMs.filter(m => m.to[0] === r && m.to[1] === c && m.promo);
-        if (promoOptions.length > 1) { setPromoTarget([r, c]); return; }
-        performMove(board, turn, castling, ep, captured, match);
-        if (mode === "online") mp.sendInput({ from: match.from, to: match.to, promo: match.promo });
-      } else if (board[r][c]?.color === turn) {
-        const ms = legalMoves(board, turn, castling, ep).filter(m => m.from[0] === r && m.from[1] === c);
-        setSelected([r, c]); setLegalMs(ms);
-      } else { setSelected(null); setLegalMs([]); }
-    } else {
-      if (board[r][c]?.color === turn) {
-        const ms = legalMoves(board, turn, castling, ep).filter(m => m.from[0] === r && m.from[1] === c);
-        setSelected([r, c]); setLegalMs(ms);
+  const performMove = useCallback((move: Move) => {
+    const {board:nb,castling:nc,ep:ne}=applyMove(boardRef.current,move,castlingRef.current,epRef.current);
+    boardRef.current=nb; castlingRef.current=nc; epRef.current=ne;
+    lastMoveRef.current=move; selectedRef.current=null; legalMsRef.current=[];
+    turnRef.current=turnRef.current==="w"?"b":"w";
+    redraw(); checkGameOver();
+  }, [redraw, checkGameOver]);
+
+  const triggerAI = useCallback((diff: AIDiff) => {
+    if (aiThinking.current||gameOverRef.current) return;
+    aiThinking.current=true; setStatus("AI thinking…");
+    const depth = diff==="easy"?0:diff==="medium"?2:3;
+    setTimeout(()=>{
+      const m=getBestMove(boardRef.current,"b",castlingRef.current,epRef.current,depth);
+      aiThinking.current=false;
+      if(m)performMove(m); else checkGameOver();
+    }, depth===0?180:320);
+  }, [performMove, checkGameOver]);
+
+  const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (gameOverRef.current||promoRef.current) return;
+    const currentMode = mode, currentDiff = aiDiff;
+    if (currentMode==="ai"&&turnRef.current==="b") return;
+    const rect = cv.current!.getBoundingClientRect();
+    const px=(e.clientX-rect.left)*(CW/rect.width);
+    const py=(e.clientY-rect.top)*(CH/rect.height);
+    const ci=Math.floor((px-BORDER)/SQ), ri=Math.floor((py-BORDER)/SQ);
+    if(ci<0||ci>=8||ri<0||ri>=8)return;
+    const boardR=ri, boardC=ci;
+
+    const sel=selectedRef.current;
+    if (sel) {
+      const matches=legalMsRef.current.filter(m=>m.to[0]===boardR&&m.to[1]===boardC);
+      if (matches.length>0) {
+        if (matches[0].promo) {
+          promoRef.current={from:matches[0].from,to:matches[0].to};
+          setPromoVisible(true); redraw(); return;
+        }
+        performMove(matches[0]);
+        if(currentMode==="ai"&&turnRef.current==="b"&&!gameOverRef.current) triggerAI(currentDiff);
+        return;
       }
+      // Deselect or re-select
+      selectedRef.current=null; legalMsRef.current=[];
     }
-  }, [board, turn, castling, ep, captured, selected, legalMs, gameOver, mode, mp, performMove]);
+    // Select piece
+    const piece=boardRef.current[boardR][boardC];
+    if (piece&&piece.color===turnRef.current) {
+      const mvs=legalMoves(boardRef.current,turnRef.current,castlingRef.current,epRef.current)
+        .filter(m=>m.from[0]===boardR&&m.from[1]===boardC);
+      selectedRef.current=[boardR,boardC]; legalMsRef.current=mvs;
+    }
+    redraw();
+  }, [mode, aiDiff, redraw, performMove, triggerAI]);
 
-  const handlePromo = useCallback((promo: PType) => {
-    if (!promoTarget) return;
-    const match = legalMs.find(m => m.to[0] === promoTarget[0] && m.to[1] === promoTarget[1] && m.promo === promo);
-    if (!match) return;
-    performMove(board, turn, castling, ep, captured, match);
-    if (mode === "online") mp.sendInput({ from: match.from, to: match.to, promo });
-  }, [promoTarget, legalMs, board, turn, castling, ep, captured, mode, mp, performMove]);
+  const handlePromo = useCallback((p: PType) => {
+    const pr=promoRef.current; if(!pr)return;
+    const {from,to}=pr;
+    const m=legalMsRef.current.find(m=>m.from[0]===from[0]&&m.from[1]===from[1]&&m.to[0]===to[0]&&m.to[1]===to[1]&&m.promo===p);
+    promoRef.current=null; setPromoVisible(false);
+    if(!m)return;
+    const currentMode=mode, currentDiff=aiDiff;
+    performMove(m);
+    if(currentMode==="ai"&&turnRef.current==="b"&&!gameOverRef.current) triggerAI(currentDiff);
+  }, [mode, aiDiff, performMove, triggerAI]);
 
-  // ─── screens ──────────────────────────────────────────────────────────────
-  if (screen === "menu") return (
+  const startGame = useCallback((m: Mode, diff: AIDiff="medium") => {
+    boardRef.current=makeInitBoard();
+    castlingRef.current={wK:true,wQ:true,bK:true,bQ:true};
+    epRef.current=null; turnRef.current="w"; selectedRef.current=null;
+    legalMsRef.current=[]; lastMoveRef.current=null; promoRef.current=null;
+    gameOverRef.current=false; aiThinking.current=false;
+    setMode(m); setAiDiff(diff); setScreen("game");
+    setStatus("White's turn"); setResult(null); setPromoVisible(false);
+    forceUpdate(n=>n+1);
+  }, []);
+
+  useEffect(()=>{
+    if(screen==="game") { setTimeout(()=>redraw(),10); }
+  }, [screen, redraw]);
+
+  if (screen==="menu") return (
     <Shell title="Chess">
-      <div className="flex flex-col items-center gap-8 text-center max-w-sm w-full">
-        <div className="text-6xl select-none">♟️</div>
-        <h2 className="text-2xl font-black text-violet-400">Chess</h2>
-        <div className="flex flex-col gap-3 w-full">
-          <button onClick={() => { setMode("ai"); setScreen("setup"); }}
-            className="w-full py-4 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 font-black rounded-2xl transition-colors touch-manipulation">
-            🤖 vs Computer
-            <div className="text-xs font-normal text-muted-foreground mt-1">Choose difficulty & time control</div>
+      <div className="flex flex-col items-center gap-6 max-w-xs w-full text-center py-4">
+        <div className="text-7xl select-none" style={{filter:"drop-shadow(0 6px 18px #a78bfa60)"}}>♟️</div>
+        <h2 className="text-2xl font-black text-violet-300">Chess</h2>
+        <div className="w-full flex flex-col gap-3">
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest">2 Players</p>
+          <button onClick={()=>startGame("local")}
+            className="py-3 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/50 text-violet-300 font-bold rounded-2xl transition-colors">
+            👥 Local vs Local
           </button>
-          <button onClick={() => { setMode("local"); setScreen("setup"); }}
-            className="w-full py-4 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/50 text-sky-400 font-black rounded-2xl transition-colors touch-manipulation">
-            👥 Local 2 Players
-            <div className="text-xs font-normal text-muted-foreground mt-1">Same device · Pass & play</div>
-          </button>
-          <button onClick={() => { setMode("online"); setScreen("online-lobby"); }}
-            className="w-full py-4 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/50 text-indigo-300 font-black rounded-2xl transition-colors touch-manipulation">
-            🌐 Online vs Friend
-            <div className="text-xs font-normal text-muted-foreground mt-1">Share a room code</div>
-          </button>
-        </div>
-      </div>
-    </Shell>
-  );
-
-  if (screen === "online-lobby") return (
-    <Shell title="Chess — Online">
-      <OnlineLobby
-        status={mp.status} roomCode={mp.roomCode} role={mp.role} error={mp.error}
-        onCreate={() => { mp.createRoom("chess"); startGame("online"); }}
-        onJoin={code => { mp.joinRoom(code); startGame("online"); }}
-        onDisconnect={() => { mp.disconnect(); setScreen("menu"); }}
-        onBack={() => { mp.disconnect(); setScreen("menu"); }}
-      />
-    </Shell>
-  );
-
-  if (screen === "setup") return (
-    <Shell title={mode === "ai" ? "Chess — vs Computer" : "Chess — Local 2P"}>
-      <div className="flex flex-col items-center gap-5 max-w-sm w-full">
-        {mode === "ai" && (
-          <>
-            <h2 className="text-xl font-black text-purple-400">🤖 AI Difficulty</h2>
-            <div className="flex flex-col gap-2 w-full">
-              {([["easy","🟢","Random moves — great for beginners"],["medium","🟡","Thinks 2 moves ahead"],["hard","🔴","Thinks 3+ moves ahead with evaluation"]] as [AIDiff,string,string][]).map(([d,icon,desc]) => (
-                <button key={d} onClick={() => setAiDiff(d)}
-                  className={`w-full py-3 px-4 rounded-xl border font-bold text-left flex items-center gap-3 transition-colors touch-manipulation ${
-                    aiDiff === d
-                      ? d === "easy" ? "bg-green-500/25 border-green-400 text-green-300"
-                      : d === "medium" ? "bg-amber-500/25 border-amber-400 text-amber-300"
-                      : "bg-red-500/25 border-red-400 text-red-300"
-                      : "bg-secondary border-border text-muted-foreground hover:border-foreground"
-                  }`}>
-                  <span className="text-xl">{icon}</span>
-                  <div><div className="font-black capitalize">{d}</div><div className="text-xs font-normal opacity-80">{desc}</div></div>
-                  {aiDiff === d && <span className="ml-auto text-xs">✓</span>}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-        <h2 className="text-xl font-black text-violet-400 mt-1">⏱ Time Control</h2>
-        <div className="grid grid-cols-2 gap-2 w-full">
-          {TIME_CONTROLS.map(tc => (
-            <button key={tc.label} onClick={() => setTimeSecs(tc.secs)}
-              className={`py-3 px-4 rounded-xl border font-bold flex items-center gap-2 transition-colors touch-manipulation ${
-                timeSecs === tc.secs ? "bg-violet-500/25 border-violet-400 text-violet-300" : "bg-secondary border-border text-muted-foreground hover:border-foreground"
-              }`}>
-              <span>{tc.icon}</span>
-              <div className="text-left"><div className="text-sm font-black">{tc.label}</div><div className="text-xs font-normal opacity-80">{tc.desc}</div></div>
-              {timeSecs === tc.secs && <span className="ml-auto text-xs">✓</span>}
-            </button>
-          ))}
-        </div>
-        <button onClick={() => startGame(mode)}
-          className="w-full py-4 bg-violet-600 hover:bg-violet-500 text-white font-black rounded-2xl transition-colors text-lg touch-manipulation mt-2">
-          ♟ Start Game
-        </button>
-        <button onClick={() => setScreen("menu")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
-      </div>
-    </Shell>
-  );
-
-  // ─── game screen ──────────────────────────────────────────────────────────
-  const flipped = mode === "online" && mp.role === "guest";
-  const myColor: Color | null = mode === "online" ? (mp.role === "host" ? "w" : "b") : null;
-  const isMyTurn = myColor === null || turn === myColor;
-  const aiThinking = mode === "ai" && turn === "b" && !gameOver;
-
-  const files = flipped ? ["h","g","f","e","d","c","b","a"] : ["a","b","c","d","e","f","g","h"];
-
-  const wCap = captured.w.map(p => SYMBOLS[p.color][p.type]).join("");
-  const bCap = captured.b.map(p => SYMBOLS[p.color][p.type]).join("");
-  const wMat = captured.w.reduce((s, p) => s + PIECE_VALS[p.type], 0);
-  const bMat = captured.b.reduce((s, p) => s + PIECE_VALS[p.type], 0);
-
-  const PlayerBar = ({ color, name }: { color: Color; name: string }) => {
-    const active = turn === color && !gameOver;
-    const time = color === "w" ? wTime : bTime;
-    const low = time <= 10 && timeSecs > 0;
-    const capStr = color === "w" ? bCap : wCap;
-    const advantage = color === "w" ? bMat - wMat : wMat - bMat;
-    return (
-      <div className={`flex items-center gap-3 w-full px-3 py-2 rounded-xl border transition-colors ${active ? "bg-violet-500/15 border-violet-500/50" : "bg-secondary/50 border-border"}`}>
-        <div className="w-7 h-7 rounded-full border-2 flex-shrink-0" style={{ background: color === "w" ? "#f0d9b5" : "#1a1a1a", borderColor: color === "w" ? "#b58863" : "#555" }} />
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold leading-tight">{name}{active && !gameOver && <span className="ml-1 text-xs text-violet-400 animate-pulse">●</span>}</div>
-          <div className="text-xs text-muted-foreground leading-tight">{capStr || "—"}{advantage > 0 ? ` +${advantage}` : ""}</div>
-        </div>
-        {timeSecs > 0 && (
-          <div className={`font-mono font-black text-base tabular-nums px-2 py-1 rounded-lg ${low && active ? "bg-red-500/20 text-red-400 animate-pulse" : active ? "bg-secondary text-foreground" : "text-muted-foreground"}`}>
-            {fmtTime(time)}
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest mt-2">vs Computer</p>
+          <div className="flex gap-2">
+            {(["easy","medium","hard"] as AIDiff[]).map(d=>(
+              <button key={d} onClick={()=>startGame("ai",d)}
+                className="flex-1 py-3 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/50 text-indigo-300 font-bold rounded-xl capitalize transition-colors">
+                🤖 {d}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
       </div>
-    );
-  };
-
-  const topColor: Color = flipped ? "w" : "b";
-  const botColor: Color = flipped ? "b" : "w";
-  const getName = (color: Color) => {
-    if (mode === "ai" && color === "b") return `🤖 AI (${aiDiff})`;
-    if (mode === "online") return color === "w" ? "⬜ White (Host)" : "⬛ Black (Guest)";
-    return color === "w" ? "⬜ White" : "⬛ Black";
-  };
+    </Shell>
+  );
 
   return (
-    <Shell title="Chess" controls={mode === "ai" ? `You vs 🤖 ${aiDiff}` : mode === "online" ? (mp.role === "host" ? "🟢 You are White" : "🔵 You are Black") : "Local 2P"}>
-      <div className="flex flex-col items-center gap-2 w-full max-w-[500px]">
-        <PlayerBar color={topColor} name={getName(topColor)} />
-
-        {/* Board */}
-        <div className="relative w-full" style={{ maxWidth: "min(480px, 95vw)" }}>
-          <div className="grid grid-cols-8 rounded-md overflow-hidden shadow-2xl" style={{ border: "6px solid #6b4c11", boxShadow: "0 8px 40px rgba(0,0,0,0.7)" }}>
-            {Array.from({ length: 8 }, (_, ri) => {
-              const r = flipped ? ri : 7 - ri;
-              const rankLabel = flipped ? ri + 1 : 8 - ri;
-              return Array.from({ length: 8 }, (_, ci) => {
-                const c = flipped ? 7 - ci : ci;
-                const sq = board[r][c];
-                const isLight = (r + c) % 2 === 0;
-                const isSel = selected?.[0] === r && selected?.[1] === c;
-                const isLastFrom = lastMove?.from[0] === r && lastMove?.from[1] === c;
-                const isLastTo = lastMove?.to[0] === r && lastMove?.to[1] === c;
-                const isLegal = legalMs.some(m => m.to[0] === r && m.to[1] === c);
-                const isKingInCheck = inCheck && sq?.type === "K" && sq?.color === turn;
-                let bg = isLight ? "#f0d9b5" : "#b58863";
-                if (isSel) bg = "#f6f669";
-                else if (isLastFrom || isLastTo) bg = isLight ? "#cdd16a" : "#aaa23a";
-                if (isKingInCheck) bg = "#e74c3c";
-                return (
-                  <div key={`${r}-${c}`} onClick={() => handleClick(r, c)}
-                    className="relative flex items-center justify-center cursor-pointer select-none aspect-square"
-                    style={{ background: bg, transition: "background 0.1s" }}>
-                    {ci === 0 && <span className="absolute top-0.5 left-0.5 leading-none font-bold" style={{ fontSize: 9, color: isLight ? "#b58863" : "#f0d9b5" }}>{rankLabel}</span>}
-                    {ri === 7 && <span className="absolute bottom-0.5 right-1 leading-none font-bold" style={{ fontSize: 9, color: isLight ? "#b58863" : "#f0d9b5" }}>{files[ci]}</span>}
-                    {isLegal && !sq && <div className="rounded-full" style={{ width: "32%", height: "32%", background: "rgba(0,0,0,0.22)" }} />}
-                    {isLegal && sq && <div className="absolute inset-0" style={{ border: "4px solid rgba(0,0,0,0.28)", borderRadius: 2 }} />}
-                    {sq && (
-                      <span style={{
-                        fontSize: "clamp(22px, 5vw, 38px)", lineHeight: 1,
-                        color: sq.color === "w" ? "#fff" : "#111",
-                        textShadow: sq.color === "w"
-                          ? "0 1px 3px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1)"
-                          : "0 1px 2px rgba(255,255,255,0.25)",
-                        filter: isSel ? "drop-shadow(0 0 5px rgba(246,246,105,1))" : "none",
-                        userSelect: "none",
-                      }}>
-                        {SYMBOLS[sq.color][sq.type]}
-                      </span>
-                    )}
-                  </div>
-                );
-              });
-            })}
+    <Shell title="Chess">
+      <p className="text-sm font-mono font-bold" style={{color: result ? "#f59e0b" : "#a5b4fc"}}>
+        {result ?? status}
+      </p>
+      <div className="relative">
+        <canvas ref={cv} width={CW} height={CH}
+          onClick={handleCanvasClick}
+          className="cursor-pointer block rounded-sm select-none"
+          style={{
+            maxWidth:"min(95vw,calc(95vh - 160px))", height:"auto",
+            boxShadow:"0 24px 80px rgba(0,0,0,0.7),0 8px 24px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,200,80,0.08)"
+          }}
+        />
+        {promoVisible && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-sm">
+            <div className="bg-stone-900 border border-violet-700 rounded-2xl p-5 flex flex-col items-center gap-3 shadow-2xl">
+              <p className="text-violet-300 font-black text-sm tracking-widest uppercase">Promote Pawn</p>
+              <div className="flex gap-2">
+                {(["Q","R","B","N"] as PType[]).map(p=>(
+                  <button key={p} onClick={()=>handlePromo(p)}
+                    className="w-14 h-14 bg-violet-800/50 hover:bg-violet-600/70 border border-violet-500 rounded-xl text-2xl transition-colors">
+                    {SYMBOLS[turnRef.current==="w"?"w":"b"][p]}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-
-          {/* Promotion picker */}
-          {promoTarget && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/75 rounded-md" style={{ zIndex: 10 }}>
-              <div className="bg-slate-800 rounded-2xl p-4 border border-violet-500/60 shadow-2xl">
-                <p className="text-center text-sm font-bold text-violet-300 mb-3">Promote pawn to:</p>
-                <div className="flex gap-2">
-                  {(["Q","R","B","N"] as PType[]).map(pt => (
-                    <button key={pt} onClick={() => handlePromo(pt)}
-                      className="flex items-center justify-center bg-secondary hover:bg-violet-600/40 rounded-xl border border-border hover:border-violet-400 transition-colors touch-manipulation"
-                      style={{ width: 56, height: 56 }}>
-                      <span style={{ fontSize: 36, color: turn === "w" ? "#fff" : "#111", textShadow: turn === "w" ? "0 1px 3px rgba(0,0,0,0.9)" : "none" }}>{SYMBOLS[turn][pt]}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Game over overlay */}
-          {gameOver && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-md gap-4" style={{ zIndex: 10 }}>
-              <p className="text-xl font-black text-primary text-center px-4 leading-tight">{status}</p>
-              <div className="flex gap-3 flex-wrap justify-center">
-                <button onClick={() => startGame(mode)} className="px-8 py-3 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-xl touch-manipulation">Play Again</button>
-                <button onClick={() => { mp.disconnect(); setScreen("menu"); }} className="px-6 py-3 bg-secondary text-foreground font-bold rounded-xl touch-manipulation">Menu</button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <PlayerBar color={botColor} name={getName(botColor)} />
-
-        <div className={`text-xs text-center px-3 py-1.5 rounded-full transition-colors ${gameOver ? "bg-secondary text-muted-foreground" : isMyTurn && !aiThinking ? "bg-violet-500/20 text-violet-300" : "bg-secondary text-muted-foreground"}`}>
-          {gameOver ? status : aiThinking ? "🤖 AI is thinking…" : isMyTurn ? "Your turn — click a piece" : `Waiting for ${turn === "w" ? "White" : "Black"}…`}
-        </div>
-
-        {!gameOver && (
-          <button onClick={() => startGame(mode)} className="text-xs text-muted-foreground hover:text-red-400 transition-colors">↺ Restart</button>
         )}
       </div>
+      <div className="flex gap-3">
+        <button onClick={()=>startGame(mode,aiDiff)}
+          className="px-5 py-2 bg-secondary hover:bg-secondary/70 text-foreground rounded-xl font-bold text-sm transition-colors">
+          New Game
+        </button>
+        <button onClick={()=>setScreen("menu")}
+          className="px-5 py-2 bg-secondary hover:bg-secondary/70 text-foreground rounded-xl font-bold text-sm transition-colors">
+          Menu
+        </button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {mode==="ai"?`🤖 vs AI (${aiDiff})`:"👥 Local 2P"} · Click piece then destination
+      </p>
     </Shell>
   );
 }
