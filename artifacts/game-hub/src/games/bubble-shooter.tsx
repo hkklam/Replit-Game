@@ -106,6 +106,36 @@ export default function BubbleShooter() {
     return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
   }, []);
 
+  const drawBall = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string) => {
+    // Base fill
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
+
+    // Shadow — dark radial at bottom-right gives depth
+    const shadow = ctx.createRadialGradient(x + r * 0.32, y + r * 0.42, 0, x, y, r);
+    shadow.addColorStop(0, "rgba(0,0,0,0.38)");
+    shadow.addColorStop(0.55, "rgba(0,0,0,0.14)");
+    shadow.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = shadow; ctx.fill();
+
+    // Shine — white radial at top-left mimics light source
+    const shine = ctx.createRadialGradient(x - r * 0.36, y - r * 0.38, 0, x - r * 0.1, y - r * 0.1, r * 0.9);
+    shine.addColorStop(0, "rgba(255,255,255,0.68)");
+    shine.addColorStop(0.28, "rgba(255,255,255,0.22)");
+    shine.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = shine; ctx.fill();
+
+    // Thin dark rim
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(0,0,0,0.28)"; ctx.lineWidth = 1.5; ctx.stroke();
+
+    // Specular highlight dot (top-left)
+    ctx.beginPath(); ctx.arc(x - r * 0.31, y - r * 0.33, r * 0.17, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,0.75)"; ctx.fill();
+  }, []);
+
   const draw = useCallback(() => {
     const cvEl = cv.current; if (!cvEl) return;
     const ctx = cvEl.getContext("2d")!;
@@ -119,19 +149,12 @@ export default function BubbleShooter() {
 
     s.grid.forEach((row, r) => row.forEach((b, col) => {
       if (!b) return;
-      const x = bx(col), y = by(r);
-      ctx.beginPath(); ctx.arc(x, y, R - 1, 0, Math.PI * 2);
-      ctx.fillStyle = b; ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.lineWidth = 1.5; ctx.stroke();
-      ctx.beginPath(); ctx.arc(x - R * 0.28, y - R * 0.28, R * 0.27, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(255,255,255,0.22)"; ctx.fill();
+      drawBall(ctx, bx(col), by(r), R - 1, b);
     }));
 
     if (s.proj) {
       const p = s.proj;
-      ctx.beginPath(); ctx.arc(p.x, p.y, R - 1, 0, Math.PI * 2);
-      ctx.fillStyle = p.color; ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 2; ctx.stroke();
+      drawBall(ctx, p.x, p.y, R - 1, p.color);
     }
 
     if (!s.proj && s.state === "playing") {
@@ -153,13 +176,11 @@ export default function BubbleShooter() {
 
     ctx.fillStyle = "#1e293b"; ctx.beginPath(); ctx.arc(SHOOTER_X, SHOOTER_Y, R + 5, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = "#334155"; ctx.lineWidth = 2; ctx.stroke();
-    ctx.beginPath(); ctx.arc(SHOOTER_X, SHOOTER_Y, R - 1, 0, Math.PI * 2);
-    ctx.fillStyle = s.color; ctx.fill();
+    drawBall(ctx, SHOOTER_X, SHOOTER_Y, R - 1, s.color);
 
     ctx.fillStyle = "#1e293b"; ctx.beginPath(); ctx.arc(W - 30, SHOOTER_Y, R + 2, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = "#334155"; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.beginPath(); ctx.arc(W - 30, SHOOTER_Y, R - 3, 0, Math.PI * 2);
-    ctx.fillStyle = s.nextColor; ctx.fill();
+    drawBall(ctx, W - 30, SHOOTER_Y, R - 3, s.nextColor);
     ctx.fillStyle = "#64748b"; ctx.font = "9px sans-serif"; ctx.textAlign = "center";
     ctx.fillText("NEXT", W - 30, SHOOTER_Y - R - 5);
 
@@ -187,7 +208,7 @@ export default function BubbleShooter() {
     while (s.grid.length <= plR) s.grid.push(Array(COLS).fill(null));
     s.grid[plR][plC] = color;
     const matched = floodFill(s.grid, plR, plC);
-    if (matched.length >= 2) {
+    if (matched.length >= 3) {
       matched.forEach(([r, c]) => { s.grid[r][c] = null; });
       s.score += matched.length * 10;
       const det = findDetached(s.grid);
@@ -210,7 +231,7 @@ export default function BubbleShooter() {
     }
     s.grid[0][col] = color;
     const matched = floodFill(s.grid, 0, col);
-    if (matched.length >= 2) {
+    if (matched.length >= 3) {
       matched.forEach(([r, c]) => { s.grid[r][c] = null; });
       s.score += matched.length * 10;
       const det = findDetached(s.grid);
@@ -319,7 +340,7 @@ export default function BubbleShooter() {
         <div>
           <h2 className="text-2xl font-black text-pink-400">Bubble Shooter</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Pop connected same-color bubbles.<br />
+            Connect 3+ same-color bubbles to pop them.<br />
             Touch &amp; drag to aim · release to shoot
           </p>
         </div>
