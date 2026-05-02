@@ -1,5 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { GameShell } from "@/components/game-shell";
+import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+
+function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center gap-4 px-4 py-3 border-b border-border">
+        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm">Hub</span>
+        </Link>
+        <h1 className="text-lg font-bold text-primary">{title}</h1>
+        {controls && <span className="text-xs text-muted-foreground ml-auto hidden sm:block">{controls}</span>}
+      </header>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">{children}</div>
+    </div>
+  );
+}
 
 const CELL = 22;
 const MAP_RAW = [
@@ -145,7 +162,7 @@ export default function PacMan() {
   }, [draw]);
 
   return (
-    <GameShell title="Pac-Man" controls="Arrow keys to move">
+    <Shell title="Pac-Man" controls="Arrow keys to move">
       <div className="flex gap-8 font-mono text-sm"><span className="text-yellow-400">Score: {score}</span><span className="text-red-400">Lives: {"❤️".repeat(lives)}</span></div>
       <div className="relative">
         <canvas ref={cv} width={W} height={H} className="rounded-lg border border-slate-700" style={{ maxWidth: "95vw" }} />
@@ -159,6 +176,6 @@ export default function PacMan() {
           </div>
         )}
       </div>
-    </GameShell>
+    </Shell>
   );
 }

@@ -1,5 +1,22 @@
 import { useState, useCallback } from "react";
-import { GameShell } from "@/components/game-shell";
+import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+
+function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center gap-4 px-4 py-3 border-b border-border">
+        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm">Hub</span>
+        </Link>
+        <h1 className="text-lg font-bold text-primary">{title}</h1>
+        {controls && <span className="text-xs text-muted-foreground ml-auto hidden sm:block">{controls}</span>}
+      </header>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">{children}</div>
+    </div>
+  );
+}
 
 type Color = "red" | "green" | "blue" | "yellow" | "wild";
 type CardType = "number" | "skip" | "reverse" | "draw2" | "wild" | "wild4";
@@ -121,7 +138,7 @@ export default function Uno() {
   const otherCount = hands[1 - turn]?.length ?? 0;
 
   return (
-    <GameShell title="Uno" controls="Local 2-player hotseat">
+    <Shell title="Uno" controls="Local 2-player hotseat">
       {picking && <ColorPicker onPick={pickColor} />}
       {!started ? (
         <div className="flex flex-col items-center gap-6">
@@ -157,6 +174,6 @@ export default function Uno() {
           <button onClick={draw} className="px-4 py-1.5 text-sm bg-secondary hover:bg-secondary/80 rounded-lg">Draw Card</button>
         </div>
       )}
-    </GameShell>
+    </Shell>
   );
 }

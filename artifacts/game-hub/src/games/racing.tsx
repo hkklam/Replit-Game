@@ -1,5 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { GameShell } from "@/components/game-shell";
+import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+
+function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center gap-4 px-4 py-3 border-b border-border">
+        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm">Hub</span>
+        </Link>
+        <h1 className="text-lg font-bold text-primary">{title}</h1>
+        {controls && <span className="text-xs text-muted-foreground ml-auto hidden sm:block">{controls}</span>}
+      </header>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">{children}</div>
+    </div>
+  );
+}
 
 const W = 700; const H = 560; const CAR_W = 14; const CAR_H = 24;
 
@@ -136,7 +153,7 @@ export default function Racing() {
   }, [draw]);
 
   return (
-    <GameShell title="Racing Game" controls="Arrow keys or WASD to drive · 3 laps to win">
+    <Shell title="Racing Game" controls="Arrow keys or WASD to drive · 3 laps to win">
       <div className="relative">
         <canvas ref={cv} width={W} height={H} className="rounded-xl border border-slate-700" style={{ maxWidth: "95vw" }} />
         {(state === "idle" || state === "done") && (
@@ -148,6 +165,6 @@ export default function Racing() {
           </div>
         )}
       </div>
-    </GameShell>
+    </Shell>
   );
 }

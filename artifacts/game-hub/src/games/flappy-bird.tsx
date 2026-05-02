@@ -1,5 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { GameShell } from "@/components/game-shell";
+import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+
+function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center gap-4 px-4 py-3 border-b border-border">
+        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm">Hub</span>
+        </Link>
+        <h1 className="text-lg font-bold text-primary">{title}</h1>
+        {controls && <span className="text-xs text-muted-foreground ml-auto hidden sm:block">{controls}</span>}
+      </header>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">{children}</div>
+    </div>
+  );
+}
 
 const W = 480; const H = 600; const GAP = 155; const PIPE_W = 60; const BIRD_R = 16;
 const GRAVITY = 0.5; const JUMP = -9; const PIPE_SPD = 3; const PIPE_INTERVAL = 90;
@@ -94,7 +111,7 @@ export default function FlappyBird() {
   }, [flap, draw]);
 
   return (
-    <GameShell title="Flappy Bird" controls="Space or tap to flap">
+    <Shell title="Flappy Bird" controls="Space or tap to flap">
       <div className="flex gap-8 font-mono text-sm text-lime-400"><span>Score: {score}</span><span>Best: {best}</span></div>
       <div className="relative cursor-pointer" onClick={flap}>
         <canvas ref={cv} width={W} height={H} className="rounded-xl border border-slate-700" style={{ maxHeight: "75vh" }} />
@@ -112,6 +129,6 @@ export default function FlappyBird() {
           </div>
         )}
       </div>
-    </GameShell>
+    </Shell>
   );
 }

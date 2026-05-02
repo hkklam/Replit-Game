@@ -1,5 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { GameShell } from "@/components/game-shell";
+import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+
+function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center gap-4 px-4 py-3 border-b border-border">
+        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm">Hub</span>
+        </Link>
+        <h1 className="text-lg font-bold text-primary">{title}</h1>
+        {controls && <span className="text-xs text-muted-foreground ml-auto hidden sm:block">{controls}</span>}
+      </header>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">{children}</div>
+    </div>
+  );
+}
 
 const GRID_W = 20; const GRID_H = 15; const GRID_D = 20;
 const ISO_X = 26; const ISO_Y = 13; const SCREEN_W = 800; const SCREEN_H = 520;
@@ -148,7 +165,7 @@ export default function Minecraft() {
   const reset = () => { world.current = initWorld(); setBlockCount(0); };
 
   return (
-    <GameShell title="Minecraft Voxel" controls="Click to place/remove blocks · Select block type below">
+    <Shell title="Minecraft Voxel" controls="Click to place/remove blocks · Select block type below">
       <div className="flex gap-3 flex-wrap justify-center">
         <div className="flex gap-2 items-center">
           <span className="text-xs text-muted-foreground">Mode:</span>
@@ -166,6 +183,6 @@ export default function Minecraft() {
         <button onClick={reset} className="px-3 py-1 rounded text-xs bg-secondary text-foreground">Reset World</button>
       </div>
       <canvas ref={cv} width={SCREEN_W} height={SCREEN_H} className="rounded-xl border border-slate-700 cursor-pointer" style={{ maxWidth: "95vw" }} />
-    </GameShell>
+    </Shell>
   );
 }

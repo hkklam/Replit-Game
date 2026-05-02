@@ -1,5 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { GameShell } from "@/components/game-shell";
+import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+
+function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center gap-4 px-4 py-3 border-b border-border">
+        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm">Hub</span>
+        </Link>
+        <h1 className="text-lg font-bold text-primary">{title}</h1>
+        {controls && <span className="text-xs text-muted-foreground ml-auto hidden sm:block">{controls}</span>}
+      </header>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">{children}</div>
+    </div>
+  );
+}
 
 const COLS = 11; const ROWS = 10; const R = 22; const DIAM = R * 2;
 const W = COLS * DIAM; const H = 520;
@@ -151,7 +168,7 @@ export default function BubbleShooter() {
   const reset = () => { g.current = { grid: initGrid(), shootColor: rndColor(), nextColor: rndColor(), angle: -Math.PI / 2, score: 0, state: "playing", projectile: null }; setScore(0); setState("playing"); cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(loop); };
 
   return (
-    <GameShell title="Bubble Shooter" controls="Move mouse to aim · Click or Space to shoot">
+    <Shell title="Bubble Shooter" controls="Move mouse to aim · Click or Space to shoot">
       <div className="relative">
         <canvas ref={cv} width={W} height={H} className="rounded-xl border border-slate-700 cursor-crosshair" style={{ maxWidth: "95vw" }} />
         {(state === "win" || state === "lose") && (
@@ -162,6 +179,6 @@ export default function BubbleShooter() {
           </div>
         )}
       </div>
-    </GameShell>
+    </Shell>
   );
 }

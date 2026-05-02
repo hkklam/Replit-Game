@@ -1,5 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { GameShell } from "@/components/game-shell";
+import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+
+function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center gap-4 px-4 py-3 border-b border-border">
+        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm">Hub</span>
+        </Link>
+        <h1 className="text-lg font-bold text-primary">{title}</h1>
+        {controls && <span className="text-xs text-muted-foreground ml-auto hidden sm:block">{controls}</span>}
+      </header>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">{children}</div>
+    </div>
+  );
+}
 
 const PASSAGES = [
   "the quick brown fox jumps over the lazy dog and then runs away into the forest",
@@ -72,7 +89,7 @@ export default function TypingRacer() {
   const pct = (typed: string) => Math.min(100, (typed.length / passage.length) * 100);
 
   return (
-    <GameShell title="Typing Racer" controls="Both players type the same passage — fastest wins!">
+    <Shell title="Typing Racer" controls="Both players type the same passage — fastest wins!">
       {phase === "lobby" && (
         <div className="flex flex-col items-center gap-6 max-w-lg text-center">
           <p className="text-4xl">⌨️</p>
@@ -117,6 +134,6 @@ export default function TypingRacer() {
           {phase === "done" && <div className="text-center"><button onClick={start} className="px-8 py-2 bg-primary text-black font-bold rounded-xl">Race Again</button></div>}
         </div>
       )}
-    </GameShell>
+    </Shell>
   );
 }

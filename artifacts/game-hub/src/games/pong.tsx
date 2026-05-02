@@ -1,5 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { GameShell } from "@/components/game-shell";
+import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+
+function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center gap-4 px-4 py-3 border-b border-border">
+        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm">Hub</span>
+        </Link>
+        <h1 className="text-lg font-bold text-primary">{title}</h1>
+        {controls && <span className="text-xs text-muted-foreground ml-auto hidden sm:block">{controls}</span>}
+      </header>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">{children}</div>
+    </div>
+  );
+}
 
 const W = 800; const H = 500; const PW = 12; const PH = 80; const BR = 8; const WIN = 7; const SPD0 = 5;
 
@@ -89,7 +106,7 @@ export default function Pong() {
   }, [loop, draw, start]);
 
   return (
-    <GameShell title="Pong" controls="P1: W/S  ·  P2: ↑/↓">
+    <Shell title="Pong" controls="P1: W/S  ·  P2: ↑/↓">
       <div className="flex gap-12 font-mono text-sm text-white">
         <span className="text-sky-400">P1 (W/S): {scores[0]}</span>
         <span className="text-muted-foreground">First to {WIN}</span>
@@ -110,6 +127,6 @@ export default function Pong() {
           </div>
         )}
       </div>
-    </GameShell>
+    </Shell>
   );
 }

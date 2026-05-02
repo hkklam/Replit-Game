@@ -1,5 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { GameShell } from "@/components/game-shell";
+import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+
+function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center gap-4 px-4 py-3 border-b border-border">
+        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm">Hub</span>
+        </Link>
+        <h1 className="text-lg font-bold text-primary">{title}</h1>
+        {controls && <span className="text-xs text-muted-foreground ml-auto hidden sm:block">{controls}</span>}
+      </header>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">{children}</div>
+    </div>
+  );
+}
 
 const CELL = 44; const COLS = 18; const ROWS = 12; const W = COLS * CELL; const H = ROWS * CELL;
 const PATH: [number, number][] = [[0,2],[1,2],[2,2],[3,2],[4,2],[4,3],[4,4],[4,5],[3,5],[2,5],[1,5],[0,5],[0,6],[0,7],[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[6,8],[6,7],[6,6],[6,5],[6,4],[6,3],[6,2],[7,2],[8,2],[9,2],[10,2],[11,2],[12,2],[12,3],[12,4],[12,5],[12,6],[12,7],[11,7],[10,7],[9,7],[8,7],[8,8],[8,9],[8,10],[9,10],[10,10],[11,10],[12,10],[13,10],[14,10],[15,10],[16,10],[17,10]];
@@ -124,7 +141,7 @@ export default function TowerDefense() {
   const reset = () => { g.current = { enemies: [], towers: [], projectiles: [], wave: 1, gold: 100, lives: 20, score: 0, frame: 0, spawnQ: 5, spawnTimer: 0, state: "playing", hovCol: -1, hovRow: -1 }; setGold(100); setLives(20); setWave(1); setScore(0); setState("playing"); cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(loop); };
 
   return (
-    <GameShell title="Tower Defense" controls="Click empty grid cell to place tower (25 gold)">
+    <Shell title="Tower Defense" controls="Click empty grid cell to place tower (25 gold)">
       <div className="relative">
         <canvas ref={cv} width={W} height={H} className="rounded-xl border border-slate-700 cursor-pointer" style={{ maxWidth: "95vw" }} />
         {(state === "win" || state === "lose") && (
@@ -135,6 +152,6 @@ export default function TowerDefense() {
           </div>
         )}
       </div>
-    </GameShell>
+    </Shell>
   );
 }
