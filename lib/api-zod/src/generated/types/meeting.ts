@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ActionItem } from "./actionItem";
 import type { TranscriptSegment } from "./transcriptSegment";
 
 export interface Meeting {
@@ -16,4 +17,9 @@ export interface Meeting {
   durationSec: number;
   costUsd: number;
   createdAt: Date;
+  summary?: string | null;
+  actionItems?: ActionItem[] | null;
+  decisions?: string[] | null;
+  openQuestions?: string[] | null;
+  analysisCostUsd?: number | null;
 }

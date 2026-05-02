@@ -535,6 +535,178 @@ export function useDownloadTranscript<
 }
 
 /**
+ * Uses GPT-4o to generate summary, action items, decisions, and open questions
+ * @summary Run AI analysis on a meeting transcript
+ */
+export const getAnalyzeMeetingUrl = (id: number) => {
+  return `/api/meetings/${id}/analyze`;
+};
+
+export const analyzeMeeting = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Meeting> => {
+  return customFetch<Meeting>(getAnalyzeMeetingUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getAnalyzeMeetingMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeMeeting>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof analyzeMeeting>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["analyzeMeeting"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof analyzeMeeting>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return analyzeMeeting(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AnalyzeMeetingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof analyzeMeeting>>
+>;
+
+export type AnalyzeMeetingMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Run AI analysis on a meeting transcript
+ */
+export const useAnalyzeMeeting = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeMeeting>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof analyzeMeeting>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getAnalyzeMeetingMutationOptions(options));
+};
+
+/**
+ * @summary Export meeting as Excel workbook
+ */
+export const getExportMeetingUrl = (id: number) => {
+  return `/api/meetings/${id}/export`;
+};
+
+export const exportMeeting = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getExportMeetingUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getExportMeetingQueryKey = (id: number) => {
+  return [`/api/meetings/${id}/export`] as const;
+};
+
+export const getExportMeetingQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportMeeting>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportMeeting>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getExportMeetingQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof exportMeeting>>> = ({
+    signal,
+  }) => exportMeeting(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportMeeting>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportMeetingQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportMeeting>>
+>;
+export type ExportMeetingQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Export meeting as Excel workbook
+ */
+
+export function useExportMeeting<
+  TData = Awaited<ReturnType<typeof exportMeeting>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportMeeting>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportMeetingQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * Total meetings, total duration, total cost, average duration
  * @summary Get aggregated meeting statistics
  */

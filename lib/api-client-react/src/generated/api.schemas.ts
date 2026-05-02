@@ -9,6 +9,22 @@ export interface HealthStatus {
   status: string;
 }
 
+export type ActionItemPriority =
+  (typeof ActionItemPriority)[keyof typeof ActionItemPriority];
+
+export const ActionItemPriority = {
+  High: "High",
+  Medium: "Medium",
+  Low: "Low",
+} as const;
+
+export interface ActionItem {
+  owner: string;
+  task: string;
+  dueDate: string;
+  priority: ActionItemPriority;
+}
+
 export interface TranscriptSegment {
   start: number;
   end: number;
@@ -24,6 +40,11 @@ export interface Meeting {
   durationSec: number;
   costUsd: number;
   createdAt: string;
+  summary?: string | null;
+  actionItems?: ActionItem[] | null;
+  decisions?: string[] | null;
+  openQuestions?: string[] | null;
+  analysisCostUsd?: number | null;
 }
 
 export interface MeetingStats {

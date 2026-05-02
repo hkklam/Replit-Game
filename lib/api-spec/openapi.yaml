@@ -157,6 +157,64 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /meetings/{id}/analyze:
+    post:
+      operationId: analyzeMeeting
+      tags: [meetings]
+      summary: Run AI analysis on a meeting transcript
+      description: Uses GPT-4o to generate summary, action items, decisions, and open questions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analysis complete — returns full meeting with analysis fields populated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Meeting"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Analysis failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /meetings/{id}/export:
+    get:
+      operationId: exportMeeting
+      tags: [meetings]
+      summary: Export meeting as Excel workbook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Excel file download
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /meetings/stats:
     get:
       operationId: getMeetingStats
@@ -181,6 +239,24 @@ components:
       required:
         - status
 
+    ActionItem:
+      type: object
+      properties:
+        owner:
+          type: string
+        task:
+          type: string
+        dueDate:
+          type: string
+        priority:
+          type: string
+          enum: [High, Medium, Low]
+      required:
+        - owner
+        - task
+        - dueDate
+        - priority
+
     Meeting:
       type: object
       properties:
@@ -203,6 +279,27 @@ components:
         createdAt:
           type: string
           format: date-time
+        summary:
+          type: string
+          nullable: true
+        actionItems:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ActionItem"
+        decisions:
+          type: array
+          nullable: true
+          items:
+            type: string
+        openQuestions:
+          type: array
+          nullable: true
+          items:
+            type: string
+        analysisCostUsd:
+          type: number
+          nullable: true
       required:
         - id
         - meetingName

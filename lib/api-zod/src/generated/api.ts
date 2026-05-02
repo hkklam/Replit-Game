@@ -36,6 +36,20 @@ export const ListMeetingsResponseItem = zod.object({
   durationSec: zod.number(),
   costUsd: zod.number(),
   createdAt: zod.coerce.date(),
+  summary: zod.string().nullish(),
+  actionItems: zod
+    .array(
+      zod.object({
+        owner: zod.string(),
+        task: zod.string(),
+        dueDate: zod.string(),
+        priority: zod.enum(["High", "Medium", "Low"]),
+      }),
+    )
+    .nullish(),
+  decisions: zod.array(zod.string()).nullish(),
+  openQuestions: zod.array(zod.string()).nullish(),
+  analysisCostUsd: zod.number().nullish(),
 });
 export const ListMeetingsResponse = zod.array(ListMeetingsResponseItem);
 
@@ -63,6 +77,20 @@ export const GetMeetingResponse = zod.object({
   durationSec: zod.number(),
   costUsd: zod.number(),
   createdAt: zod.coerce.date(),
+  summary: zod.string().nullish(),
+  actionItems: zod
+    .array(
+      zod.object({
+        owner: zod.string(),
+        task: zod.string(),
+        dueDate: zod.string(),
+        priority: zod.enum(["High", "Medium", "Low"]),
+      }),
+    )
+    .nullish(),
+  decisions: zod.array(zod.string()).nullish(),
+  openQuestions: zod.array(zod.string()).nullish(),
+  analysisCostUsd: zod.number().nullish(),
 });
 
 /**
@@ -102,12 +130,74 @@ export const UploadAudioResponse = zod.object({
   durationSec: zod.number(),
   costUsd: zod.number(),
   createdAt: zod.coerce.date(),
+  summary: zod.string().nullish(),
+  actionItems: zod
+    .array(
+      zod.object({
+        owner: zod.string(),
+        task: zod.string(),
+        dueDate: zod.string(),
+        priority: zod.enum(["High", "Medium", "Low"]),
+      }),
+    )
+    .nullish(),
+  decisions: zod.array(zod.string()).nullish(),
+  openQuestions: zod.array(zod.string()).nullish(),
+  analysisCostUsd: zod.number().nullish(),
 });
 
 /**
  * @summary Download transcript as markdown
  */
 export const DownloadTranscriptParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * Uses GPT-4o to generate summary, action items, decisions, and open questions
+ * @summary Run AI analysis on a meeting transcript
+ */
+export const AnalyzeMeetingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AnalyzeMeetingResponse = zod.object({
+  id: zod.number(),
+  meetingName: zod.string(),
+  fileId: zod.string(),
+  transcript: zod.string(),
+  segments: zod
+    .array(
+      zod.object({
+        start: zod.number(),
+        end: zod.number(),
+        text: zod.string(),
+      }),
+    )
+    .optional(),
+  durationSec: zod.number(),
+  costUsd: zod.number(),
+  createdAt: zod.coerce.date(),
+  summary: zod.string().nullish(),
+  actionItems: zod
+    .array(
+      zod.object({
+        owner: zod.string(),
+        task: zod.string(),
+        dueDate: zod.string(),
+        priority: zod.enum(["High", "Medium", "Low"]),
+      }),
+    )
+    .nullish(),
+  decisions: zod.array(zod.string()).nullish(),
+  openQuestions: zod.array(zod.string()).nullish(),
+  analysisCostUsd: zod.number().nullish(),
+});
+
+/**
+ * @summary Export meeting as Excel workbook
+ */
+export const ExportMeetingParams = zod.object({
   id: zod.coerce.number(),
 });
 
