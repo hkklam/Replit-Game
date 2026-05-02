@@ -101,10 +101,12 @@ export default function BubbleShooter() {
       if (r < 0 || r >= grid.length || c < 0 || c >= (grid[r]?.length ?? 0)) continue;
       if (!grid[r]?.[c] || grid[r][c]!.color !== color) continue;
       visited.add(k); matched.push([r, c]);
-      const offs = r % 2 === 0 ? [[0,1],[0,-1],[-1,0],[1,0],[-1,-1],[-1,1]] : [[0,1],[0,-1],[-1,0],[1,0],[-1,0],[-1,1]];
+      const offs = r % 2 === 0
+        ? [[0,1],[0,-1],[-1,-1],[-1,0],[1,-1],[1,0]]
+        : [[0,1],[0,-1],[-1,0],[-1,1],[1,0],[1,1]];
       offs.forEach(([dr, dc]) => queue.push([r + dr, c + dc]));
     }
-    if (matched.length >= 3) { matched.forEach(([r, c]) => { grid[r][c] = null; }); return matched.length * 10; }
+    if (matched.length >= 2) { matched.forEach(([r, c]) => { grid[r][c] = null; }); return matched.length * 10; }
     return 0;
   }, []);
 
