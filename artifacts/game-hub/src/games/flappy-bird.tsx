@@ -20,7 +20,7 @@ function Shell({ title, controls, children }: { title: string; controls?: string
 }
 
 const W = 480; const H = 600; const BIRD_R = 16; const PIPE_W = 58;
-const GRAVITY = 0.46; const JUMP = -9.4;
+const GRAVITY = 0.46; const JUMP = -4.7;
 const B1X = 98; const B2X = 128;
 
 type Theme = "sky" | "city" | "cave" | "space";
