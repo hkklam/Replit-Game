@@ -77,6 +77,56 @@ type AnalysisResult = {
   decisions: string[];
   open_questions: string[];
 };
+type SpeakerSegment = { index: number; speaker: string };
+
+async function diarizeSegments(
+  segments: Array<{ start: number; end: number; text: string }>
+): Promise<{ speakerSegments: SpeakerSegment[]; costUsd: number }> {
+  if (segments.length === 0) return { speakerSegments: [], costUsd: 0 };
+
+  const numbered = segments
+    .map((s, i) => `[${i}] ${s.text.trim()}`)
+    .join("\n");
+
+  const systemPrompt = `You are a speaker diarization assistant.
+Given numbered transcript segments, identify which speaker said each segment.
+Use real names if they are mentioned in the text (e.g. "Thanks John", "As Sarah said").
+Otherwise use "Speaker 1", "Speaker 2", etc.
+Return ONLY valid JSON, no preamble:
+{ "speakers": ["name1", "name2"], "assignments": [{ "index": 0, "speaker": "name1" }, ...] }
+Every segment index must appear in assignments exactly once.`;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    max_tokens: 1500,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Assign speakers to each segment:\n\n${numbered}` },
+    ],
+  });
+
+  const raw = response.choices[0].message.content ?? "";
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return { speakerSegments: [], costUsd: 0 };
+    parsed = JSON.parse(match[0]);
+  }
+
+  const assignments = (parsed.assignments ?? []) as Array<{ index: number; speaker: string }>;
+  const speakerSegments: SpeakerSegment[] = assignments.map((a) => ({
+    index: Number(a.index),
+    speaker: String(a.speaker),
+  }));
+
+  const inputTokens = response.usage?.prompt_tokens ?? 0;
+  const outputTokens = response.usage?.completion_tokens ?? 0;
+  const costUsd = parseFloat(((inputTokens * 2.5 + outputTokens * 10) / 1_000_000).toFixed(6));
+
+  return { speakerSegments, costUsd };
+}
 
 async function analyzeTranscript(transcript: string): Promise<AnalysisResult & { costUsd: number }> {
   const systemPrompt = `You are a professional meeting notes assistant.
@@ -197,14 +247,24 @@ async function generateExcel(meeting: typeof meetingsTable.$inferSelect): Promis
   openQuestions.forEach((q, i) => ws4.addRow([i + 1, q, ""]));
   autoFitColumns(ws4);
 
+  const speakerSegments = ((meeting.speakerSegments ?? []) as SpeakerSegment[]);
+  const speakerMap = new Map<number, string>(speakerSegments.map((s) => [s.index, s.speaker]));
+  const hasSpeakers = speakerSegments.length > 0;
+
   const ws5 = wb.addWorksheet("Transcript");
-  styleHeader(ws5, ["Timestamp", "Text"]);
+  const transcriptHeaders = hasSpeakers ? ["Timestamp", "Speaker", "Text"] : ["Timestamp", "Text"];
+  styleHeader(ws5, transcriptHeaders);
   if (segments.length > 0) {
-    for (const seg of segments) {
-      ws5.addRow([formatTimestamp(seg.start), seg.text.trim()]);
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i];
+      if (hasSpeakers) {
+        ws5.addRow([formatTimestamp(seg.start), speakerMap.get(i) ?? "", seg.text.trim()]);
+      } else {
+        ws5.addRow([formatTimestamp(seg.start), seg.text.trim()]);
+      }
     }
   } else {
-    ws5.addRow(["00:00:00", meeting.transcript]);
+    ws5.addRow(hasSpeakers ? ["00:00:00", "", meeting.transcript] : ["00:00:00", meeting.transcript]);
   }
   autoFitColumns(ws5);
 
@@ -374,7 +434,12 @@ router.post("/meetings/:id/analyze", async (req, res) => {
       return;
     }
 
-    const analysis = await analyzeTranscript(transcriptText);
+    const existingSegments = (meeting.segments ?? []) as Array<{ start: number; end: number; text: string }>;
+    const [analysis, diarization] = await Promise.all([
+      analyzeTranscript(transcriptText),
+      diarizeSegments(existingSegments),
+    ]);
+    const totalAnalysisCost = parseFloat((analysis.costUsd + diarization.costUsd).toFixed(6));
 
     const [updated] = await db.update(meetingsTable)
       .set({
@@ -382,7 +447,8 @@ router.post("/meetings/:id/analyze", async (req, res) => {
         actionItems: analysis.action_items as unknown as Record<string, unknown>[],
         decisions: analysis.decisions as unknown as string[],
         openQuestions: analysis.open_questions as unknown as string[],
-        analysisCostUsd: analysis.costUsd,
+        analysisCostUsd: totalAnalysisCost,
+        speakerSegments: diarization.speakerSegments as unknown as Record<string, unknown>[],
       })
       .where(eq(meetingsTable.id, parse.data.id))
       .returning();

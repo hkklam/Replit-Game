@@ -31,6 +31,11 @@ export interface TranscriptSegment {
   text: string;
 }
 
+export interface SpeakerSegment {
+  index: number;
+  speaker: string;
+}
+
 export interface Meeting {
   id: number;
   meetingName: string;
@@ -45,6 +50,7 @@ export interface Meeting {
   decisions?: string[] | null;
   openQuestions?: string[] | null;
   analysisCostUsd?: number | null;
+  speakerSegments?: SpeakerSegment[] | null;
 }
 
 export interface MeetingStats {

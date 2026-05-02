@@ -16,6 +16,7 @@ export const meetingsTable = pgTable("meetings", {
   decisions: jsonb("decisions"),
   openQuestions: jsonb("open_questions"),
   analysisCostUsd: real("analysis_cost_usd"),
+  speakerSegments: jsonb("speaker_segments"),
 });
 
 export const insertMeetingSchema = createInsertSchema(meetingsTable).omit({ id: true, createdAt: true });

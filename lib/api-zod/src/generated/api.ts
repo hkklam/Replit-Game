@@ -50,6 +50,14 @@ export const ListMeetingsResponseItem = zod.object({
   decisions: zod.array(zod.string()).nullish(),
   openQuestions: zod.array(zod.string()).nullish(),
   analysisCostUsd: zod.number().nullish(),
+  speakerSegments: zod
+    .array(
+      zod.object({
+        index: zod.number(),
+        speaker: zod.string(),
+      }),
+    )
+    .nullish(),
 });
 export const ListMeetingsResponse = zod.array(ListMeetingsResponseItem);
 
@@ -91,6 +99,14 @@ export const GetMeetingResponse = zod.object({
   decisions: zod.array(zod.string()).nullish(),
   openQuestions: zod.array(zod.string()).nullish(),
   analysisCostUsd: zod.number().nullish(),
+  speakerSegments: zod
+    .array(
+      zod.object({
+        index: zod.number(),
+        speaker: zod.string(),
+      }),
+    )
+    .nullish(),
 });
 
 /**
@@ -144,6 +160,14 @@ export const UploadAudioResponse = zod.object({
   decisions: zod.array(zod.string()).nullish(),
   openQuestions: zod.array(zod.string()).nullish(),
   analysisCostUsd: zod.number().nullish(),
+  speakerSegments: zod
+    .array(
+      zod.object({
+        index: zod.number(),
+        speaker: zod.string(),
+      }),
+    )
+    .nullish(),
 });
 
 /**
@@ -192,6 +216,14 @@ export const AnalyzeMeetingResponse = zod.object({
   decisions: zod.array(zod.string()).nullish(),
   openQuestions: zod.array(zod.string()).nullish(),
   analysisCostUsd: zod.number().nullish(),
+  speakerSegments: zod
+    .array(
+      zod.object({
+        index: zod.number(),
+        speaker: zod.string(),
+      }),
+    )
+    .nullish(),
 });
 
 /**

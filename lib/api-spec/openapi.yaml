@@ -300,6 +300,11 @@ components:
         analysisCostUsd:
           type: number
           nullable: true
+        speakerSegments:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/SpeakerSegment"
       required:
         - id
         - meetingName
@@ -322,6 +327,17 @@ components:
         - start
         - end
         - text
+
+    SpeakerSegment:
+      type: object
+      properties:
+        index:
+          type: integer
+        speaker:
+          type: string
+      required:
+        - index
+        - speaker
 
     MeetingStats:
       type: object

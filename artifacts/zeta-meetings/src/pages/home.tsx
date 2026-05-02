@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
-import { formatDuration, formatCurrency } from "@/lib/format";
+import { formatDuration, formatCurrency, formatTimestamp } from "@/lib/format";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mic, Square, Download, RefreshCw, TableProperties, Sparkles, FileSpreadsheet } from "lucide-react";
-import type { Meeting, ActionItem } from "@workspace/api-client-react";
+import type { Meeting, ActionItem, SpeakerSegment } from "@workspace/api-client-react";
 
 export default function Home() {
   const [meetingName, setMeetingName] = useState("");
@@ -85,6 +85,9 @@ export default function Home() {
   const actionItems = (result?.actionItems ?? []) as ActionItem[];
   const decisions = (result?.decisions ?? []) as string[];
   const openQuestions = (result?.openQuestions ?? []) as string[];
+  const speakerSegs = (result?.speakerSegments ?? []) as SpeakerSegment[];
+  const speakerMap = new Map<number, string>(speakerSegs.map((s) => [s.index, s.speaker]));
+  const uniqueSpeakers = [...new Set(speakerSegs.map((s) => s.speaker))];
   const hasAnalysis = !!result?.summary;
   const totalCost = (result?.costUsd ?? 0) + (result?.analysisCostUsd ?? 0);
 
@@ -268,8 +271,39 @@ export default function Home() {
                   </TabsContent>
 
                   <TabsContent value="transcript">
-                    <div className="bg-secondary/50 rounded-md p-4 max-h-[400px] overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap font-serif">
-                      {result.transcript || "No transcript generated."}
+                    {speakerSegs.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {uniqueSpeakers.map((speaker) => (
+                          <span key={speaker} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${homeSpeakerColor(speaker, uniqueSpeakers)}`}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+                            {speaker}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="bg-secondary/50 rounded-md p-4 max-h-[400px] overflow-y-auto font-serif text-sm">
+                      {result.segments && (result.segments as unknown[]).length > 0 ? (
+                        <div className="space-y-3">
+                          {(result.segments as Array<{ start: number; end: number; text: string }>).map((seg, i) => {
+                            const speaker = speakerMap.get(i);
+                            return (
+                              <div key={i} className="flex gap-3 items-start leading-relaxed">
+                                <span className="text-muted-foreground font-mono text-xs mt-1 shrink-0 opacity-60 w-14">
+                                  {formatTimestamp(seg.start)}
+                                </span>
+                                {speaker && (
+                                  <span className={`shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold leading-tight ${homeSpeakerColor(speaker, uniqueSpeakers)}`}>
+                                    {speaker}
+                                  </span>
+                                )}
+                                <span>{seg.text}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="whitespace-pre-wrap leading-relaxed">{result.transcript || "No transcript generated."}</div>
+                      )}
                     </div>
                   </TabsContent>
                 </Tabs>
@@ -280,6 +314,20 @@ export default function Home() {
       </div>
     </Layout>
   );
+}
+
+const HOME_SPEAKER_PALETTES = [
+  "bg-blue-100 text-blue-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-violet-100 text-violet-700",
+  "bg-orange-100 text-orange-700",
+  "bg-pink-100 text-pink-700",
+  "bg-teal-100 text-teal-700",
+];
+
+function homeSpeakerColor(speaker: string, allSpeakers: string[]): string {
+  const idx = allSpeakers.indexOf(speaker);
+  return HOME_SPEAKER_PALETTES[idx % HOME_SPEAKER_PALETTES.length] ?? "bg-muted text-muted-foreground";
 }
 
 function PriorityBadge({ priority }: { priority: string }) {

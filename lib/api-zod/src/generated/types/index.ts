@@ -12,6 +12,7 @@ export * from "./errorResponse";
 export * from "./healthStatus";
 export * from "./meeting";
 export * from "./meetingStats";
+export * from "./speakerSegment";
 export * from "./successResponse";
 export * from "./transcriptSegment";
 export * from "./uploadAudioBody";

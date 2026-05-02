@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { useParams, useLocation } from "wouter";
 import { useGetMeeting, useDeleteMeeting, getListMeetingsQueryKey } from "@workspace/api-client-react";
-import type { ActionItem } from "@workspace/api-client-react";
+import type { ActionItem, SpeakerSegment } from "@workspace/api-client-react";
 import { formatDuration, formatCurrency, formatTimestamp } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -113,6 +113,9 @@ export default function MeetingDetail() {
   const actionItems = (meeting.actionItems ?? []) as ActionItem[];
   const decisions = (meeting.decisions ?? []) as string[];
   const openQuestions = (meeting.openQuestions ?? []) as string[];
+  const speakerSegments = (meeting.speakerSegments ?? []) as SpeakerSegment[];
+  const speakerMap = new Map<number, string>(speakerSegments.map((s) => [s.index, s.speaker]));
+  const uniqueSpeakers = [...new Set(speakerSegments.map((s) => s.speaker))];
   const hasAnalysis = !!meeting.summary;
   const totalCost = meeting.costUsd + (meeting.analysisCostUsd ?? 0);
 
@@ -259,17 +262,35 @@ export default function MeetingDetail() {
           </TabsContent>
 
           <TabsContent value="transcript">
+            {speakerSegments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {uniqueSpeakers.map((speaker) => (
+                  <span key={speaker} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${speakerColor(speaker, uniqueSpeakers)}`}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+                    {speaker}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="bg-card border border-border rounded-lg p-6 md:p-8 font-serif text-[15px] leading-loose text-card-foreground shadow-sm">
               {meeting.segments && (meeting.segments as unknown[]).length > 0 ? (
-                <div className="space-y-4">
-                  {(meeting.segments as Array<{ start: number; end: number; text: string }>).map((seg, i) => (
-                    <div key={i} className="flex gap-4">
-                      <span className="text-muted-foreground font-mono text-xs mt-1.5 shrink-0 opacity-70">
-                        {formatTimestamp(seg.start)}
-                      </span>
-                      <span>{seg.text}</span>
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  {(meeting.segments as Array<{ start: number; end: number; text: string }>).map((seg, i) => {
+                    const speaker = speakerMap.get(i);
+                    return (
+                      <div key={i} className="flex gap-3 items-start">
+                        <span className="text-muted-foreground font-mono text-xs mt-1.5 shrink-0 opacity-70 w-16">
+                          {formatTimestamp(seg.start)}
+                        </span>
+                        {speaker && (
+                          <span className={`shrink-0 mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold leading-tight ${speakerColor(speaker, uniqueSpeakers)}`}>
+                            {speaker}
+                          </span>
+                        )}
+                        <span className="leading-relaxed">{seg.text}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="whitespace-pre-wrap">{meeting.transcript || "No transcript content available."}</div>
@@ -293,4 +314,18 @@ function PriorityBadge({ priority }: { priority: string }) {
       {priority}
     </span>
   );
+}
+
+const SPEAKER_PALETTES = [
+  "bg-blue-100 text-blue-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-violet-100 text-violet-700",
+  "bg-orange-100 text-orange-700",
+  "bg-pink-100 text-pink-700",
+  "bg-teal-100 text-teal-700",
+];
+
+function speakerColor(speaker: string, allSpeakers: string[]): string {
+  const idx = allSpeakers.indexOf(speaker);
+  return SPEAKER_PALETTES[idx % SPEAKER_PALETTES.length] ?? "bg-muted text-muted-foreground";
 }
