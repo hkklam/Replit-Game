@@ -307,7 +307,7 @@ export default function TowerDefense() {
 
   const loop = useCallback(()=>{
     const s=g.current;
-    if(s.state!=="playing"){draw();return;}
+    if(s.state==="win"||s.state==="lose"){draw();return;}
     s.frame++;
 
     // Between-waves spawn management

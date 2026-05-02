@@ -328,7 +328,13 @@ export default function Minecraft() {
         />
         {/* Click-to-enter overlay */}
         {!locked && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/65 rounded-xl gap-3">
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center bg-black/65 rounded-xl gap-3 cursor-pointer select-none"
+            onClick={() => {
+              setLocked(true);
+              canvasRef.current?.requestPointerLock();
+            }}
+          >
             <div className="text-6xl">⛏️</div>
             <p className="text-white text-xl font-black">Click to Enter World</p>
             <div className="text-white/60 text-xs text-center space-y-0.5">
