@@ -19,7 +19,8 @@ function Shell({ title, controls, children }: { title: string; controls?: string
   );
 }
 
-const W = 700, H = 560, CAR_W = 14, CAR_H = 24;
+const W = 700, H = 560;
+const CAR_W = 22, CAR_H = 42;
 
 type WP = { x: number; y: number };
 type TrackDef = {
@@ -31,66 +32,88 @@ type TrackDef = {
 const TRACKS: TrackDef[] = [
   {
     id: "monza", name: "Monza", flag: "🇮🇹", stars: 1,
-    desc: "Fast & flowing · 2 chicanes · long straights",
-    trackW: 76, wpR: 48, aiDiff: "easy",
+    desc: "Fast straights · 3 chicanes · Parabolica hairpin",
+    trackW: 50, wpR: 36, aiDiff: "easy",
     wps: [
-      { x: 165, y: 100 }, { x: 380, y: 100 },
-      { x: 428, y:  76 }, { x: 476, y: 124 },
-      { x: 562, y: 100 }, { x: 618, y: 148 },
-      { x: 638, y: 235 }, { x: 638, y: 388 },
-      { x: 596, y: 460 }, { x: 478, y: 496 },
-      { x: 330, y: 496 }, { x: 165, y: 496 },
-      { x:  82, y: 450 }, { x:  62, y: 325 },
-      { x:  68, y: 200 }, { x: 116, y: 128 },
+      { x: 118, y: 452 }, { x: 290, y: 452 }, { x: 444, y: 452 },
+      { x: 528, y: 426 }, { x: 574, y: 382 }, { x: 604, y: 322 },
+      { x: 608, y: 248 }, { x: 608, y: 176 },
+      { x: 580, y: 133 }, { x: 534, y: 106 },
+      { x: 494, y: 136 }, { x: 454, y: 103 },
+      { x: 406, y: 126 }, { x: 366, y:  93 }, { x: 320, y: 116 },
+      { x: 255, y:  96 }, { x: 178, y:  93 },
+      { x: 108, y: 116 }, { x:  76, y: 166 },
+      { x:  66, y: 278 }, { x:  66, y: 396 }, { x:  86, y: 438 },
     ],
   },
   {
     id: "silverstone", name: "Silverstone", flag: "🇬🇧", stars: 2,
-    desc: "Flowing corners · Maggotts–Becketts L-R-L-R complex",
-    trackW: 68, wpR: 44, aiDiff: "easy",
+    desc: "Maggotts–Becketts–Chapel S-complex · flowing circuit",
+    trackW: 44, wpR: 32, aiDiff: "easy",
     wps: [
-      { x: 128, y: 288 }, { x: 285, y: 226 }, { x: 392, y: 194 },
-      { x: 465, y: 158 }, { x: 530, y: 132 }, { x: 586, y: 158 },
-      { x: 632, y: 130 }, { x: 655, y: 172 }, { x: 655, y: 278 },
-      { x: 632, y: 375 }, { x: 578, y: 440 }, { x: 468, y: 478 },
-      { x: 328, y: 492 }, { x: 196, y: 470 }, { x: 132, y: 414 }, { x: 108, y: 345 },
+      { x: 118, y: 308 }, { x: 268, y: 296 }, { x: 368, y: 260 },
+      { x: 436, y: 230 }, { x: 474, y: 208 },
+      { x: 512, y: 226 }, { x: 546, y: 204 },
+      { x: 580, y: 170 }, { x: 620, y: 153 },
+      { x: 656, y: 186 }, { x: 648, y: 248 },
+      { x: 620, y: 306 }, { x: 574, y: 366 },
+      { x: 510, y: 426 }, { x: 438, y: 460 },
+      { x: 348, y: 478 }, { x: 254, y: 470 },
+      { x: 166, y: 448 }, { x:  98, y: 410 },
+      { x:  78, y: 360 }, { x:  88, y: 310 },
     ],
   },
   {
     id: "spa", name: "Spa-Francorchamps", flag: "🇧🇪", stars: 3,
-    desc: "Eau Rouge L–R · Pouhon sweeper · Bus Stop chicane",
-    trackW: 64, wpR: 42, aiDiff: "medium",
+    desc: "Eau Rouge · Pouhon sweeper · Bus Stop chicane",
+    trackW: 40, wpR: 30, aiDiff: "medium",
     wps: [
-      { x: 188, y: 115 }, { x: 375, y: 115 }, { x: 520, y: 115 },
-      { x: 575, y: 158 }, { x: 600, y: 210 }, { x: 594, y: 276 }, { x: 560, y: 310 },
-      { x: 582, y: 364 }, { x: 592, y: 435 }, { x: 566, y: 494 }, { x: 496, y: 512 },
-      { x: 392, y: 500 }, { x: 290, y: 480 }, { x: 210, y: 448 }, { x: 146, y: 384 },
-      { x:  94, y: 305 }, { x:  76, y: 226 }, { x:  96, y: 160 }, { x: 144, y: 128 },
+      { x: 168, y: 118 }, { x: 348, y: 106 }, { x: 502, y:  98 },
+      { x: 570, y: 136 }, { x: 608, y: 180 }, { x: 616, y: 242 },
+      { x: 600, y: 300 }, { x: 568, y: 348 }, { x: 578, y: 396 },
+      { x: 590, y: 452 }, { x: 556, y: 496 }, { x: 488, y: 512 },
+      { x: 418, y: 502 }, { x: 328, y: 488 }, { x: 246, y: 460 },
+      { x: 163, y: 422 }, { x:  98, y: 378 },
+      { x:  70, y: 320 }, { x:  88, y: 260 },
+      { x:  93, y: 198 }, { x:  98, y: 150 }, { x: 140, y: 126 },
     ],
   },
   {
     id: "suzuka", name: "Suzuka", flag: "🇯🇵", stars: 4,
     desc: "S-curves R-L-R-L · 130R · Spoon · Hairpin",
-    trackW: 60, wpR: 38, aiDiff: "hard",
+    trackW: 36, wpR: 26, aiDiff: "hard",
     wps: [
-      { x: 218, y: 112 }, { x: 395, y: 112 },
-      { x: 478, y: 142 }, { x: 518, y: 196 }, { x: 522, y: 262 },
-      { x: 550, y: 292 }, { x: 508, y: 322 }, { x: 550, y: 352 }, { x: 508, y: 382 },
-      { x: 478, y: 430 }, { x: 414, y: 456 }, { x: 346, y: 440 }, { x: 276, y: 402 },
-      { x: 216, y: 350 }, { x: 170, y: 276 }, { x: 120, y: 210 }, { x: 126, y: 148 }, { x: 174, y: 118 },
+      { x: 216, y: 116 }, { x: 388, y: 110 },
+      { x: 478, y: 138 }, { x: 518, y: 183 },
+      { x: 516, y: 236 }, { x: 546, y: 266 },
+      { x: 516, y: 296 }, { x: 550, y: 328 },
+      { x: 576, y: 378 }, { x: 556, y: 422 },
+      { x: 508, y: 448 }, { x: 453, y: 460 },
+      { x: 393, y: 443 }, { x: 343, y: 406 },
+      { x: 308, y: 363 }, { x: 290, y: 308 },
+      { x: 250, y: 263 }, { x: 193, y: 243 },
+      { x: 128, y: 226 }, { x:  96, y: 186 },
+      { x: 116, y: 153 }, { x: 166, y: 126 },
     ],
   },
   {
     id: "monaco", name: "Monaco", flag: "🇲🇨", stars: 5,
-    desc: "Street circuit · 22 turns · very narrow & technical",
-    trackW: 54, wpR: 30, aiDiff: "hard",
+    desc: "Street circuit · 22 turns · Tunnel · Swimming Pool",
+    trackW: 32, wpR: 22, aiDiff: "hard",
     wps: [
-      { x: 172, y: 258 }, { x: 298, y: 258 }, { x: 360, y: 232 }, { x: 400, y: 202 },
-      { x: 446, y: 180 }, { x: 494, y: 170 }, { x: 536, y: 192 }, { x: 562, y: 234 },
-      { x: 556, y: 282 }, { x: 524, y: 318 }, { x: 568, y: 364 }, { x: 606, y: 394 },
-      { x: 634, y: 434 }, { x: 610, y: 476 }, { x: 562, y: 472 }, { x: 528, y: 494 },
-      { x: 458, y: 504 }, { x: 390, y: 494 }, { x: 324, y: 504 }, { x: 260, y: 492 },
-      { x: 212, y: 462 }, { x: 163, y: 437 }, { x: 136, y: 396 }, { x: 148, y: 336 }, { x: 154, y: 294 },
+      { x: 170, y: 266 }, { x: 308, y: 266 },
+      { x: 378, y: 246 }, { x: 426, y: 216 },
+      { x: 466, y: 186 }, { x: 503, y: 166 },
+      { x: 540, y: 180 }, { x: 558, y: 216 },
+      { x: 554, y: 263 }, { x: 530, y: 306 },
+      { x: 563, y: 350 }, { x: 606, y: 380 },
+      { x: 640, y: 420 }, { x: 620, y: 463 },
+      { x: 573, y: 480 }, { x: 523, y: 498 },
+      { x: 453, y: 508 }, { x: 383, y: 500 },
+      { x: 316, y: 494 }, { x: 250, y: 482 },
+      { x: 196, y: 456 }, { x: 146, y: 426 },
+      { x: 120, y: 386 }, { x: 136, y: 333 },
+      { x: 148, y: 293 },
     ],
   },
 ];
@@ -110,16 +133,6 @@ function ptSegDist2(px: number, py: number, ax: number, ay: number, bx: number, 
   return (px - ax - t * dx) ** 2 + (py - ay - t * dy) ** 2;
 }
 
-function isOnTrack(x: number, y: number, wps: WP[], halfW: number): boolean {
-  const hw2 = halfW * halfW;
-  for (let i = 0; i < wps.length; i++) {
-    const a = wps[i], b = wps[(i + 1) % wps.length];
-    if (ptSegDist2(x, y, a.x, a.y, b.x, b.y) < hw2) return true;
-  }
-  return false;
-}
-
-// Returns the nearest point on the track centreline and distance to it
 function nearestOnTrack(x: number, y: number, wps: WP[]): { nx: number; ny: number; dist: number } {
   let best = Infinity, bnx = wps[0].x, bny = wps[0].y;
   for (let i = 0; i < wps.length; i++) {
@@ -136,51 +149,44 @@ function nearestOnTrack(x: number, y: number, wps: WP[]): { nx: number; ny: numb
 
 function drawTrack(ctx: CanvasRenderingContext2D, track: TrackDef) {
   const { wps, trackW } = track;
-  ctx.fillStyle = "#166534"; ctx.fillRect(0, 0, W, H);
-  const tracePath = (close = true) => {
+  ctx.fillStyle = "#14532d"; ctx.fillRect(0, 0, W, H);
+
+  const TRACK_W = trackW * 2;
+  const KERB_W  = trackW * 2 + 10;
+
+  const tracePath = () => {
     ctx.beginPath(); ctx.moveTo(wps[0].x, wps[0].y);
     for (let i = 1; i < wps.length; i++) ctx.lineTo(wps[i].x, wps[i].y);
-    if (close) ctx.closePath();
+    ctx.closePath();
   };
   ctx.lineJoin = "round"; ctx.lineCap = "round";
 
-  // Outer shadow/ground
-  tracePath(); ctx.strokeStyle = "#111"; ctx.lineWidth = trackW * 2 + 22; ctx.stroke();
+  tracePath(); ctx.strokeStyle = "#0a0a0a"; ctx.lineWidth = TRACK_W + 24; ctx.stroke();
 
-  // ── Kerb / wall stripe (red-white alternating) ──────────────────────────
-  // Draw the kerb as a thick stroke, then clip the track surface over it.
-  // The 8 px visible rim becomes the wall.
-  const KERB_W = trackW * 2 + 14;
-  const TRACK_W = trackW * 2;
-  // White base for the kerb band
   tracePath(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = KERB_W; ctx.stroke();
-  // Red dashes over the white to create the classic red/white kerb pattern
-  ctx.setLineDash([18, 18]);
+  ctx.setLineDash([16, 16]);
   tracePath(); ctx.strokeStyle = "#dc2626"; ctx.lineWidth = KERB_W; ctx.stroke();
   ctx.setLineDash([]);
-  // A thin bright inner highlight to make it pop
-  tracePath(); ctx.strokeStyle = "rgba(255,255,255,0.6)"; ctx.lineWidth = KERB_W - 2; ctx.stroke();
+  tracePath(); ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = KERB_W - 2; ctx.stroke();
 
-  // Track surface on top (covers the kerb centre, leaving only the rim visible)
-  tracePath(); ctx.strokeStyle = "#2a2a2a"; ctx.lineWidth = TRACK_W; ctx.stroke();
+  tracePath(); ctx.strokeStyle = "#252525"; ctx.lineWidth = TRACK_W; ctx.stroke();
+  tracePath(); ctx.strokeStyle = "rgba(255,255,255,0.025)"; ctx.lineWidth = TRACK_W - 6; ctx.stroke();
 
-  // Subtle track texture / sheen
-  tracePath(); ctx.strokeStyle = "rgba(255,255,255,0.03)"; ctx.lineWidth = TRACK_W - 4; ctx.stroke();
-
-  // Centre dashes
-  ctx.setLineDash([16, 22]); ctx.strokeStyle = "rgba(251,191,36,0.55)"; ctx.lineWidth = 2;
+  ctx.setLineDash([14, 20]); ctx.strokeStyle = "rgba(251,191,36,0.5)"; ctx.lineWidth = 2;
   tracePath(); ctx.stroke(); ctx.setLineDash([]);
+
   const w0 = wps[0], w1 = wps[1];
   const ang = Math.atan2(w1.y - w0.y, w1.x - w0.x);
   ctx.save(); ctx.translate(w0.x, w0.y); ctx.rotate(ang + Math.PI / 2);
-  const sq = 9, cols = Math.ceil((trackW * 2) / sq);
+  const sq = 9, cols = Math.ceil(TRACK_W / sq);
   for (let r = 0; r < 2; r++)
     for (let c = 0; c < cols; c++) {
       ctx.fillStyle = (r + c) % 2 === 0 ? "#fff" : "#111";
       ctx.fillRect(c * sq - trackW, r * sq - sq, sq, sq);
     }
   ctx.restore();
-  ctx.fillStyle = "rgba(0,0,0,0.55)"; ctx.fillRect(5, H - 26, 150, 22);
+
+  ctx.fillStyle = "rgba(0,0,0,0.55)"; ctx.fillRect(5, H - 26, 160, 22);
   ctx.fillStyle = "rgba(255,255,255,0.7)"; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "left";
   ctx.fillText(`${track.flag}  ${track.name}  ${"★".repeat(track.stars)}${"☆".repeat(5 - track.stars)}`, 10, H - 10);
 }
@@ -197,7 +203,6 @@ function makeCar(track: TrackDef, color: string, label: string, perp = 0, back =
 
 type GameMode = "1p" | "2p";
 
-// Touch control button
 function TBtn({ label, onDown, onUp, className }: { label: string; onDown: () => void; onUp: () => void; className?: string }) {
   return (
     <button
@@ -218,7 +223,7 @@ export default function Racing() {
     mode: "1p" as GameMode, track: TRACKS[0], aiDiff: "easy" as Difficulty,
     car: makeCar(TRACKS[0], "#ef4444", "You"),
     car2: makeCar(TRACKS[0], "#22d3ee", "P2", 24),
-    ai: [makeCar(TRACKS[0], "#3b82f6", "AI 1", 0, 28), makeCar(TRACKS[0], "#a855f7", "AI 2", 24, 28)],
+    ai: [makeCar(TRACKS[0], "#3b82f6", "AI 1", 0, 48), makeCar(TRACKS[0], "#a855f7", "AI 2", 24, 48)],
     keys: new Set<string>(), frame: 0, state: "idle" as "idle" | "playing" | "done", winner: "",
   });
   const [screen, setScreen] = useState<"menu" | "track-select" | "race">("menu");
@@ -231,15 +236,119 @@ export default function Racing() {
   const raf = useRef(0);
 
   const drawCar = useCallback((ctx: CanvasRenderingContext2D, car: Car) => {
-    ctx.save(); ctx.translate(car.x, car.y); ctx.rotate(car.angle + Math.PI / 2);
-    ctx.fillStyle = car.color; ctx.fillRect(-CAR_W / 2, -CAR_H / 2, CAR_W, CAR_H);
-    ctx.fillStyle = "rgba(255,255,255,0.3)"; ctx.fillRect(-CAR_W / 2, -CAR_H / 2, CAR_W, 6);
+    const hw = CAR_W / 2;
+    const hh = CAR_H / 2;
+
+    ctx.save();
+    ctx.translate(car.x, car.y);
+    ctx.rotate(car.angle + Math.PI / 2);
+
+    // Drop shadow
+    ctx.save();
+    ctx.globalAlpha = 0.3;
     ctx.fillStyle = "#000";
-    ctx.fillRect(-CAR_W / 2, CAR_H / 2 - 6, 5, 5); ctx.fillRect(CAR_W / 2 - 5, CAR_H / 2 - 6, 5, 5);
-    ctx.fillRect(-CAR_W / 2, -CAR_H / 2, 5, 5); ctx.fillRect(CAR_W / 2 - 5, -CAR_H / 2, 5, 5);
+    ctx.beginPath();
+    ctx.ellipse(2, 3, hw + 3, hh - 1, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
-    ctx.fillStyle = "#fff"; ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center";
-    ctx.fillText(car.label, car.x, car.y - 18);
+
+    // Front wing (wide flat piece)
+    ctx.fillStyle = car.color;
+    ctx.fillRect(-hw - 8, -hh + 3, (hw + 8) * 2, 5);
+    // Front wing endplates
+    ctx.fillStyle = "#111";
+    ctx.fillRect(-hw - 8, -hh + 3, 3, 8);
+    ctx.fillRect(hw + 5, -hh + 3, 3, 8);
+
+    // Main body — tapered F1 monocoque
+    ctx.fillStyle = car.color;
+    ctx.beginPath();
+    ctx.moveTo(0, -hh + 1);           // nose tip
+    ctx.lineTo(hw * 0.45, -hh + 8);   // nose flare
+    ctx.lineTo(hw, -hh + 18);         // widest point (front shoulder)
+    ctx.lineTo(hw, hh - 13);          // sidepod
+    ctx.lineTo(hw - 4, hh - 3);       // rear taper
+    ctx.lineTo(-hw + 4, hh - 3);      // rear flat
+    ctx.lineTo(-hw, hh - 13);         // rear taper left
+    ctx.lineTo(-hw, -hh + 18);        // sidepod left
+    ctx.lineTo(-hw * 0.45, -hh + 8);  // nose flare left
+    ctx.closePath();
+    ctx.fill();
+
+    // Body centre highlight stripe
+    ctx.fillStyle = "rgba(255,255,255,0.14)";
+    ctx.beginPath();
+    ctx.moveTo(0, -hh + 2);
+    ctx.lineTo(hw * 0.35, -hh + 10);
+    ctx.lineTo(hw * 0.35, hh - 14);
+    ctx.lineTo(-hw * 0.35, hh - 14);
+    ctx.lineTo(-hw * 0.35, -hh + 10);
+    ctx.closePath();
+    ctx.fill();
+
+    // Air intake / engine cover detail
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fillRect(-3, -hh + 18, 6, 12);
+
+    // Cockpit surround
+    ctx.fillStyle = "#0a0a1a";
+    ctx.beginPath();
+    ctx.ellipse(0, -hh + 28, 5.5, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Halo safety device
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(0, -hh + 23, 5, 3, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Helmet
+    ctx.fillStyle = "#e8e8e8";
+    ctx.beginPath();
+    ctx.arc(0, -hh + 22, 3.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = car.color;
+    ctx.beginPath();
+    ctx.arc(0, -hh + 22, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Rear wing (wide, double element)
+    ctx.fillStyle = "#0d0d0d";
+    ctx.fillRect(-hw - 6, hh - 9, (hw + 6) * 2, 6);
+    ctx.fillStyle = car.color;
+    ctx.fillRect(-hw - 6, hh - 9, (hw + 6) * 2, 2);  // color stripe
+    // Rear wing endplates
+    ctx.fillStyle = "#222";
+    ctx.fillRect(-hw - 6, hh - 10, 3, 9);
+    ctx.fillRect(hw + 3, hh - 10, 3, 9);
+
+    // Wheels (4) — wider rear, narrower front
+    const drawWheel = (wx: number, wy: number, ww: number, wh: number) => {
+      ctx.fillStyle = "#111";
+      ctx.fillRect(wx, wy, ww, wh);
+      // Rim highlight
+      ctx.strokeStyle = "#444";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(wx + 1, wy + 1, ww - 2, wh - 2);
+      // Center hub
+      ctx.fillStyle = "#555";
+      ctx.fillRect(wx + 2, wy + Math.floor(wh / 2) - 1, ww - 4, 3);
+    };
+    // Front wheels (narrower)
+    drawWheel(-hw - 3, -hh + 12, 6, 12);
+    drawWheel(hw - 3, -hh + 12, 6, 12);
+    // Rear wheels (wider)
+    drawWheel(-hw - 4, hh - 20, 7, 13);
+    drawWheel(hw - 3, hh - 20, 7, 13);
+
+    ctx.restore();
+
+    // Label above car
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 9px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(car.label, car.x, car.y - 28);
   }, []);
 
   const draw = useCallback(() => {
@@ -250,55 +359,69 @@ export default function Racing() {
     s.ai.forEach(ai => drawCar(ctx, ai));
     if (s.mode === "2p") drawCar(ctx, s.car2);
     drawCar(ctx, s.car);
-    const hudH = s.mode === "2p" ? 50 : 30;
-    ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(0, 0, W, hudH);
+    const hudH = s.mode === "2p" ? 52 : 30;
+    ctx.fillStyle = "rgba(0,0,0,0.72)"; ctx.fillRect(0, 0, W, hudH);
     ctx.fillStyle = "#ef4444"; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "left";
     ctx.fillText(`You 🏎️  Lap ${s.car.lap}  ${Math.round(s.car.speed * 30)}km/h  Best: ${s.car.bestLap < Infinity ? (s.car.bestLap / 1000).toFixed(2) + "s" : "-"}`, 8, 16);
-    if (s.mode === "2p") { ctx.fillStyle = "#22d3ee"; ctx.fillText(`P2 🏎️  Lap ${s.car2.lap}  ${Math.round(s.car2.speed * 30)}km/h  Best: ${s.car2.bestLap < Infinity ? (s.car2.bestLap / 1000).toFixed(2) + "s" : "-"}`, 8, 40); }
+    if (s.mode === "2p") { ctx.fillStyle = "#22d3ee"; ctx.fillText(`P2 🏎️  Lap ${s.car2.lap}  ${Math.round(s.car2.speed * 30)}km/h  Best: ${s.car2.bestLap < Infinity ? (s.car2.bestLap / 1000).toFixed(2) + "s" : "-"}`, 8, 42); }
   }, [drawCar]);
 
   const loop = useCallback(() => {
     const s = g.current; s.frame++;
     const { wps, trackW, wpR } = s.track;
     const accel = 0.18, brake = 0.22, turnSpd = 0.055, friction = 0.96;
+    // Kerb: 5px beyond tarmac edge on each side. Wall is 2px past kerb.
+    const kerbExtra = 5;
+
     const updateCar = (c: Car, left: boolean, right: boolean, up: boolean, down: boolean, maxSpd = 5.5): boolean => {
       if (left)  c.angle -= turnSpd * Math.max(0.2, c.speed / 5);
       if (right) c.angle += turnSpd * Math.max(0.2, c.speed / 5);
       if (up)   c.speed = Math.min(c.speed + accel, maxSpd);
       else if (down) c.speed = Math.max(c.speed - brake, -2);
 
-      const halfW = trackW / 2;
       const propX = c.x + Math.cos(c.angle) * c.speed;
       const propY = c.y + Math.sin(c.angle) * c.speed;
 
-      if (isOnTrack(propX, propY, wps, halfW)) {
-        // Normal on-track movement
+      const { nx, ny, dist } = nearestOnTrack(propX, propY, wps);
+
+      if (dist <= trackW) {
+        // Full tarmac — normal grip
         c.speed *= friction;
         c.x = propX; c.y = propY;
+      } else if (dist <= trackW + kerbExtra) {
+        // Kerb — slight penalty, car still moves
+        c.speed *= friction * 0.97;
+        c.x = propX; c.y = propY;
       } else {
-        // Wall hit — clamp position to track edge and apply heavy penalty
-        c.speed *= 0.28; // heavy wall-impact slow
-        const { nx: cnx, ny: cny, dist } = nearestOnTrack(propX, propY, wps);
+        // Wall hit — heavy slowdown, push back to kerb edge
+        c.speed *= 0.28;
         if (dist > 0.5) {
-          // Push car back so it sits just inside the kerb edge
-          const clampR = halfW - 3;
+          const clampR = trackW + kerbExtra - 1;
           const ratio = clampR / dist;
-          c.x = cnx + (propX - cnx) * ratio;
-          c.y = cny + (propY - cny) * ratio;
+          c.x = nx + (propX - nx) * ratio;
+          c.y = ny + (propY - ny) * ratio;
         } else {
           c.x = propX; c.y = propY;
         }
       }
 
       if (Math.abs(c.speed) < 0.01) c.speed = 0;
-      c.x = Math.max(5, Math.min(W - 5, c.x)); c.y = Math.max(5, Math.min(H - 5, c.y));
+      c.x = Math.max(5, Math.min(W - 5, c.x));
+      c.y = Math.max(5, Math.min(H - 5, c.y));
       const wp = wps[c.wpIdx];
       if (Math.sqrt((c.x - wp.x) ** 2 + (c.y - wp.y) ** 2) < wpR) {
         c.wpIdx = (c.wpIdx + 1) % wps.length;
-        if (c.wpIdx === 0) { c.wpIdx = 1; c.lap++; const lt = Date.now() - c.lapStart; if (lt < c.bestLap) c.bestLap = lt; c.lapStart = Date.now(); return true; }
+        if (c.wpIdx === 0) {
+          c.wpIdx = 1; c.lap++;
+          const lt = Date.now() - c.lapStart;
+          if (lt < c.bestLap) c.bestLap = lt;
+          c.lapStart = Date.now();
+          return true;
+        }
       }
       return false;
     };
+
     const k = s.keys;
     const lap1Done = updateCar(s.car, k.has("ArrowLeft") || k.has("left"), k.has("ArrowRight") || k.has("right"), k.has("ArrowUp") || k.has("up"), k.has("ArrowDown") || k.has("down"));
     if (lap1Done) { setLap1(s.car.lap); setLaps1(prev => [...prev, s.car.bestLap]); if (s.car.lap >= 3) { s.state = "done"; s.winner = "You"; setWinner("You"); setState("done"); draw(); return; } }
@@ -320,12 +443,15 @@ export default function Racing() {
   }, [draw]);
 
   const startRace = useCallback((mode: GameMode, track: TrackDef) => {
-    const pw = track.trackW * 0.35, bk = track.trackW * 0.45;
+    // Side-by-side spacing: CAR_W + 4px gap; row gap: CAR_H + 10px
+    const side = Math.min(CAR_W + 4, track.trackW - CAR_W - 4);
+    const row = CAR_H + 10;
     g.current = {
       mode, track, aiDiff: track.aiDiff,
-      car: makeCar(track, "#ef4444", "You", 0, 0),
-      car2: makeCar(track, "#22d3ee", "P2", pw, 0),
-      ai: [makeCar(track, "#3b82f6", "AI 1", 0, bk), makeCar(track, "#a855f7", "AI 2", pw, bk)],
+      car:  makeCar(track, "#ef4444", "You",  0,    0),
+      car2: makeCar(track, "#22d3ee", "P2",   side, 0),
+      ai: [makeCar(track, "#3b82f6", "AI 1",  0,    row),
+           makeCar(track, "#a855f7", "AI 2",  side, row)],
       keys: new Set(), frame: 0, state: "playing", winner: "",
     };
     setGameMode(mode); setTrackName(track.name);
@@ -333,9 +459,8 @@ export default function Racing() {
     cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(loop);
   }, [loop]);
 
-  // Touch key helpers for on-screen controls
   const keyDown = useCallback((k: string) => g.current.keys.add(k), []);
-  const keyUp = useCallback((k: string) => g.current.keys.delete(k), []);
+  const keyUp   = useCallback((k: string) => g.current.keys.delete(k), []);
 
   useEffect(() => {
     if (screen !== "race") return;
@@ -345,9 +470,9 @@ export default function Racing() {
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); cancelAnimationFrame(raf.current); };
   }, [screen, draw]);
 
-  const STAR_COLORS = ["", "text-green-400", "text-lime-400", "text-amber-400", "text-orange-400", "text-red-400"];
+  const STAR_COLORS   = ["", "text-green-400", "text-lime-400", "text-amber-400", "text-orange-400", "text-red-400"];
   const TRACK_BORDERS = ["", "border-green-500/50", "border-lime-500/50", "border-amber-500/50", "border-orange-500/50", "border-red-500/50"];
-  const TRACK_BG = ["", "bg-green-500/10", "bg-lime-500/10", "bg-amber-500/10", "bg-orange-500/10", "bg-red-500/10"];
+  const TRACK_BG      = ["", "bg-green-500/10", "bg-lime-500/10", "bg-amber-500/10", "bg-orange-500/10", "bg-red-500/10"];
 
   if (screen === "menu") return (
     <Shell title="Racing Game">
@@ -421,17 +546,13 @@ export default function Racing() {
         )}
       </div>
 
-      {/* Mobile on-screen controls (1p only — 2p requires keyboard) */}
       {gameMode === "1p" && state === "playing" && (
         <div className="flex items-center justify-between w-full max-w-md px-2 sm:hidden gap-2">
-          {/* Left side: steer left */}
           <TBtn label="◀" className="w-24 h-16 bg-indigo-800/70" onDown={() => keyDown("left")} onUp={() => keyUp("left")} />
-          {/* Centre: accelerate / brake */}
           <div className="flex flex-col gap-2 flex-1 max-w-[140px]">
             <TBtn label="▲ Gas" className="h-14 bg-green-700/70" onDown={() => keyDown("up")} onUp={() => keyUp("up")} />
             <TBtn label="▼ Brake" className="h-12 bg-red-700/70" onDown={() => keyDown("down")} onUp={() => keyUp("down")} />
           </div>
-          {/* Right side: steer right */}
           <TBtn label="▶" className="w-24 h-16 bg-indigo-800/70" onDown={() => keyDown("right")} onUp={() => keyUp("right")} />
         </div>
       )}
