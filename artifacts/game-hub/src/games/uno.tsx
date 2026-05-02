@@ -567,23 +567,85 @@ function PlayerSetup({ onStart, onBack }: { onStart: (configs: PlayerConfig[], v
 }
 
 // ── UNO button / call tracker ─────────────────────────────────────────────────
-function UnoCallButton({ onCall, timeLeft, maxTime }: { onCall: () => void; timeLeft: number; maxTime: number }) {
-  const pct = Math.max(0, timeLeft / maxTime);
-  const r = 30, circ = 2 * Math.PI * r;
+function UnoCallButton({ onCall, deadline, maxTime, called }: {
+  onCall: () => void; deadline: number; maxTime: number; called: boolean;
+}) {
+  const [localCalled, setLocalCalled] = useState(false);
+  const [, tick] = useState(0);
+
+  // Re-render every 80ms so the countdown arc stays live
+  useEffect(() => {
+    const id = setInterval(() => tick(n => n + 1), 80);
+    return () => clearInterval(id);
+  }, []);
+
+  const isDone = localCalled || called;
+  const timeLeft = Math.max(0, deadline - Date.now());
+  const pct = timeLeft / maxTime;
+  const urgent = pct < 0.35 && !isDone;
+  const r = 52, circ = 2 * Math.PI * r;
+
+  const handleClick = () => {
+    if (isDone) return;
+    setLocalCalled(true);
+    onCall();
+  };
+
   return (
-    <div className="fixed bottom-32 right-4 z-40 flex flex-col items-center gap-1">
-      <div className="relative w-20 h-20">
-        <svg className="absolute inset-0 -rotate-90" width={80} height={80}>
-          <circle cx={40} cy={40} r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={6}/>
-          <circle cx={40} cy={40} r={r} fill="none" stroke={pct > 0.4 ? "#22c55e" : pct > 0.2 ? "#f59e0b" : "#ef4444"} strokeWidth={6}
-            strokeDasharray={circ} strokeDashoffset={circ*(1-pct)} strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.1s" }}/>
-        </svg>
-        <button onClick={onCall}
-          className="absolute inset-2 rounded-full bg-yellow-500 hover:bg-yellow-400 text-black font-black text-lg flex items-center justify-center shadow-xl transition-colors animate-bounce">
-          UNO!
-        </button>
+    <div className="fixed inset-0 pointer-events-none z-40 flex items-end justify-center pb-36">
+      <div className="pointer-events-auto flex flex-col items-center gap-3">
+        {isDone ? (
+          /* ── Confirmed state ── */
+          <div className="flex flex-col items-center gap-2">
+            <div className="px-10 py-4 rounded-3xl font-black text-2xl text-black shadow-2xl shadow-green-400/60"
+              style={{ background: "linear-gradient(135deg,#4ade80,#22c55e)", boxShadow: "0 0 40px rgba(74,222,128,0.7)" }}>
+              ✓ UNO CALLED!
+            </div>
+            <span className="text-green-400 text-sm font-bold animate-bounce">Nice! 🎉</span>
+          </div>
+        ) : (
+          /* ── Active state ── */
+          <>
+            <div className={`text-sm font-black uppercase tracking-widest px-4 py-1 rounded-full border ${
+              urgent
+                ? "text-red-300 border-red-500/60 bg-red-500/15 animate-pulse"
+                : "text-yellow-300 border-yellow-500/50 bg-yellow-500/10"
+            }`}>
+              {urgent ? "⚠ Say UNO fast!" : "🔔 1 card left — say UNO!"}
+            </div>
+            <div className="relative" style={{ width: 136, height: 136 }}>
+              {/* Timer arc */}
+              <svg className="absolute inset-0 -rotate-90" width={136} height={136}>
+                <circle cx={68} cy={68} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={10}/>
+                <circle cx={68} cy={68} r={r} fill="none"
+                  stroke={pct > 0.5 ? "#22c55e" : pct > 0.25 ? "#f59e0b" : "#ef4444"}
+                  strokeWidth={10} strokeDasharray={circ} strokeDashoffset={circ * (1 - pct)}
+                  strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.08s linear, stroke 0.3s" }}/>
+              </svg>
+              {/* Button */}
+              <button
+                onClick={handleClick}
+                className={`absolute inset-2.5 rounded-full font-black text-3xl flex items-center justify-center transition-all select-none ${
+                  urgent
+                    ? "text-white animate-pulse"
+                    : "text-black animate-bounce"
+                }`}
+                style={{
+                  background: urgent
+                    ? "linear-gradient(135deg,#ef4444,#dc2626)"
+                    : "linear-gradient(135deg,#fde047,#facc15)",
+                  boxShadow: urgent
+                    ? "0 0 32px rgba(239,68,68,0.8), 0 4px 20px rgba(0,0,0,0.5)"
+                    : "0 0 28px rgba(250,204,21,0.75), 0 4px 20px rgba(0,0,0,0.5)",
+                }}
+              >
+                UNO!
+              </button>
+            </div>
+            <span className="text-xs text-gray-400 font-medium">{(timeLeft / 1000).toFixed(1)}s left</span>
+          </>
+        )}
       </div>
-      <p className="text-xs text-yellow-300 font-semibold">Say UNO!</p>
     </div>
   );
 }
@@ -866,8 +928,7 @@ export default function Uno() {
   const curPlayerIsHuman = !gs.isAI[gs.turn];
   const activeHand = gs.hands[gs.turn];
   const isMyTurn = mode === "online" ? gs.turn === myIdx : curPlayerIsHuman;
-  const unoNeeded = unoCall?.playerIdx === gs.turn && !unoCall.called && curPlayerIsHuman;
-  const timeLeft = unoCall ? Math.max(0, unoCall.deadline - Date.now()) : 0;
+  const unoNeeded = unoCall?.playerIdx === gs.turn && curPlayerIsHuman;
 
   // Everyone except the current human player (opponents from their view)
   const opponents = gs.names
@@ -884,7 +945,7 @@ export default function Uno() {
       {!handRevealed && curPlayerIsHuman && (
         <PassScreen name={gs.names[gs.turn]} onReveal={() => setHandRevealed(true)}/>
       )}
-      {unoNeeded && <UnoCallButton onCall={callUno} timeLeft={timeLeft} maxTime={UNO_TIMER}/>}
+      {unoNeeded && <UnoCallButton onCall={callUno} deadline={unoCall!.deadline} maxTime={UNO_TIMER} called={unoCall!.called}/>}
 
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-2.5 border-b border-red-900/40 bg-gray-950">
