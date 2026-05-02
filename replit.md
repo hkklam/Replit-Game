@@ -2,7 +2,9 @@
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Contains **ZETA Meeting Notes** — a browser-based meeting recorder and transcription tool.
+pnpm workspace monorepo using TypeScript. Contains two products:
+1. **ZETA Meeting Notes** — a browser-based meeting recorder and transcription tool.
+2. **Game Hub** — a browser-based collection of 12 MVP games.
 
 ## Stack
 
@@ -18,6 +20,13 @@ pnpm workspace monorepo using TypeScript. Contains **ZETA Meeting Notes** — a 
 - **AI**: Replit OpenAI Integration (Whisper for transcription)
 
 ## Artifacts
+
+### `artifacts/game-hub` — React+Vite Game Hub (port 23091, path `/game-hub`)
+12 browser games, all pure React/Canvas (no backend needed):
+- 🟢 Simple: Snake, Pong, Typing Racer, Uno, Chess
+- 🟡 Medium: Flappy Bird, Tower Defense, Bubble Shooter, Battleship, Pac-Man
+- 🔴 Hard: Minecraft Voxel (isometric canvas builder), Racing Game (top-down)
+All games are in `artifacts/game-hub/src/games/`. Routing via `wouter`.
 
 ### `artifacts/zeta-meetings` — React+Vite frontend (port 24296, path `/`)
 Pages: Record (`/`), History (`/meetings`), Meeting Detail (`/meetings/:id`)
