@@ -20,16 +20,16 @@ function Shell({ title, controls, children }: { title: string; controls?: string
 }
 
 const W = 480; const H = 600; const BIRD_R = 16; const PIPE_W = 58;
-const GRAVITY = 0.46; const JUMP = -4.7;
+const JUMP = -5.875;
 const B1X = 98; const B2X = 128;
 
 type Theme = "sky" | "city" | "cave" | "space";
 
-const THEMES: Record<Theme, { name: string; icon: string; spd: number; gap: number; interval: number; groundH: number; desc: string; diff: string; birdColors: [string, string] }> = {
-  sky:   { name: "Sunny Day",  icon: "☀️",  spd: 2.5, gap: 158, interval: 95, groundH: 58, desc: "Classic pipes, blue sky",    diff: "Easy",   birdColors: ["#facc15", "#67e8f9"] },
-  city:  { name: "Night City", icon: "🌃",  spd: 3.0, gap: 148, interval: 90, groundH: 52, desc: "Skyscrapers after dark",      diff: "Medium", birdColors: ["#22d3ee", "#f472b6"] },
-  cave:  { name: "Dark Cave",  icon: "🕳️",  spd: 3.0, gap: 140, interval: 88, groundH: 50, desc: "Stalactite tunnels",          diff: "Hard",   birdColors: ["#f97316", "#a78bfa"] },
-  space: { name: "Deep Space", icon: "🚀",  spd: 3.3, gap: 152, interval: 92, groundH: 0,  desc: "Asteroid fields, zero-G",    diff: "Expert", birdColors: ["#c4b5fd", "#6ee7b7"] },
+const THEMES: Record<Theme, { name: string; icon: string; spd: number; gap: number; interval: number; groundH: number; gravity: number; desc: string; diff: string; birdColors: [string, string] }> = {
+  sky:   { name: "Sunny Day",  icon: "☀️",  spd: 2.5, gap: 158, interval: 95, groundH: 58, gravity: 1.0, desc: "Classic pipes, blue sky",    diff: "Easy",   birdColors: ["#facc15", "#67e8f9"] },
+  city:  { name: "Night City", icon: "🌃",  spd: 3.0, gap: 148, interval: 90, groundH: 52, gravity: 0.8, desc: "Skyscrapers after dark",      diff: "Medium", birdColors: ["#22d3ee", "#f472b6"] },
+  cave:  { name: "Dark Cave",  icon: "🕳️",  spd: 3.0, gap: 140, interval: 88, groundH: 50, gravity: 0.7, desc: "Stalactite tunnels",          diff: "Hard",   birdColors: ["#f97316", "#a78bfa"] },
+  space: { name: "Deep Space", icon: "🚀",  spd: 3.3, gap: 152, interval: 92, groundH: 0,  gravity: 0.5, desc: "Asteroid fields, zero-G",    diff: "Expert", birdColors: ["#c4b5fd", "#6ee7b7"] },
 };
 
 const DIFF_COLORS: Record<string, string> = { Easy: "text-green-400", Medium: "text-amber-400", Hard: "text-red-400", Expert: "text-purple-400" };
@@ -47,14 +47,14 @@ type GameState = {
   pipes: Pipe[]; pipeCount: number;
   frame: number; bgOffset: number;
   state: "idle" | "playing" | "dead";
-  spd: number; gap: number; interval: number; groundH: number;
+  spd: number; gap: number; interval: number; groundH: number; gravity: number;
 };
 
 function makeBird(yOff = 0): Bird { return { y: H / 2 + yOff, vy: 0, alive: true, score: 0, rot: 0 }; }
 
 function initState(theme: Theme, mode: "1p" | "2p"): GameState {
   const c = THEMES[theme];
-  return { theme, mode, b1: makeBird(0), b2: makeBird(30), pipes: [], pipeCount: 0, frame: 0, bgOffset: 0, state: "idle", spd: c.spd, gap: c.gap, interval: c.interval, groundH: c.groundH };
+  return { theme, mode, b1: makeBird(0), b2: makeBird(30), pipes: [], pipeCount: 0, frame: 0, bgOffset: 0, state: "idle", spd: c.spd, gap: c.gap, interval: c.interval, groundH: c.groundH, gravity: c.gravity };
 }
 
 function drawBird(ctx: CanvasRenderingContext2D, x: number, bird: Bird, theme: Theme, player: 1 | 2) {
@@ -318,7 +318,7 @@ export default function FlappyBird() {
     const s = g.current;
     if (s.state !== "playing") { draw(); return; }
     s.frame++; s.bgOffset += s.spd;
-    const upd = (b: Bird) => { if (!b.alive) return; b.vy += GRAVITY; b.y += b.vy; b.rot = Math.max(-0.55, Math.min(1.35, b.vy * 0.068)); };
+    const upd = (b: Bird) => { if (!b.alive) return; b.vy += s.gravity; b.y += b.vy; b.rot = Math.max(-0.55, Math.min(1.35, b.vy * 0.068)); };
     upd(s.b1); if (s.mode === "2p") upd(s.b2);
     if (s.frame % s.interval === 0) {
       const tMin = 60; const tMax = H - s.gap - s.groundH - 60;
