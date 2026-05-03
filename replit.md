@@ -22,10 +22,17 @@ pnpm workspace monorepo using TypeScript. Contains two products:
 ## Artifacts
 
 ### `artifacts/game-hub` — React+Vite Game Hub (port 23091, path `/game-hub`)
-12 browser games, all pure React/Canvas:
-- 🟢 Simple: Snake, Pong, Typing Racer, Uno, Chess
-- 🟡 Medium: Flappy Bird, Tower Defense, Bubble Shooter, Battleship, Pac-Man
-- 🔴 Hard: Minecraft Voxel (isometric canvas builder), Racing Game (top-down)
+24 browser games, all pure React/Canvas:
+- 🟢 Simple: Snake, Pong, Typing Racer, Uno, Chess, Tetris, BrainRace
+- 🟡 Medium: Flappy Bird, Tower Defense, Bubble Shooter, Battleship, Pac-Man, Magic Sort, Flow Free, Sneezing Kittens, TrainYard, Spin & Solve
+- 🔴 Hard: Minecraft Voxel, Racing Game, Candy Crush 3D, Tetris Royale, DrawIt (Pictionary), Mahjong, BrainRace, **Quiz Board Arena** (Jeopardy-style)
+
+**Quiz Board Arena** (`quiz-board.tsx`):
+- Jeopardy-style trivia, 1–4 players hot-seat (same device)
+- 12 categories: Science & Nature, World Geography, World History, Literature & Arts, Sports & Games, Technology & Inventions (base pack) + Wordplay & Vocabulary, Music & Instruments, Food & Drink, Math & Logic, Famous People, The Human Body (expanded pack)
+- 1800+ clues; 6 random categories per game; 5 value tiers ($100–$500) per category
+- Correct = +value, wrong = -value; configurable timer (15/30/45/60s); fuzzy answer matching
+- Pack selector (Base/Expanded/All) + custom category picker in setup
 All games are in `artifacts/game-hub/src/games/`. Routing via `wouter`.
 
 **Online multiplayer** (via WebSocket relay in `artifacts/api-server`):

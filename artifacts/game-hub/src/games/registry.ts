@@ -22,6 +22,7 @@ import SneezingKittens from "./sneezing-kittens";
 import TrainYard from "./trainyard";
 import SpinSolve from "./spin-solve";
 import BrainRace from "./brain-race";
+import QuizBoard from "./quiz-board";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -297,6 +298,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-blue-950/80 via-blue-900/30 to-transparent",
     borderColor: "#3b82f630",
     component: BrainRace,
+  },
+  {
+    id: "quiz-board",
+    name: "Quiz Board Arena",
+    icon: "🎯",
+    tier: "🔴",
+    desc: "Jeopardy-style trivia for 1–4 players. 12 categories · 1800+ clues · Base & Expanded packs. Hot-seat multiplayer.",
+    color: "#fbbf24",
+    gradient: "from-amber-950/80 via-yellow-900/30 to-transparent",
+    borderColor: "#fbbf2430",
+    component: QuizBoard,
   },
 ];
 
