@@ -361,9 +361,9 @@ function PuzzleBoard({ answer, revealed }: { answer: string; revealed: string[] 
   const tileSize = totalLetters > 20 ? 26 : totalLetters > 14 ? 30 : 34;
   const fontSize = tileSize - 12;
   return (
-    <div style={{ padding: '10px 12px 8px', display: 'flex', flexWrap: 'wrap', gap: 5, justifyContent: 'center' }}>
+    <div style={{ padding: '10px 12px 8px', display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
       {words.map((word, wi) => (
-        <div key={wi} style={{ display: 'flex', gap: 2 }}>
+        <div key={wi} style={{ display: 'flex', gap: 4 }}>
           {word.split('').map((ch, ci) => {
             const rev = revealed.includes(ch) || !/[A-Z]/.test(ch);
             return (
@@ -396,6 +396,35 @@ function LetterKeys({ guessed, onGuess, mode }: { guessed: string[]; onGuess: (l
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// ─── LETTER INPUT FOR PUZZLE ──────────────────────────────────────────────────
+function PuzzleLetterInput({ onGuess, onCancel }: { onGuess: (letter: string) => void; onCancel: () => void }) {
+  const [val, setVal] = useState('');
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const char = e.target.value.toUpperCase().slice(0, 1);
+    setVal(char);
+    if (/^[A-Z]$/.test(char)) {
+      onGuess(char);
+      setVal('');
+    }
+  };
+  
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, backdropFilter: 'blur(4px)' }}>
+      <div style={{ background: '#0d1b2a', border: '2px solid #f0c040', borderRadius: 16, padding: 28, textAlign: 'center', width: 340 }}>
+        <div style={{ fontSize: 36, marginBottom: 8 }}>✏️</div>
+        <h3 style={{ color: '#f0c040', margin: '0 0 16px' }}>Type a Letter</h3>
+        <p style={{ color: '#888', fontSize: 14, marginBottom: 16 }}>Enter a single letter to guess</p>
+        <input value={val} onChange={handleInputChange} placeholder="A–Z" autoFocus maxLength={1}
+          style={{ width: '100%', padding: '12px 16px', background: '#1a2a40', border: '2px solid #3a5a80', borderRadius: 8, color: '#fff', fontSize: 24, fontWeight: 700, boxSizing: 'border-box', textAlign: 'center', fontFamily: 'Georgia, serif', letterSpacing: 2 }} />
+        <div style={{ display: 'flex', gap: 10, marginTop: 14, justifyContent: 'center' }}>
+          <button onClick={onCancel} style={{ padding: '10px 20px', background: '#374151', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>Cancel</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -833,15 +862,16 @@ function SsOnlineGame({ ssState, ssActions, onBack }: { ssState: ReturnType<type
           </button>
         </div>
       )}
-      {/* Consonant keyboard */}
+      {/* Consonant input */}
       {myTurn && gs.phase === 'guessing' && (
-        <div style={{ width: '100%' }}>
-          <div style={{ textAlign: 'center', fontSize: 12, color: '#888', marginBottom: 6 }}>▼ Pick a consonant {gs.doubleActive && <span style={{ color: '#f59e0b' }}>(DOUBLE POINTS!)</span>}</div>
-          <LetterKeys guessed={gs.guessed} onGuess={l => ssActions.sendAction('guess', { letter: l })} mode="consonant" />
-        </div>
+        <PuzzleLetterInput onGuess={l => ssActions.sendAction('guess', { letter: l })} onCancel={() => {}} />
       )}
-      {/* Vowel keyboard */}
+      {/* Vowel input */}
       {myTurn && gs.phase === 'vowel' && (
+        <PuzzleLetterInput onGuess={l => ssActions.sendAction('guess_vowel', { letter: l })} onCancel={() => {}} />
+      )}
+      {/* Old keyboard fallback (hidden) */}
+      {false && myTurn && gs.phase === 'vowel' && (
         <div style={{ width: '100%' }}>
           <div style={{ textAlign: 'center', fontSize: 12, color: '#888', marginBottom: 6 }}>▼ Pick a vowel ({gs.vowelFree ? '🎁 FREE!' : `−$${VOWEL_COST}`})</div>
           <LetterKeys guessed={gs.guessed} onGuess={l => ssActions.sendAction('vowel', { letter: l })} mode="vowel" />
@@ -978,12 +1008,12 @@ function AiGame({ initialGs, onMenu }: { initialGs: GS; onMenu: () => void }) {
         </div>
       )}
       {isHuman && phase === 'guessing' && (
-        <div style={{ width: '100%' }}>
-          <div style={{ textAlign: 'center', fontSize: 12, color: '#888', marginBottom: 6 }}>▼ Pick a consonant {doubleActive && <span style={{ color: '#f59e0b' }}>(DOUBLE POINTS!)</span>}</div>
-          <LetterKeys guessed={guessed} onGuess={onGuess} mode="consonant" />
-        </div>
+        <PuzzleLetterInput onGuess={onGuess} onCancel={() => {}} />
       )}
       {isHuman && phase === 'vowel' && (
+        <PuzzleLetterInput onGuess={onGuess} onCancel={() => {}} />
+      )}
+      {false && isHuman && phase === 'vowel' && (
         <div style={{ width: '100%' }}>
           <div style={{ textAlign: 'center', fontSize: 12, color: '#888', marginBottom: 6 }}>▼ Pick a vowel ({gs.vowelFree ? '🎁 FREE!' : `−$${VOWEL_COST}`})</div>
           <LetterKeys guessed={guessed} onGuess={onGuess} mode="vowel" />
