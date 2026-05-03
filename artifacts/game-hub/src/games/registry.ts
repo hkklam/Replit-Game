@@ -20,6 +20,7 @@ import Pictionary from "./pictionary";
 import Mahjong from "./mahjong";
 import SneezingKittens from "./sneezing-kittens";
 import TrainYard from "./trainyard";
+import SpinSolve from "./spin-solve";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -273,6 +274,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-yellow-950/80 via-yellow-900/30 to-transparent",
     borderColor: "#d9770630",
     component: TrainYard,
+  },
+  {
+    id: "spin-solve",
+    name: "Spin & Solve Arena",
+    icon: "🎡",
+    tier: "🟡",
+    desc: "Wheel of Fortune style! Spin the prize wheel, guess letters, buy vowels, and solve the puzzle before the AI does.",
+    color: "#f0c040",
+    gradient: "from-yellow-950/80 via-amber-900/30 to-transparent",
+    borderColor: "#f0c04030",
+    component: SpinSolve,
   },
 ];
 
