@@ -2,6 +2,417 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 
+// ─── Canvas / world constants ─────────────────────────────────────────────────
+const CW      = 700;
+const CH      = 480;
+const SEG     = 26;     // world units per track segment
+const ROAD_W  = 52;     // road half-width
+const RUMBLE  = 13;     // extra width for rumble strip
+const LAP_COUNT = 3;
+
+// ─── Physics ──────────────────────────────────────────────────────────────────
+const MAX_SPD   = 4.6;
+const ACCEL     = 0.10;
+const BRAKE_F   = 0.17;
+const FRICTION  = 0.973;
+const STEER_LAT = 1.9;    // lateral units added per frame at full speed
+const CENTRI    = 0.38;   // curvature-induced lateral drift scale
+const OFF_MULT  = 0.935;  // speed multiplier when off-road
+
+export type Difficulty = "easy" | "medium" | "hard";
+const AI_SPD: Record<Difficulty, number> = { easy: 2.1, medium: 3.0, hard: 3.85 };
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface TrackCmd { turn: number; count: number; }
+interface TrackInfo {
+  id: string; name: string; flag: string; stars: number;
+  desc: string; aiDiff: Difficulty; cmds: TrackCmd[];
+}
+interface TrackPt { x: number; y: number; h: number; col: number; }
+interface CarState {
+  prog: number; lat: number; spd: number;
+  lap: number; bestLap: number; lapStart: number;
+  color: string; label: string;
+}
+interface MapBounds { x0: number; y0: number; x1: number; y1: number; }
+interface BuiltTrack { pts: TrackPt[]; total: number; mb: MapBounds; }
+interface GameState {
+  pts: TrackPt[]; total: number; mb: MapBounds; info: TrackInfo;
+  player: CarState; player2: CarState | null; ais: CarState[];
+  keys: Set<string>; s1: number; s2: number;
+  phase: "countdown" | "playing" | "done";
+  startAt: number; winner: string; mode: "1p" | "2p";
+}
+
+// ─── Track definitions ────────────────────────────────────────────────────────
+// turn = total degrees turned over that stretch (+ = right, - = left)
+const TRACKS: TrackInfo[] = [
+  {
+    id: "monza", name: "Monza", flag: "🇮🇹", stars: 1,
+    desc: "Long straights · chicane complex · Parabolica hairpin",
+    aiDiff: "easy",
+    cmds: [
+      { turn: 0,    count: 38 }, { turn: 68,   count: 10 },
+      { turn: -88,  count: 12 }, { turn: 64,   count: 8  },
+      { turn: 0,    count: 22 }, { turn: 80,   count: 14 },
+      { turn: 0,    count: 12 }, { turn: 75,   count: 14 },
+      { turn: 0,    count: 14 }, { turn: -80,  count: 10 },
+      { turn: 80,   count: 10 }, { turn: 0,    count: 14 },
+      { turn: 180,  count: 30 }, { turn: 0,    count: 38 },
+    ],
+  },
+  {
+    id: "silverstone", name: "Silverstone", flag: "🇬🇧", stars: 2,
+    desc: "Maggotts–Becketts–Chapel S-complex · fast sweepers",
+    aiDiff: "easy",
+    cmds: [
+      { turn: 60,   count: 14 }, { turn: 0,    count: 16 },
+      { turn: -100, count: 10 }, { turn: 100,  count: 10 },
+      { turn: -100, count: 10 }, { turn: 0,    count: 20 },
+      { turn: 90,   count: 14 }, { turn: 0,    count: 12 },
+      { turn: 78,   count: 12 }, { turn: 0,    count: 12 },
+      { turn: -56,  count: 14 }, { turn: 0,    count: 18 },
+      { turn: 60,   count: 14 }, { turn: 0,    count: 18 },
+      { turn: -60,  count: 14 }, { turn: 0,    count: 18 },
+      { turn: -68,  count: 14 }, { turn: 0,    count: 26 },
+    ],
+  },
+  {
+    id: "spa", name: "Spa-Francorchamps", flag: "🇧🇪", stars: 3,
+    desc: "Eau Rouge · Kemmel straight · Pouhon · La Source",
+    aiDiff: "medium",
+    cmds: [
+      { turn: 0,    count: 26 }, { turn: -195, count: 22 },
+      { turn: 0,    count: 10 }, { turn: -80,  count: 8  },
+      { turn: 105,  count: 7  }, { turn: 15,   count: 44 },
+      { turn: -100, count: 9  }, { turn: 90,   count: 7  },
+      { turn: 0,    count: 20 }, { turn: -75,  count: 20 },
+      { turn: 0,    count: 18 }, { turn: -138, count: 9  },
+      { turn: 138,  count: 7  }, { turn: 35,   count: 12 },
+      { turn: 0,    count: 28 },
+    ],
+  },
+  {
+    id: "suzuka", name: "Suzuka", flag: "🇯🇵", stars: 4,
+    desc: "S-curves · 130R · Spoon · Casio Triangle · technical",
+    aiDiff: "hard",
+    cmds: [
+      { turn: 0,    count: 18 }, { turn: 115,  count: 7  },
+      { turn: -115, count: 7  }, { turn: 115,  count: 7  },
+      { turn: -115, count: 7  }, { turn: 0,    count: 14 },
+      { turn: -90,  count: 10 }, { turn: 0,    count: 11 },
+      { turn: 80,   count: 9  }, { turn: -100, count: 7  },
+      { turn: 0,    count: 11 }, { turn: -215, count: 32 },
+      { turn: 0,    count: 18 }, { turn: -70,  count: 22 },
+      { turn: 0,    count: 22 }, { turn: -110, count: 14 },
+      { turn: 0,    count: 9  }, { turn: 155,  count: 7  },
+      { turn: -155, count: 6  }, { turn: 0,    count: 38 },
+    ],
+  },
+  {
+    id: "monaco", name: "Monaco", flag: "🇲🇨", stars: 5,
+    desc: "Street circuit · Loews hairpin · tunnel · tight walls",
+    aiDiff: "hard",
+    cmds: [
+      { turn: 0,    count: 13 }, { turn: 88,   count: 10 },
+      { turn: 18,   count: 22 }, { turn: 72,   count: 9  },
+      { turn: 88,   count: 9  }, { turn: -248, count: 32 },
+      { turn: 78,   count: 9  }, { turn: -12,  count: 28 },
+      { turn: -168, count: 10 }, { turn: 168,  count: 9  },
+      { turn: 68,   count: 9  }, { turn: 168,  count: 9  },
+      { turn: -168, count: 9  }, { turn: -148, count: 22 },
+      { turn: 118,  count: 9  }, { turn: 0,    count: 38 },
+    ],
+  },
+];
+
+// ─── Track builder ────────────────────────────────────────────────────────────
+function buildTrack(info: TrackInfo): BuiltTrack {
+  const pts: TrackPt[] = [];
+  let x = 0, y = 0, h = -Math.PI / 2, colCnt = 0;
+  for (const cmd of info.cmds) {
+    const dh = (cmd.turn * Math.PI / 180) / Math.max(1, cmd.count);
+    for (let i = 0; i < cmd.count; i++) {
+      pts.push({ x, y, h, col: Math.floor(colCnt / 4) % 2 });
+      colCnt++;
+      h += dh;
+      x += Math.cos(h) * SEG;
+      y += Math.sin(h) * SEG;
+    }
+  }
+  pts.push({ x, y, h, col: pts[pts.length - 1]?.col ?? 0 });
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const p of pts) {
+    if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x;
+    if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y;
+  }
+  return { pts, total: (pts.length - 1) * SEG, mb: { x0, y0, x1, y1 } };
+}
+
+// ─── Track helpers ────────────────────────────────────────────────────────────
+function tpAt(pts: TrackPt[], total: number, prog: number): TrackPt {
+  const p = ((prog % total) + total) % total;
+  const idx = Math.min(Math.floor(p / SEG), pts.length - 2);
+  const f = (p % SEG) / SEG;
+  const a = pts[idx], b = pts[idx + 1];
+  return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, h: a.h, col: a.col };
+}
+
+function carWP(pts: TrackPt[], total: number, prog: number, lat: number) {
+  const tp = tpAt(pts, total, prog);
+  const perp = tp.h + Math.PI / 2;
+  return { wx: tp.x + Math.cos(perp) * lat, wy: tp.y + Math.sin(perp) * lat, h: tp.h };
+}
+
+function segCurvature(pts: TrackPt[], total: number, prog: number): number {
+  const p = ((prog % total) + total) % total;
+  const idx = Math.min(Math.floor(p / SEG), pts.length - 2);
+  return pts[Math.min(idx + 1, pts.length - 1)].h - pts[idx].h;
+}
+
+function makeCar(prog: number, lat: number, color: string, label: string): CarState {
+  return { prog, lat, spd: 0, lap: 0, bestLap: Infinity, lapStart: 0, color, label };
+}
+
+function stepCar(
+  car: CarState, pts: TrackPt[], total: number,
+  accel: boolean, brake: boolean, left: boolean, right: boolean,
+): number | null {
+  if (accel)      car.spd = Math.min(car.spd + ACCEL, MAX_SPD);
+  else if (brake) car.spd = Math.max(car.spd - BRAKE_F, 0);
+  else            car.spd *= FRICTION;
+
+  const steer = (left ? -1 : 0) + (right ? 1 : 0);
+  car.lat += steer * STEER_LAT * Math.max(0.25, car.spd / MAX_SPD);
+
+  const dh = segCurvature(pts, total, car.prog);
+  car.lat += dh * car.spd * CENTRI;
+
+  if (Math.abs(car.lat) > ROAD_W) car.spd *= OFF_MULT;
+  car.lat = Math.max(-(ROAD_W + RUMBLE) * 2.2, Math.min((ROAD_W + RUMBLE) * 2.2, car.lat));
+
+  car.prog += car.spd;
+  if (car.prog >= total) {
+    car.prog -= total;
+    car.lap++;
+    const lt = Date.now() - car.lapStart;
+    if (lt < car.bestLap) car.bestLap = lt;
+    car.lapStart = Date.now();
+    return lt;
+  }
+  return null;
+}
+
+// ─── Drawing helpers ──────────────────────────────────────────────────────────
+function shadeHex(color: string, amt: number): string {
+  const n = parseInt(color.replace("#", ""), 16);
+  const r = Math.max(0, Math.min(255, (n >> 16) + amt));
+  const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
+  const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
+  return `rgb(${r},${g},${b})`;
+}
+
+function drawTopCar(
+  ctx: CanvasRenderingContext2D,
+  wx: number, wy: number, h: number,
+  color: string, label: string,
+) {
+  ctx.save();
+  ctx.translate(wx, wy);
+  ctx.rotate(h + Math.PI / 2);
+
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = "#000";
+  ctx.beginPath(); ctx.ellipse(2, 2, 9, 15, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  const grad = ctx.createLinearGradient(-9, -15, 9, 15);
+  grad.addColorStop(0, color); grad.addColorStop(1, shadeHex(color, -60));
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(-9, -15); ctx.lineTo(9, -15); ctx.lineTo(9, 15); ctx.lineTo(-9, 15); ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(150,210,255,0.52)";
+  ctx.fillRect(-7, -13, 14, 9);
+
+  ctx.fillStyle = "#111";
+  ctx.fillRect(-12, -11, 4, 6); ctx.fillRect(8, -11, 4, 6);
+  ctx.fillRect(-12, 6,  4, 6); ctx.fillRect(8, 6,  4, 6);
+
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText(label, 0, 4);
+
+  ctx.restore();
+}
+
+// ─── Render one player's viewport ─────────────────────────────────────────────
+function renderScene(
+  ctx: CanvasRenderingContext2D, gs: GameState,
+  player: CarState, otherCars: CarState[],
+  yOff: number, vH: number, position: number,
+) {
+  const { pts, total, mb } = gs;
+  const wp = carWP(pts, total, player.prog, player.lat);
+  const camAngle = -(wp.h + Math.PI / 2);
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, yOff, CW, vH); ctx.clip();
+
+  // Camera transform: center on car, rotate so car heading = screen-up
+  ctx.translate(CW / 2, yOff + vH / 2);
+  ctx.rotate(camAngle);
+  ctx.translate(-wp.wx, -wp.wy);
+
+  // Grass background
+  const mg = 2400;
+  ctx.fillStyle = "#2d5a1b";
+  ctx.fillRect(mb.x0 - mg, mb.y0 - mg, (mb.x1 - mb.x0) + mg * 2, (mb.y1 - mb.y0) + mg * 2);
+  ctx.fillStyle = "#275318";
+  for (let gx = Math.floor((mb.x0 - mg) / 110) * 110; gx < mb.x1 + mg; gx += 110) {
+    ctx.fillRect(gx, mb.y0 - mg, 55, (mb.y1 - mb.y0) + mg * 2);
+  }
+
+  // Track segments — draw each as a quad (rumble + road surface)
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1];
+    const ha = a.h + Math.PI / 2, hb = b.h + Math.PI / 2;
+    const rw = ROAD_W + RUMBLE;
+    const cos_ha = Math.cos(ha), sin_ha = Math.sin(ha);
+    const cos_hb = Math.cos(hb), sin_hb = Math.sin(hb);
+
+    // Rumble strip (alternating white / red)
+    ctx.fillStyle = a.col === 0 ? "#e8e8e8" : "#cc1111";
+    ctx.beginPath();
+    ctx.moveTo(a.x + cos_ha * rw,  a.y + sin_ha * rw);
+    ctx.lineTo(a.x - cos_ha * rw,  a.y - sin_ha * rw);
+    ctx.lineTo(b.x - cos_hb * rw,  b.y - sin_hb * rw);
+    ctx.lineTo(b.x + cos_hb * rw,  b.y + sin_hb * rw);
+    ctx.closePath(); ctx.fill();
+
+    // Road surface
+    ctx.fillStyle = a.col === 0 ? "#323232" : "#2b2b2b";
+    ctx.beginPath();
+    ctx.moveTo(a.x + cos_ha * ROAD_W,  a.y + sin_ha * ROAD_W);
+    ctx.lineTo(a.x - cos_ha * ROAD_W,  a.y - sin_ha * ROAD_W);
+    ctx.lineTo(b.x - cos_hb * ROAD_W,  b.y - sin_hb * ROAD_W);
+    ctx.lineTo(b.x + cos_hb * ROAD_W,  b.y + sin_hb * ROAD_W);
+    ctx.closePath(); ctx.fill();
+
+    // Edge lines
+    if (i % 2 === 0) {
+      const ew = 2.2;
+      ctx.fillStyle = "rgba(255,255,255,0.78)";
+      ctx.beginPath();
+      ctx.moveTo(a.x + cos_ha * ROAD_W,       a.y + sin_ha * ROAD_W);
+      ctx.lineTo(a.x + cos_ha * (ROAD_W - ew), a.y + sin_ha * (ROAD_W - ew));
+      ctx.lineTo(b.x + cos_hb * (ROAD_W - ew), b.y + sin_hb * (ROAD_W - ew));
+      ctx.lineTo(b.x + cos_hb * ROAD_W,        b.y + sin_hb * ROAD_W);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(a.x - cos_ha * ROAD_W,       a.y - sin_ha * ROAD_W);
+      ctx.lineTo(a.x - cos_ha * (ROAD_W - ew), a.y - sin_ha * (ROAD_W - ew));
+      ctx.lineTo(b.x - cos_hb * (ROAD_W - ew), b.y - sin_hb * (ROAD_W - ew));
+      ctx.lineTo(b.x - cos_hb * ROAD_W,        b.y - sin_hb * ROAD_W);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+
+  // Center dashes
+  ctx.strokeStyle = "rgba(255,255,140,0.52)";
+  ctx.lineWidth = 2.6;
+  ctx.setLineDash([14, 14]);
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Start / finish line (checkerboard)
+  const sf0 = pts[0];
+  const sfh = sf0.h + Math.PI / 2;
+  const cs = 9;
+  for (let s = -3; s <= 3; s++) {
+    for (let d = 0; d < 2; d++) {
+      const bx = sf0.x + Math.cos(sfh) * (s * cs) + Math.cos(sf0.h) * (d * cs);
+      const by = sf0.y + Math.sin(sfh) * (s * cs) + Math.sin(sf0.h) * (d * cs);
+      ctx.fillStyle = (s + d) % 2 === 0 ? "#fff" : "#000";
+      ctx.fillRect(bx - cs / 2, by - cs / 2, cs, cs);
+    }
+  }
+
+  // Cars (others behind, player on top)
+  for (const car of [...otherCars, player]) {
+    const cwp = carWP(pts, total, car.prog, car.lat);
+    drawTopCar(ctx, cwp.wx, cwp.wy, cwp.h, car.color, car.label);
+  }
+
+  ctx.restore(); // back to screen space
+
+  // ─── Minimap ─────────────────────────────────────────────────────────────
+  const msz = 88;
+  const mpx = CW - msz - 8, mpy = yOff + 8;
+  const mpad = 14;
+  const mw = mb.x1 - mb.x0 + mpad * 2, mh = mb.y1 - mb.y0 + mpad * 2;
+  const ms = Math.min(msz / mw, msz / mh);
+  const mox = mpx + msz / 2 - (mb.x0 + mw / 2 - mpad) * ms;
+  const moy = mpy + msz / 2 - (mb.y0 + mh / 2 - mpad) * ms;
+
+  ctx.fillStyle = "rgba(0,0,0,0.70)";
+  ctx.beginPath();
+  ctx.roundRect(mpx - 2, mpy - 2, msz + 4, msz + 4, 7);
+  ctx.fill();
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(mpx, mpy, msz, msz); ctx.clip();
+
+  ctx.strokeStyle = "#444";
+  ctx.lineWidth = (ROAD_W + RUMBLE) * 2 * ms;
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x * ms + mox, pts[0].y * ms + moy);
+  for (const p of pts) ctx.lineTo(p.x * ms + mox, p.y * ms + moy);
+  ctx.closePath(); ctx.stroke();
+
+  ctx.strokeStyle = "#666";
+  ctx.lineWidth = ROAD_W * 2 * ms;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x * ms + mox, pts[0].y * ms + moy);
+  for (const p of pts) ctx.lineTo(p.x * ms + mox, p.y * ms + moy);
+  ctx.closePath(); ctx.stroke();
+
+  for (const car of [...otherCars, player]) {
+    const cwp = carWP(pts, total, car.prog, car.lat);
+    ctx.fillStyle = car.color;
+    ctx.beginPath();
+    ctx.arc(cwp.wx * ms + mox, cwp.wy * ms + moy, car === player ? 4 : 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // ─── HUD bar ─────────────────────────────────────────────────────────────
+  ctx.fillStyle = "rgba(0,0,0,0.72)";
+  ctx.fillRect(0, yOff, CW, 36);
+  ctx.fillStyle = player.color;
+  ctx.font = "bold 13px sans-serif"; ctx.textAlign = "left";
+  ctx.fillText(
+    `${player.label}  P${position}  Lap ${Math.min(player.lap + 1, LAP_COUNT)}/${LAP_COUNT}`,
+    10, yOff + 16,
+  );
+  ctx.fillStyle = "#aaa"; ctx.font = "11px sans-serif";
+  const elapsed = (Date.now() - player.lapStart) / 1000;
+  ctx.fillText(
+    `Best: ${player.bestLap < Infinity ? (player.bestLap / 1000).toFixed(2) + "s" : "--"}  ·  ${Math.round(player.spd * 30)} km/h  ·  ${elapsed.toFixed(1)}s`,
+    10, yOff + 29,
+  );
+}
+
+// ─── Shell & touch button ─────────────────────────────────────────────────────
 function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -18,6 +429,7 @@ function Shell({ title, controls, children }: { title: string; controls?: string
     </div>
   );
 }
+
 function TBtn({ label, onDown, onUp, className }: { label: string; onDown: () => void; onUp: () => void; className?: string }) {
   return (
     <button
@@ -30,556 +442,23 @@ function TBtn({ label, onDown, onUp, className }: { label: string; onDown: () =>
   );
 }
 
-// ─── Projection constants ─────────────────────────────────────────────────────
-const CW       = 700;
-const CH       = 480;
-const SEG_LEN  = 200;          // world units per track segment
-const ROAD_H   = 1000;         // road half-width (world units)
-const CAM_H    = 1000;         // camera height above road
-const CAM_D    = 0.84;         // camera depth / focal length
-const PL_Z     = CAM_H * CAM_D;  // near-plane z  = 840
-const DRAW_N   = 220;          // segments rendered per frame
-const N_SEGS   = 1600;         // segments per lap
-const TRACK_LEN = N_SEGS * SEG_LEN;
-
-// ─── Physics constants ────────────────────────────────────────────────────────
-const MAX_SPD  = 180;
-const ACCEL    = 4.5;
-const BRAKE_F  = 8;
-const FRICTION = 0.962;
-const OFF_F    = 0.88;
-const CENTRI   = 0.026;
-const STEER    = 18;
-const LAP_COUNT = 3;
-const AI_SPD: Record<string, number> = { easy: 80, medium: 132, hard: 160 };
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface Seg { curve: number; pitch: number; col: number; }
-export type Difficulty = "easy" | "medium" | "hard";
-interface TrackInfo {
-  id: string; name: string; flag: string; stars: number; desc: string; aiDiff: Difficulty;
-  cmds: { curve: number; pitch: number; count: number }[];
-}
-interface CarState {
-  z: number; x: number; speed: number;
-  lap: number; bestLap: number; lapStart: number;
-  color: string; label: string;
-}
-interface GameState {
-  track: Seg[]; info: TrackInfo;
-  player: CarState; player2: CarState | null;
-  ais: CarState[];
-  keys: Set<string>;
-  steer1: number; steer2: number;
-  phase: "countdown" | "playing" | "done";
-  startAt: number;
-  winner: string;
-  mode: "1p" | "2p";
-}
-
-// ─── Track definitions ────────────────────────────────────────────────────────
-const TRACKS: TrackInfo[] = [
-  {
-    id: "monza", name: "Monza", flag: "🇮🇹", stars: 1,
-    desc: "Long straights · chicane complex · Parabolica hairpin",
-    aiDiff: "easy",
-    cmds: [
-      { curve: 0,    pitch: 0, count: 350 },
-      { curve: 190,  pitch: 0, count: 12  },
-      { curve: -240, pitch: 0, count: 18  },
-      { curve: 100,  pitch: 0, count: 10  },
-      { curve: 0,    pitch: 0, count: 200 },
-      { curve: 100,  pitch: 0, count: 28  },
-      { curve: 0,    pitch: 0, count: 15  },
-      { curve: 120,  pitch: 0, count: 22  },
-      { curve: 0,    pitch: 0, count: 80  },
-      { curve: -120, pitch: 0, count: 15  },
-      { curve: 150,  pitch: 0, count: 15  },
-      { curve: 0,    pitch: 0, count: 80  },
-      { curve: -320, pitch: 0, count: 55  },
-      { curve: 0,    pitch: 0, count: 200 },
-    ],
-  },
-  {
-    id: "silverstone", name: "Silverstone", flag: "🇬🇧", stars: 2,
-    desc: "Maggotts–Becketts–Chapel S-complex · flowing bends",
-    aiDiff: "easy",
-    cmds: [
-      { curve: 80,   pitch: 0, count: 28  },
-      { curve: 0,    pitch: 0, count: 60  },
-      { curve: -160, pitch: 0, count: 18  },
-      { curve: 160,  pitch: 0, count: 18  },
-      { curve: -160, pitch: 0, count: 18  },
-      { curve: 0,    pitch: 0, count: 100 },
-      { curve: 100,  pitch: 0, count: 30  },
-      { curve: 0,    pitch: 0, count: 50  },
-      { curve: 90,   pitch: 0, count: 25  },
-      { curve: 0,    pitch: 0, count: 40  },
-      { curve: -60,  pitch: 0, count: 30  },
-      { curve: 0,    pitch: 0, count: 80  },
-      { curve: 70,   pitch: 0, count: 30  },
-      { curve: 0,    pitch: 0, count: 80  },
-      { curve: -60,  pitch: 0, count: 28  },
-      { curve: 0,    pitch: 0, count: 60  },
-      { curve: -80,  pitch: 0, count: 28  },
-      { curve: 0,    pitch: 0, count: 200 },
-    ],
-  },
-  {
-    id: "spa", name: "Spa-Francorchamps", flag: "🇧🇪", stars: 3,
-    desc: "Eau Rouge uphill · Kemmel straight · Pouhon · hills",
-    aiDiff: "medium",
-    cmds: [
-      { curve: 0,    pitch: 0,   count: 60  },
-      { curve: -330, pitch: 0,   count: 50  },
-      { curve: 0,    pitch: 0,   count: 20  },
-      { curve: -100, pitch: 12,  count: 18  },
-      { curve: 120,  pitch: 6,   count: 15  },
-      { curve: 20,   pitch: -5,  count: 100 },
-      { curve: -160, pitch: 0,   count: 16  },
-      { curve: 130,  pitch: 0,   count: 14  },
-      { curve: 0,    pitch: 0,   count: 60  },
-      { curve: -80,  pitch: 0,   count: 40  },
-      { curve: 0,    pitch: 0,   count: 50  },
-      { curve: -200, pitch: 0,   count: 18  },
-      { curve: 200,  pitch: 0,   count: 12  },
-      { curve: 40,   pitch: 0,   count: 30  },
-      { curve: 0,    pitch: 0,   count: 180 },
-    ],
-  },
-  {
-    id: "suzuka", name: "Suzuka", flag: "🇯🇵", stars: 4,
-    desc: "S-curves · 130R · Spoon · tight hairpin · technical",
-    aiDiff: "hard",
-    cmds: [
-      { curve: 0,    pitch: 0, count: 50  },
-      { curve: 180,  pitch: 0, count: 14  },
-      { curve: -180, pitch: 0, count: 14  },
-      { curve: 180,  pitch: 0, count: 14  },
-      { curve: -180, pitch: 0, count: 14  },
-      { curve: 0,    pitch: 0, count: 40  },
-      { curve: -130, pitch: 0, count: 22  },
-      { curve: 0,    pitch: 0, count: 30  },
-      { curve: 120,  pitch: 0, count: 18  },
-      { curve: -150, pitch: 0, count: 15  },
-      { curve: 0,    pitch: 0, count: 30  },
-      { curve: -340, pitch: 0, count: 60  },
-      { curve: 0,    pitch: 0, count: 50  },
-      { curve: -90,  pitch: 0, count: 45  },
-      { curve: 0,    pitch: 0, count: 70  },
-      { curve: -160, pitch: 0, count: 28  },
-      { curve: 0,    pitch: 0, count: 20  },
-      { curve: 220,  pitch: 0, count: 14  },
-      { curve: -220, pitch: 0, count: 12  },
-      { curve: 0,    pitch: 0, count: 150 },
-    ],
-  },
-  {
-    id: "monaco", name: "Monaco", flag: "🇲🇨", stars: 5,
-    desc: "Street circuit · Loews hairpin · tunnel · Swimming Pool",
-    aiDiff: "hard",
-    cmds: [
-      { curve: 0,    pitch: 0,  count: 40  },
-      { curve: 130,  pitch: 0,  count: 22  },
-      { curve: 20,   pitch: 8,  count: 60  },
-      { curve: 90,   pitch: 2,  count: 18  },
-      { curve: 140,  pitch: -3, count: 18  },
-      { curve: -400, pitch: 0,  count: 60  },
-      { curve: 110,  pitch: 0,  count: 18  },
-      { curve: -15,  pitch: 0,  count: 80  },
-      { curve: -250, pitch: 0,  count: 18  },
-      { curve: 250,  pitch: 0,  count: 15  },
-      { curve: 90,   pitch: 0,  count: 18  },
-      { curve: 260,  pitch: 0,  count: 18  },
-      { curve: -260, pitch: 0,  count: 15  },
-      { curve: -220, pitch: 0,  count: 40  },
-      { curve: 160,  pitch: 0,  count: 18  },
-      { curve: 0,    pitch: 0,  count: 200 },
-    ],
-  },
-];
-
-function buildTrack(info: TrackInfo): Seg[] {
-  const segs: Seg[] = [];
-  for (const cmd of info.cmds) {
-    for (let i = 0; i < cmd.count; i++) {
-      segs.push({ curve: cmd.curve, pitch: cmd.pitch, col: Math.floor(segs.length / 3) % 2 });
-    }
-  }
-  const base = Math.max(1, segs.length);
-  while (segs.length < N_SEGS) {
-    const src = segs[segs.length % base];
-    segs.push({ ...src, col: Math.floor(segs.length / 3) % 2 });
-  }
-  return segs.slice(0, N_SEGS);
-}
-
-// ─── Rendering helpers ────────────────────────────────────────────────────────
-function trap(ctx: CanvasRenderingContext2D, x1: number, y1: number, w1: number, x2: number, y2: number, w2: number) {
-  ctx.beginPath();
-  ctx.moveTo(x1, y1); ctx.lineTo(x1 + w1, y1);
-  ctx.lineTo(x2 + w2, y2); ctx.lineTo(x2, y2);
-  ctx.closePath(); ctx.fill();
-}
-
-function shadeHex(col: string, amt: number): string {
-  try {
-    const n = parseInt(col.slice(1), 16);
-    const r = Math.max(0, Math.min(255, (n >> 16) + amt));
-    const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
-    const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
-    return `rgb(${r},${g},${b})`;
-  } catch { return col; }
-}
-
-function drawCarSprite(ctx: CanvasRenderingContext2D, sx: number, sy: number, scale: number, color: string, label: string) {
-  const cw = scale * ROAD_H * 0.42 * (CW / 2);
-  const ch = scale * 290 * (CH / 2);
-  if (cw < 2) return;
-
-  ctx.save();
-  ctx.globalAlpha = 0.22;
-  ctx.fillStyle = "#000";
-  ctx.beginPath(); ctx.ellipse(sx, sy + 2, cw * 1.1, cw * 0.22, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-
-  const grad = ctx.createLinearGradient(sx - cw, sy - ch, sx + cw, sy);
-  grad.addColorStop(0, shadeHex(color, -50));
-  grad.addColorStop(0.45, color);
-  grad.addColorStop(1, shadeHex(color, -35));
-  ctx.fillStyle = grad;
-  ctx.beginPath(); ctx.roundRect(sx - cw, sy - ch, cw * 2, ch, cw * 0.14); ctx.fill();
-
-  ctx.fillStyle = "rgba(155,210,255,0.38)";
-  ctx.fillRect(sx - cw * 0.62, sy - ch * 0.95, cw * 1.24, ch * 0.3);
-
-  ctx.fillStyle = "#0d0d0d";
-  const ww = cw * 0.3, wh = ch * 0.2;
-  ctx.fillRect(sx - cw * 1.12, sy - wh, ww, wh);
-  ctx.fillRect(sx + cw * 0.82, sy - wh, ww, wh);
-
-  if (cw > 12) {
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.font = `bold ${Math.max(8, Math.round(cw * 0.52))}px sans-serif`;
-    ctx.textAlign = "center";
-    ctx.fillText(label, sx, sy - ch - 3);
-  }
-}
-
-function drawTree(ctx: CanvasRenderingContext2D, sx: number, sy: number, scale: number, fog: number) {
-  const h = scale * 1800 * (CH / 2);
-  const w = h * 0.55;
-  if (h < 3) return;
-  const alpha = Math.max(0, 1 - fog * 1.15);
-  if (alpha <= 0) return;
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  if (h > 10) {
-    ctx.fillStyle = "#3b2410";
-    ctx.fillRect(sx - w * 0.07, sy - h * 0.18, w * 0.14, h * 0.18);
-  }
-  ctx.fillStyle = "#17520f";
-  ctx.beginPath(); ctx.moveTo(sx, sy - h * 0.54); ctx.lineTo(sx - w, sy - h * 0.05); ctx.lineTo(sx + w, sy - h * 0.05); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = "#1d6414";
-  ctx.beginPath(); ctx.moveTo(sx, sy - h * 0.76); ctx.lineTo(sx - w * 0.74, sy - h * 0.32); ctx.lineTo(sx + w * 0.74, sy - h * 0.32); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = "#237a1a";
-  ctx.beginPath(); ctx.moveTo(sx, sy - h); ctx.lineTo(sx - w * 0.5, sy - h * 0.58); ctx.lineTo(sx + w * 0.5, sy - h * 0.58); ctx.closePath(); ctx.fill();
-  ctx.restore();
-}
-
-function drawMountains(ctx: CanvasRenderingContext2D, xShift: number, yOff: number, H2: number) {
-  const hy = yOff + H2 + 2;
-  ctx.fillStyle = "#0d0520";
-  ctx.beginPath(); ctx.moveTo(0, hy);
-  for (let px = 0; px <= CW; px += 3) {
-    const h = Math.abs(Math.sin(px * 0.0038 + xShift * 0.00028) * 90 + Math.sin(px * 0.0082 + xShift * 0.00038) * 34);
-    ctx.lineTo(px, hy - h);
-  }
-  ctx.lineTo(CW, hy); ctx.closePath(); ctx.fill();
-
-  ctx.fillStyle = "#140a2c";
-  ctx.beginPath(); ctx.moveTo(0, hy);
-  for (let px = 0; px <= CW; px += 3) {
-    const h = Math.abs(Math.sin(px * 0.0068 + xShift * 0.00048) * 62 + Math.sin(px * 0.013 + xShift * 0.00066) * 24);
-    ctx.lineTo(px, hy - h + 14);
-  }
-  ctx.lineTo(CW, hy); ctx.closePath(); ctx.fill();
-
-  ctx.fillStyle = "#1b0f3e";
-  ctx.beginPath(); ctx.moveTo(0, hy);
-  for (let px = 0; px <= CW; px += 3) {
-    const h = Math.abs(Math.sin(px * 0.011 + xShift * 0.00072) * 44 + Math.sin(px * 0.019 + xShift * 0.0009) * 18);
-    ctx.lineTo(px, hy - h + 26);
-  }
-  ctx.lineTo(CW, hy); ctx.closePath(); ctx.fill();
-}
-
-function drawCockpit(ctx: CanvasRenderingContext2D, speed: number, steer: number, yOff: number, vH: number) {
-  const W = CW;
-  const dashY = yOff + vH * 0.76;
-
-  ctx.fillStyle = "#090909";
-  ctx.beginPath();
-  ctx.moveTo(0, yOff); ctx.lineTo(W * 0.21, dashY); ctx.lineTo(0, yOff + vH);
-  ctx.closePath(); ctx.fill();
-
-  ctx.beginPath();
-  ctx.moveTo(W, yOff); ctx.lineTo(W * 0.79, dashY); ctx.lineTo(W, yOff + vH);
-  ctx.closePath(); ctx.fill();
-
-  const hg = ctx.createLinearGradient(0, dashY, 0, yOff + vH);
-  hg.addColorStop(0, "#181818"); hg.addColorStop(1, "#0c0c0c");
-  ctx.fillStyle = hg;
-  ctx.beginPath();
-  ctx.moveTo(W * 0.21, dashY); ctx.lineTo(W * 0.79, dashY);
-  ctx.lineTo(W, yOff + vH); ctx.lineTo(0, yOff + vH);
-  ctx.closePath(); ctx.fill();
-
-  ctx.strokeStyle = "rgba(255,255,255,0.055)"; ctx.lineWidth = 1.5;
-  const vpx = W / 2, vpy = dashY - vH * 0.14;
-  ctx.beginPath(); ctx.moveTo(vpx - 16, vpy); ctx.lineTo(vpx - 50, yOff + vH); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(vpx + 16, vpy); ctx.lineTo(vpx + 50, yOff + vH); ctx.stroke();
-
-  ctx.fillStyle = "#0e0e0e";
-  ctx.fillRect(0, dashY, W, (yOff + vH) - dashY);
-  ctx.strokeStyle = "rgba(255,255,255,0.11)"; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(0, dashY); ctx.lineTo(W, dashY); ctx.stroke();
-
-  const spx = W - 76, spy = yOff + vH - 24, spr = 44;
-  ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(spx, spy, spr, 0.65 * Math.PI, 2.35 * Math.PI); ctx.stroke();
-  const sf = Math.min(1, speed / MAX_SPD);
-  const sa = 0.65 * Math.PI + sf * 1.7 * Math.PI;
-  ctx.strokeStyle = sf > 0.82 ? "#ff4433" : sf > 0.55 ? "#ffaa22" : "#33ff88";
-  ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.moveTo(spx, spy);
-  ctx.lineTo(spx + Math.cos(sa) * spr * 0.8, spy + Math.sin(sa) * spr * 0.8); ctx.stroke();
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
-  ctx.font = "9px sans-serif"; ctx.textAlign = "center";
-  ctx.fillText(`${Math.round(speed * 30)}`, spx, spy + 4);
-  ctx.fillText("km/h", spx, spy + 13);
-
-  if (vH >= 220) {
-    const swx = W / 2, swy = dashY + vH * 0.095, swR = 27;
-    const swa = steer * (Math.PI / 4);
-    ctx.strokeStyle = "#2e2e2e"; ctx.lineWidth = 7;
-    ctx.beginPath(); ctx.arc(swx, swy, swR, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = "#464646"; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.arc(swx, swy, swR, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = "#3c3c3c"; ctx.lineWidth = 4; ctx.lineCap = "round";
-    for (let i = 0; i < 3; i++) {
-      const a = swa + i * Math.PI * 2 / 3;
-      ctx.beginPath();
-      ctx.moveTo(swx + Math.cos(a) * swR * 0.8, swy + Math.sin(a) * swR * 0.8);
-      ctx.lineTo(swx - Math.cos(a) * swR * 0.26, swy - Math.sin(a) * swR * 0.26);
-      ctx.stroke();
-    }
-    ctx.fillStyle = "#1a1a1a"; ctx.beginPath(); ctx.arc(swx, swy, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#2c2c2c"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(swx, swy, 8, 0, Math.PI * 2); ctx.stroke();
-    ctx.lineCap = "butt";
-  }
-}
-
-// ─── Cockpit view renderer ────────────────────────────────────────────────────
-function renderView(
-  ctx: CanvasRenderingContext2D,
-  gs: GameState,
-  player: CarState,
-  otherCars: CarState[],
-  yOff: number,
-  vH: number,
-  steer: number,
-  position: number,
-) {
-  const W2 = CW / 2, H2 = vH / 2;
-  const px = player.x;
-  const pz = player.z;
-
-  ctx.save();
-  ctx.beginPath(); ctx.rect(0, yOff, CW, vH); ctx.clip();
-
-  // Sky
-  const skyG = ctx.createLinearGradient(0, yOff, 0, yOff + vH * 0.55);
-  skyG.addColorStop(0, "#06011a"); skyG.addColorStop(0.5, "#150830"); skyG.addColorStop(1, "#221244");
-  ctx.fillStyle = skyG; ctx.fillRect(0, yOff, CW, vH);
-
-  for (let i = 0; i < 50; i++) {
-    const sx2 = (i * 173 + 41) % CW;
-    const sy2 = yOff + (i * 97 + 13) % (vH * 0.44);
-    ctx.fillStyle = `rgba(255,255,255,${0.25 + (i % 4) * 0.12})`;
-    ctx.fillRect(sx2, sy2, 1, 1);
-  }
-
-  // Horizon glow
-  const hg = ctx.createLinearGradient(0, yOff + H2 - 20, 0, yOff + H2 + 20);
-  hg.addColorStop(0, "rgba(80,40,160,0)"); hg.addColorStop(0.5, "rgba(80,40,180,0.18)"); hg.addColorStop(1, "rgba(80,40,160,0)");
-  ctx.fillStyle = hg; ctx.fillRect(0, yOff + H2 - 20, CW, 40);
-
-  // Camera
-  const camSeg = Math.floor(pz / SEG_LEN) % N_SEGS;
-  const camFrac = (pz % SEG_LEN) / SEG_LEN;
-
-  const cumX = new Float32Array(DRAW_N + 2);
-  const cumY = new Float32Array(DRAW_N + 2);
-  for (let n = 1; n <= DRAW_N + 1; n++) {
-    const si = (camSeg + n) % N_SEGS;
-    cumX[n] = cumX[n - 1] + gs.track[si].curve;
-    cumY[n] = cumY[n - 1] + gs.track[si].pitch;
-  }
-
-  // Mountains on horizon (parallax shift from far curve accumulation)
-  const mxShift = cumX[Math.min(DRAW_N - 1, 180)];
-  drawMountains(ctx, mxShift, yOff, H2);
-
-  // Sprites
-  type Spr = { n: number; sx: number; sy: number; sc: number; color: string; label: string; kind?: "tree" };
-  const sprites: Spr[] = [];
-  for (const car of otherCars) {
-    const diff = (car.lap * TRACK_LEN + car.z) - (player.lap * TRACK_LEN + pz);
-    const nF = diff / SEG_LEN;
-    const n = Math.floor(nF);
-    if (n < 1 || n > DRAW_N - 1) continue;
-    const wz = PL_Z + n * SEG_LEN - camFrac * SEG_LEN;
-    if (wz <= 0) continue;
-    const sc = CAM_D / wz;
-    sprites.push({
-      n,
-      sx: W2 + sc * (cumX[n] + car.x - px) * W2,
-      sy: yOff + H2 + sc * (CAM_H - cumY[n]) * H2,
-      sc, color: car.color, label: car.label,
-    });
-  }
-  // Tree sprites on both sides of the road
-  for (let n = 2; n < DRAW_N - 1; n++) {
-    const si = (camSeg + n) % N_SEGS;
-    const wz = PL_Z + n * SEG_LEN - camFrac * SEG_LEN;
-    if (wz <= 0) continue;
-    const sc = CAM_D / wz;
-    const sy = yOff + H2 + sc * (CAM_H - cumY[n]) * H2;
-    if (si % 8 === 0) {
-      const spread = 460 + (si * 113) % 380;
-      sprites.push({ n, kind: "tree", sx: W2 + sc * (cumX[n] - (ROAD_H + spread) - px) * W2, sy, sc, color: "", label: "" });
-    }
-    if (si % 8 === 4) {
-      const spread = 440 + (si * 179) % 400;
-      sprites.push({ n, kind: "tree", sx: W2 + sc * (cumX[n] + (ROAD_H + spread) - px) * W2, sy, sc, color: "", label: "" });
-    }
-  }
-  sprites.sort((a, b) => b.n - a.n);
-
-  // Road bands (far → near)
-  let maxy = yOff + vH;
-  let sprI = 0;
-
-  for (let n = DRAW_N; n >= 1; n--) {
-    const si = (camSeg + n) % N_SEGS;
-    const seg = gs.track[si];
-
-    const wf = PL_Z + n * SEG_LEN - camFrac * SEG_LEN;
-    const wn = PL_Z + (n - 1) * SEG_LEN - camFrac * SEG_LEN;
-    if (wn <= 0) continue;
-
-    const sf = wf > 0 ? CAM_D / wf : 0;
-    const sn = CAM_D / wn;
-
-    const cxf = W2 + sf * (cumX[n]     - px) * W2;
-    const cxn = W2 + sn * (cumX[n - 1] - px) * W2;
-    const hwf = sf * ROAD_H * W2;
-    const hwn = sn * ROAD_H * W2;
-    const cyf = yOff + H2 + sf * (CAM_H - cumY[n])     * H2;
-    const cyn = yOff + H2 + sn * (CAM_H - cumY[n - 1]) * H2;
-
-    if (cyn <= cyf || cyn < yOff || cyf > yOff + vH) continue;
-    if (cyn >= maxy) continue;
-
-    const cn = Math.min(cyn, maxy);
-    const col = seg.col;
-    const fog = Math.min(0.88, Math.pow(n / DRAW_N, 1.65) * 1.45);
-
-    // Grass
-    ctx.fillStyle = col === 0 ? "#1d601d" : "#185218";
-    ctx.fillRect(0, cyf, CW, cn - cyf);
-
-    // Rumble strips
-    const rw = { f: hwf * 0.13, n: hwn * 0.13 };
-    ctx.fillStyle = col === 0 ? "#ffffff" : "#dd1111";
-    trap(ctx, cxf - hwf - rw.f, cyf, rw.f * 2, cxn - hwn - rw.n, cn, rw.n * 2);
-    trap(ctx, cxf + hwf, cyf, rw.f * 2, cxn + hwn, cn, rw.n * 2);
-
-    // Road
-    ctx.fillStyle = col === 0 ? "#333" : "#2b2b2b";
-    trap(ctx, cxf - hwf, cyf, hwf * 2, cxn - hwn, cn, hwn * 2);
-
-    // Center lane dash
-    if (col === 0 && hwf > 8) {
-      const lf = hwf * 0.038, ln = hwn * 0.038;
-      ctx.fillStyle = "rgba(255,255,140,0.52)";
-      trap(ctx, cxf - lf * 0.5, cyf, lf, cxn - ln * 0.5, cn, ln);
-    }
-
-    // Fog
-    if (fog > 0.04) {
-      ctx.fillStyle = `rgba(8,2,20,${fog.toFixed(2)})`;
-      ctx.fillRect(0, cyf, CW, cn - cyf);
-    }
-
-    // Road edge lines (white)
-    if (hwf > 6) {
-      const elw = { f: hwf * 0.022, n: hwn * 0.022 };
-      ctx.fillStyle = "rgba(255,255,255,0.82)";
-      trap(ctx, cxf - hwf, cyf, elw.f, cxn - hwn, cn, elw.n);
-      trap(ctx, cxf + hwf - elw.f, cyf, elw.f, cxn + hwn - elw.n, cn, elw.n);
-    }
-
-    // Sprites at this depth
-    while (sprI < sprites.length && sprites[sprI].n >= n) {
-      const sp = sprites[sprI++];
-      if (sp.n === n) {
-        if (sp.kind === "tree") drawTree(ctx, sp.sx, sp.sy, sp.sc, fog);
-        else drawCarSprite(ctx, sp.sx, sp.sy, sp.sc, sp.color, sp.label);
-      }
-    }
-    maxy = Math.min(maxy, cn);
-  }
-
-  // Cockpit overlay
-  drawCockpit(ctx, player.speed, steer, yOff, vH);
-
-  // HUD bar
-  ctx.fillStyle = "rgba(0,0,0,0.75)";
-  ctx.fillRect(0, yOff, CW, 38);
-  ctx.fillStyle = player.color;
-  ctx.font = "bold 13px sans-serif"; ctx.textAlign = "left";
-  ctx.fillText(`${player.label} · P${position} · Lap ${Math.min(player.lap + 1, LAP_COUNT)}/${LAP_COUNT}`, 10, yOff + 16);
-  ctx.fillStyle = "#aaa"; ctx.font = "11px sans-serif";
-  const elapsed = (Date.now() - player.lapStart) / 1000;
-  ctx.fillText(`Best: ${player.bestLap < Infinity ? (player.bestLap / 1000).toFixed(2) + "s" : "--"}  ·  ${Math.round(player.speed * 30)} km/h  ·  ${elapsed.toFixed(1)}s`, 10, yOff + 30);
-
-  ctx.restore();
-}
-
-// ─── Main component ────────────────────────────────────────────────────────────
-function makeCar(z: number, x: number, color: string, label: string): CarState {
-  return { z, x, speed: 0, lap: 0, bestLap: Infinity, lapStart: 0, color, label };
-}
-
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function Racing() {
-  const cv = useRef<HTMLCanvasElement>(null);
-  const g = useRef<GameState | null>(null);
+  const cv  = useRef<HTMLCanvasElement>(null);
+  const g   = useRef<GameState | null>(null);
   const raf = useRef(0);
-  const built = useRef<Map<string, Seg[]>>(new Map());
-  const [screen, setScreen] = useState<"menu" | "track-select" | "race">("menu");
+  const cache = useRef<Map<string, BuiltTrack>>(new Map());
+
+  const [screen,   setScreen]   = useState<"menu" | "track-select" | "race">("menu");
   const [gameMode, setGameMode] = useState<"1p" | "2p">("1p");
-  const [phase, setPhase] = useState<"countdown" | "playing" | "done">("countdown");
-  const [winner, setWinner] = useState("");
-  const [lapLog1, setLapLog1] = useState<number[]>([]);
-  const [lapLog2, setLapLog2] = useState<number[]>([]);
+  const [phase,    setPhase]    = useState<"countdown" | "playing" | "done">("countdown");
+  const [winner,   setWinner]   = useState("");
+  const [lapLog1,  setLapLog1]  = useState<number[]>([]);
   const [selTrack, setSelTrack] = useState(TRACKS[0]);
 
-  const getTrack = useCallback((info: TrackInfo) => {
-    if (!built.current.has(info.id)) built.current.set(info.id, buildTrack(info));
-    return built.current.get(info.id)!;
+  const getTrack = useCallback((info: TrackInfo): BuiltTrack => {
+    if (!cache.current.has(info.id)) cache.current.set(info.id, buildTrack(info));
+    return cache.current.get(info.id)!;
   }, []);
 
   const draw = useCallback(() => {
@@ -592,38 +471,29 @@ export default function Racing() {
     ctx.clearRect(0, 0, CW, CH);
 
     const allCars = [gs.player, ...gs.ais, ...(gs.player2 ? [gs.player2] : [])];
-    function pos(p: CarState) {
-      const t = p.lap * TRACK_LEN + p.z;
-      return 1 + allCars.filter(c => c !== p && c.lap * TRACK_LEN + c.z > t).length;
-    }
+    const pos = (p: CarState) =>
+      1 + allCars.filter(c => c !== p && (c.lap * gs.total + c.prog) > (p.lap * gs.total + p.prog)).length;
 
-    const others1 = [...gs.ais, ...(gs.player2 ? [gs.player2] : [])];
-    renderView(ctx, gs, gs.player, others1, 0, vH, gs.steer1, pos(gs.player));
+    renderScene(ctx, gs, gs.player, [...gs.ais, ...(gs.player2 ? [gs.player2] : [])], 0, vH, pos(gs.player));
     if (is2p && gs.player2) {
-      renderView(ctx, gs, gs.player2, [gs.player, ...gs.ais], vH, vH, gs.steer2, pos(gs.player2));
+      renderScene(ctx, gs, gs.player2, [gs.player, ...gs.ais], vH, vH, pos(gs.player2));
       ctx.fillStyle = "#000"; ctx.fillRect(0, vH - 1, CW, 3);
     }
 
-    // Countdown
     if (gs.phase === "countdown") {
       const left = (gs.startAt - Date.now()) / 1000;
-      ctx.fillStyle = "rgba(0,0,0,0.52)"; ctx.fillRect(0, 0, CW, CH);
-      ctx.fillStyle = "#ffffff";
-      ctx.font = `bold ${is2p ? 68 : 88}px sans-serif`;
-      ctx.textAlign = "center";
-      const cdStr = left > 0 ? String(Math.ceil(left)) : "GO!";
-      ctx.fillText(cdStr, CW / 2, CH / 2 + 28);
+      ctx.fillStyle = "rgba(0,0,0,0.50)"; ctx.fillRect(0, 0, CW, CH);
+      ctx.fillStyle = "#fff";
+      ctx.font = `bold ${is2p ? 68 : 88}px sans-serif`; ctx.textAlign = "center";
+      ctx.fillText(left > 0 ? String(Math.ceil(left)) : "GO!", CW / 2, CH / 2 + 28);
     }
-
-    // Done
     if (gs.phase === "done") {
-      ctx.fillStyle = "rgba(0,0,0,0.80)"; ctx.fillRect(0, 0, CW, CH);
+      ctx.fillStyle = "rgba(0,0,0,0.78)"; ctx.fillRect(0, 0, CW, CH);
       ctx.fillStyle = "#fff"; ctx.font = "bold 44px sans-serif"; ctx.textAlign = "center";
       ctx.fillText(`🏁 ${gs.winner} Wins!`, CW / 2, CH / 2 - 16);
-      const p1b = gs.player.bestLap;
-      if (p1b < Infinity) {
+      if (gs.player.bestLap < Infinity) {
         ctx.fillStyle = "#ef4444"; ctx.font = "15px sans-serif";
-        ctx.fillText(`Best lap: ${(p1b / 1000).toFixed(2)}s`, CW / 2, CH / 2 + 18);
+        ctx.fillText(`Best lap: ${(gs.player.bestLap / 1000).toFixed(2)}s`, CW / 2, CH / 2 + 18);
       }
     }
   }, []);
@@ -632,8 +502,7 @@ export default function Racing() {
     const gs = g.current; if (!gs) return;
 
     if (gs.phase === "countdown") {
-      const left = gs.startAt - Date.now();
-      if (left <= 0) {
+      if (gs.startAt - Date.now() <= 0) {
         gs.phase = "playing";
         const now = Date.now();
         gs.player.lapStart = now;
@@ -641,65 +510,40 @@ export default function Racing() {
         gs.ais.forEach(a => a.lapStart = now);
         setPhase("playing");
       }
-      draw();
-      raf.current = requestAnimationFrame(loop);
-      return;
+      draw(); raf.current = requestAnimationFrame(loop); return;
     }
-
     if (gs.phase === "done") return;
 
     const k = gs.keys;
-    const tgt1 = (k.has("ArrowLeft") || k.has("left")) ? -1 : (k.has("ArrowRight") || k.has("right")) ? 1 : 0;
-    const tgt2 = k.has("a") ? -1 : k.has("d") ? 1 : 0;
-    gs.steer1 += (tgt1 - gs.steer1) * 0.13;
-    gs.steer2 += (tgt2 - gs.steer2) * 0.13;
+    const ts1 = (k.has("ArrowLeft") || k.has("left")) ? -1 : (k.has("ArrowRight") || k.has("right")) ? 1 : 0;
+    const ts2 = k.has("a") ? -1 : k.has("d") ? 1 : 0;
+    gs.s1 += (ts1 - gs.s1) * 0.15;
+    gs.s2 += (ts2 - gs.s2) * 0.15;
 
-    const gsTrack = gs.track;
-    function stepCar(p: CarState, up: boolean, dn: boolean, lf: boolean, rt: boolean) {
-      if (up)       p.speed = Math.min(p.speed + ACCEL, MAX_SPD);
-      else if (dn)  p.speed = Math.max(p.speed - BRAKE_F, 0);
-      else          p.speed *= FRICTION;
-      if (lf) p.x -= STEER * Math.max(0.25, p.speed / MAX_SPD);
-      if (rt) p.x += STEER * Math.max(0.25, p.speed / MAX_SPD);
-      const si = Math.floor((p.z + PL_Z) / SEG_LEN) % N_SEGS;
-      p.x += gsTrack[si].curve * (p.speed / MAX_SPD) * CENTRI;
-      if (Math.abs(p.x) > ROAD_H * 1.12) p.speed *= OFF_F;
-      p.x = Math.max(-ROAD_H * 2.2, Math.min(ROAD_H * 2.2, p.x));
-      p.z += p.speed;
-      if (p.z >= TRACK_LEN) {
-        p.z -= TRACK_LEN;
-        const lt = Date.now() - p.lapStart;
-        if (lt < p.bestLap) p.bestLap = lt;
-        p.lapStart = Date.now();
-        p.lap++;
-        return lt;
-      }
-      return null;
-    }
-
-    const lt1 = stepCar(gs.player,
-      k.has("ArrowUp") || k.has("up"), k.has("ArrowDown") || k.has("down"),
-      k.has("ArrowLeft") || k.has("left"), k.has("ArrowRight") || k.has("right"),
+    const lt1 = stepCar(
+      gs.player, gs.pts, gs.total,
+      k.has("ArrowUp") || k.has("up"),
+      k.has("ArrowDown") || k.has("down"),
+      k.has("ArrowLeft") || k.has("left"),
+      k.has("ArrowRight") || k.has("right"),
     );
     if (lt1 !== null) setLapLog1(prev => [...prev, lt1]);
 
     if (gs.mode === "2p" && gs.player2) {
-      const lt2 = stepCar(gs.player2, k.has("w"), k.has("s"), k.has("a"), k.has("d"));
-      if (lt2 !== null) setLapLog2(prev => [...prev, lt2]);
+      stepCar(gs.player2, gs.pts, gs.total, k.has("w"), k.has("s"), k.has("a"), k.has("d"));
     }
 
     for (const ai of gs.ais) {
-      const spd = AI_SPD[gs.info.aiDiff] ?? 120;
-      ai.speed = spd;
-      ai.x *= 0.94;
-      const si = Math.floor(ai.z / SEG_LEN) % N_SEGS;
-      ai.x += gs.track[si].curve * (spd / MAX_SPD) * CENTRI;
-      ai.x = Math.max(-ROAD_H, Math.min(ROAD_H, ai.x));
-      ai.z += spd;
-      if (ai.z >= TRACK_LEN) { ai.z -= TRACK_LEN; ai.lap++; }
+      const spd = AI_SPD[gs.info.aiDiff];
+      ai.spd = spd;
+      ai.lat *= 0.90;
+      const dh = segCurvature(gs.pts, gs.total, ai.prog);
+      ai.lat += dh * spd * CENTRI;
+      ai.lat = Math.max(-ROAD_W * 0.85, Math.min(ROAD_W * 0.85, ai.lat));
+      ai.prog += spd;
+      if (ai.prog >= gs.total) { ai.prog -= gs.total; ai.lap++; }
     }
 
-    // Win detection
     const p1w = gs.player.lap >= LAP_COUNT;
     const p2w = gs.mode === "2p" && !!gs.player2 && gs.player2.lap >= LAP_COUNT;
     const aiw = gs.ais.find(a => a.lap >= LAP_COUNT);
@@ -716,22 +560,22 @@ export default function Racing() {
 
   const startRace = useCallback((mode: "1p" | "2p", info: TrackInfo) => {
     cancelAnimationFrame(raf.current);
-    const track = getTrack(info);
+    const { pts, total, mb } = getTrack(info);
     const gs: GameState = {
-      track, info, mode,
-      player:  makeCar(0,  -ROAD_H * 0.22, "#ef4444", "You"),
-      player2: mode === "2p" ? makeCar(0, ROAD_H * 0.22, "#22d3ee", "P2") : null,
+      pts, total, mb, info, mode,
+      player:  makeCar(0, -ROAD_W * 0.25, "#ef4444", "You"),
+      player2: mode === "2p" ? makeCar(0, ROAD_W * 0.25, "#22d3ee", "P2") : null,
       ais: [
-        makeCar(0, ROAD_H * 0.22,  "#3b82f6", "AI 1"),
-        makeCar(0, -ROAD_H * 0.44, "#a855f7", "AI 2"),
+        makeCar(0,  ROAD_W * 0.25, "#3b82f6", "AI1"),
+        makeCar(0, -ROAD_W * 0.50, "#a855f7", "AI2"),
       ],
-      keys: new Set(), steer1: 0, steer2: 0,
+      keys: new Set(), s1: 0, s2: 0,
       phase: "countdown", startAt: Date.now() + 3200,
       winner: "",
     };
     g.current = gs;
     setGameMode(mode); setSelTrack(info);
-    setPhase("countdown"); setWinner(""); setLapLog1([]); setLapLog2([]);
+    setPhase("countdown"); setWinner(""); setLapLog1([]);
     raf.current = requestAnimationFrame(loop);
   }, [getTrack, loop]);
 
@@ -742,15 +586,19 @@ export default function Racing() {
     if (screen !== "race") return;
     const down = (e: KeyboardEvent) => {
       g.current?.keys.add(e.key);
-      if (["Arrow", "w","a","s","d"].some(k => e.key.startsWith(k) || e.key === k)) e.preventDefault();
+      if (["Arrow", "w", "a", "s", "d"].some(kk => e.key.startsWith(kk) || e.key === kk)) e.preventDefault();
     };
     const up = (e: KeyboardEvent) => g.current?.keys.delete(e.key);
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
-    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); cancelAnimationFrame(raf.current); };
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      cancelAnimationFrame(raf.current);
+    };
   }, [screen]);
 
-  const SC = ["", "border-green-500/50 bg-green-500/10", "border-lime-500/50 bg-lime-500/10", "border-amber-500/50 bg-amber-500/10", "border-orange-500/50 bg-orange-500/10", "border-red-500/50 bg-red-500/10"];
+  const SC  = ["", "border-green-500/50 bg-green-500/10", "border-lime-500/50 bg-lime-500/10", "border-amber-500/50 bg-amber-500/10", "border-orange-500/50 bg-orange-500/10", "border-red-500/50 bg-red-500/10"];
   const STR = ["", "text-green-400", "text-lime-400", "text-amber-400", "text-orange-400", "text-red-400"];
 
   if (screen === "menu") return (
@@ -762,12 +610,12 @@ export default function Racing() {
           <button onClick={() => { setGameMode("1p"); setScreen("track-select"); }}
             className="w-full py-4 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 font-black rounded-2xl transition-colors touch-manipulation">
             🤖 vs Computer AI
-            <div className="text-xs font-normal text-muted-foreground mt-1">Cockpit view · AI difficulty scales with track</div>
+            <div className="text-xs font-normal text-muted-foreground mt-1">Top-down · world rotates with the car · AI scales with track</div>
           </button>
           <button onClick={() => { setGameMode("2p"); setScreen("track-select"); }}
             className="w-full py-4 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-400 font-black rounded-2xl transition-colors touch-manipulation">
             👥 2 Players Local
-            <div className="text-xs font-normal text-muted-foreground mt-1">Split-screen cockpit view · P1: Arrows · P2: WASD</div>
+            <div className="text-xs font-normal text-muted-foreground mt-1">Split-screen top-down · P1: Arrows · P2: WASD</div>
           </button>
         </div>
       </div>
@@ -804,7 +652,10 @@ export default function Racing() {
   );
 
   return (
-    <Shell title={`Racing · ${selTrack.name}`} controls={gameMode === "2p" ? "🔴 P1: Arrows · 🔵 P2: WASD · 3 laps" : "Arrow keys · 3 laps"}>
+    <Shell
+      title={`Racing · ${selTrack.name}`}
+      controls={gameMode === "2p" ? "🔴 P1: Arrows · 🔵 P2: WASD · 3 laps" : "↑ gas  ↓ brake  ← → steer · 3 laps"}
+    >
       <div className="relative w-full flex justify-center">
         <canvas ref={cv} width={CW} height={CH}
           className="rounded-xl border border-slate-700"
@@ -837,7 +688,7 @@ export default function Racing() {
         </div>
       )}
       {gameMode === "1p" && phase === "playing" && (
-        <p className="text-xs text-muted-foreground hidden sm:block">Arrow keys · 3 laps to win · Stay on the road!</p>
+        <p className="text-xs text-muted-foreground hidden sm:block">Arrow keys · {LAP_COUNT} laps to win · Stay on the road!</p>
       )}
       {phase === "done" && lapLog1.length > 0 && (
         <p className="text-xs text-muted-foreground hidden sm:block">{winner === "You" ? "🏆 Excellent race!" : "Better luck next time!"}</p>
