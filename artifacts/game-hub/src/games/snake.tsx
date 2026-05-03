@@ -287,6 +287,16 @@ function drawFood(ctx: CanvasRenderingContext2D, food: P) {
   ctx.fillStyle = "rgba(255,255,255,0.65)"; ctx.fill();
 }
 
+// ─── D-Pad button ─────────────────────────────────────────────────────────────
+function DPadBtn({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <button
+      className="w-14 h-14 flex items-center justify-center rounded-xl bg-emerald-900/60 border border-emerald-500/30 text-white text-xl font-bold active:bg-emerald-500/40 select-none touch-manipulation"
+      onPointerDown={e => { e.preventDefault(); onPress(); }}
+    >{label}</button>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function SnakeGame() {
   const cv = useRef<HTMLCanvasElement>(null);
@@ -301,6 +311,7 @@ export default function SnakeGame() {
   const raf = useRef(0);
   const pausedRef = useRef(false);
   const [paused, setPaused] = useState(false);
+  const touchStart = useRef<{x:number;y:number}|null>(null);
 
   const mp = useOnlineMultiplayer({
     onGuestJoined: useCallback(() => { startOnlineGame("host"); }, []),
@@ -406,6 +417,14 @@ export default function SnakeGame() {
     setGameMode("online"); setP1Score(0); setP2Score(0); setScreen("game");
     if (role === "host") { cancelAnimationFrame(raf.current); raf.current = requestAnimationFrame(loop); }
   }, [loop]);
+
+  const setDir1 = useCallback((dx: number, dy: number) => {
+    const nd = { x: dx, y: dy };
+    const s1 = g.current.s1;
+    if (!s1.alive || (nd.x === -s1.dir.x && nd.y === -s1.dir.y)) return;
+    if (gameMode === "online" && mp.role === "guest") mp.sendInput({ nd });
+    else s1.nd = nd;
+  }, [gameMode, mp.role, mp.sendInput]);
 
   useEffect(() => {
     if (screen !== "game") return;
@@ -532,8 +551,22 @@ export default function SnakeGame() {
       </div>
       <div className="relative">
         <canvas ref={cv} width={W} height={H}
-          className="rounded-lg border border-emerald-900/60"
+          className="rounded-lg border border-emerald-900/60 touch-none"
           style={{ maxWidth: "min(95vw, 624px)", height: "auto" }}
+          onTouchStart={e => {
+            const t = e.changedTouches[0];
+            touchStart.current = { x: t.clientX, y: t.clientY };
+          }}
+          onTouchEnd={e => {
+            if (!touchStart.current) return;
+            const t = e.changedTouches[0];
+            const dx = t.clientX - touchStart.current.x;
+            const dy = t.clientY - touchStart.current.y;
+            touchStart.current = null;
+            if (Math.abs(dx) < 15 && Math.abs(dy) < 15) return;
+            if (Math.abs(dx) > Math.abs(dy)) setDir1(dx > 0 ? 1 : -1, 0);
+            else setDir1(0, dy > 0 ? 1 : -1);
+          }}
         />
         {isOnlineGuest && screen === "game" && (
           <div className="absolute top-2 left-0 right-0 flex justify-center pointer-events-none">
@@ -563,6 +596,20 @@ export default function SnakeGame() {
           </div>
         )}
       </div>
+
+      {(gameMode === "1p" || gameMode === "ai") && (
+        <div className="flex flex-col items-center gap-1 sm:hidden select-none mt-1">
+          <DPadBtn label="▲" onPress={() => setDir1(0, -1)} />
+          <div className="flex gap-1">
+            <DPadBtn label="◀" onPress={() => setDir1(-1, 0)} />
+            <div className="w-14 h-14" />
+            <DPadBtn label="▶" onPress={() => setDir1(1, 0)} />
+          </div>
+          <DPadBtn label="▼" onPress={() => setDir1(0, 1)} />
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground text-center sm:hidden">Swipe the board or use the D-pad</p>
+      <p className="text-xs text-muted-foreground text-center hidden sm:block">{controlsLabel}</p>
     </Shell>
   );
 }

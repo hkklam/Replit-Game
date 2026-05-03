@@ -404,6 +404,7 @@ export default function Tetris() {
   const keysRef   = useRef<Set<string>>(new Set());
   const dasRef    = useRef<{ dir:number; delay:number; tick:number }>({ dir:0, delay:0, tick:0 });
   const prevTimeRef = useRef<number>(0);
+  const touchSwipe = useRef<{x:number;y:number}|null>(null);
   const [screen, setScreen] = useState<Screen>("start");
 
   // ── Init game state ──────────────────────────────────────────────────────────
@@ -865,11 +866,14 @@ export default function Tetris() {
   }
 
   // ── GAME SCREEN ──────────────────────────────────────────────────────────────
+  const gs = gsRef.current;
+  const canTap = gs && gs.phase === "playing";
+
   return (
     <div style={{
       minHeight: "100vh",
       background: "radial-gradient(ellipse at 50% 0%, #0d0030 0%, #050012 60%, #000008 100%)",
-      display: "flex", alignItems: "center", justifyContent: "center",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       padding: 8,
     }}>
       <Link href="/">
@@ -884,8 +888,46 @@ export default function Tetris() {
           transformOrigin: "top center",
           imageRendering: "pixelated",
           display: "block",
+          touchAction: "none",
         }}
+        onTouchStart={e => {
+          const t = e.changedTouches[0];
+          touchSwipe.current = { x: t.clientX, y: t.clientY };
+        }}
+        onTouchEnd={e => {
+          if (!touchSwipe.current) return;
+          const t = e.changedTouches[0];
+          const dx = t.clientX - touchSwipe.current.x;
+          const dy = t.clientY - touchSwipe.current.y;
+          touchSwipe.current = null;
+          const gs = gsRef.current;
+          if (!gs || gs.phase !== "playing") return;
+          if (Math.abs(dx) < 15 && Math.abs(dy) < 15) { doHardDrop(gs); return; }
+          if (Math.abs(dy) > Math.abs(dx)) {
+            if (dy > 0) keysRef.current.add("ArrowDown");
+            else doRotate(gs, 1);
+          } else {
+            doMove(gs, dx > 0 ? 1 : -1);
+          }
+        }}
+        onTouchMove={e => e.preventDefault()}
       />
+      {/* Mobile on-screen controls — fixed to bottom so transform:scale doesn't break layout */}
+      <div className="sm:hidden" style={{ position:"fixed", bottom:0, left:0, right:0, padding:"8px 6px 12px", background:"rgba(5,0,18,0.92)", borderTop:"1px solid rgba(255,255,255,0.1)", display:"flex", gap:6, justifyContent:"center", flexWrap:"wrap", zIndex:50 }}>
+        {([
+          { label:"⏮ Hold", fn: () => { const g=gsRef.current; if(g&&g.phase==="playing") doHold(g); } },
+          { label:"◀",      fn: () => { const g=gsRef.current; if(g&&g.phase==="playing") doMove(g,-1); } },
+          { label:"↻ CW",   fn: () => { const g=gsRef.current; if(g&&g.phase==="playing") doRotate(g,1); } },
+          { label:"↺ CCW",  fn: () => { const g=gsRef.current; if(g&&g.phase==="playing") doRotate(g,-1); } },
+          { label:"▶",      fn: () => { const g=gsRef.current; if(g&&g.phase==="playing") doMove(g,1); } },
+          { label:"⬇ Drop", fn: () => { const g=gsRef.current; if(g&&g.phase==="playing") doHardDrop(g); } },
+        ]).map(({ label, fn }) => (
+          <button key={label} onPointerDown={e => { e.preventDefault(); fn(); }}
+            style={{ padding:"10px 14px", borderRadius:10, border:"1px solid rgba(255,255,255,0.15)", background: canTap ? "rgba(124,58,237,0.35)" : "rgba(255,255,255,0.06)", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", touchAction:"manipulation", userSelect:"none" }}>
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

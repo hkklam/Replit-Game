@@ -143,11 +143,20 @@ function makeMaterials(): Record<BlockType, THREE.MeshLambertMaterial[]> {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Minecraft() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // World is built inside the effect so constants are always current (avoids stale-ref on HMR)
   const worldRef = useRef<(BlockType|null)[][][]>([]);
   const [selectedBlock, setSelectedBlock] = useState<BlockType>("grass");
   const [locked, setLocked] = useState(false);
   const selectedRef = useRef<BlockType>("grass");
+
+  // Touch / mobile refs — written by JSX handlers, read by animation loop
+  const touchKeysRef = useRef(new Set<string>());
+  const touchLookDeltaRef = useRef({ dyaw: 0, dpitch: 0 });
+  const touchCamRef = useRef<{ x: number; y: number; id: number } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile("ontouchstart" in window || navigator.maxTouchPoints > 0);
+  }, []);
 
   useEffect(()=>{ selectedRef.current=selectedBlock; },[selectedBlock]);
 
@@ -305,17 +314,26 @@ export default function Minecraft() {
       const dt=Math.min((now-lastTime)/1000,0.05);
       lastTime=now;
 
+      // Consume touch camera delta accumulated by JSX handlers
+      const tdelta = touchLookDeltaRef.current;
+      if (tdelta.dyaw !== 0 || tdelta.dpitch !== 0) {
+        yaw -= tdelta.dyaw;
+        pitch = Math.max(-Math.PI/2+0.02, Math.min(Math.PI/2-0.02, pitch + tdelta.dpitch));
+        touchLookDeltaRef.current = { dyaw: 0, dpitch: 0 };
+      }
+
       camera.rotation.order="YXZ";
       camera.rotation.y=yaw; camera.rotation.x=pitch;
 
+      const tk = touchKeysRef.current;
       const speed=7;
       const mv=new THREE.Vector3();
-      if(keys.has("KeyW"))mv.z-=1;
-      if(keys.has("KeyS"))mv.z+=1;
-      if(keys.has("KeyA"))mv.x-=1;
-      if(keys.has("KeyD"))mv.x+=1;
-      if(keys.has("Space"))mv.y+=1;
-      if(keys.has("ShiftLeft")||keys.has("ShiftRight"))mv.y-=1;
+      if(keys.has("KeyW")||tk.has("KeyW"))mv.z-=1;
+      if(keys.has("KeyS")||tk.has("KeyS"))mv.z+=1;
+      if(keys.has("KeyA")||tk.has("KeyA"))mv.x-=1;
+      if(keys.has("KeyD")||tk.has("KeyD"))mv.x+=1;
+      if(keys.has("Space")||tk.has("Space"))mv.y+=1;
+      if(keys.has("ShiftLeft")||keys.has("ShiftRight")||tk.has("ShiftLeft"))mv.y-=1;
       if(mv.lengthSq()>0){
         mv.normalize();
         const yq=new THREE.Quaternion().setFromEuler(new THREE.Euler(0,yaw,0));
@@ -357,20 +375,48 @@ export default function Minecraft() {
       <div className="relative" style={{width:800,maxWidth:"95vw"}}>
         <canvas ref={canvasRef} width={800} height={500}
           className="block rounded-xl w-full cursor-crosshair"
-          style={{maxWidth:"95vw",height:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.6)"}}
+          style={{maxWidth:"95vw",height:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.6)",touchAction:"none"}}
+          onTouchStart={e => {
+            e.preventDefault();
+            if (!locked) { setLocked(true); return; }
+            const t = e.changedTouches[0];
+            touchCamRef.current = { x: t.clientX, y: t.clientY, id: t.identifier };
+          }}
+          onTouchMove={e => {
+            e.preventDefault();
+            if (!touchCamRef.current) return;
+            const touch = Array.from(e.touches).find(t => t.identifier === touchCamRef.current!.id);
+            if (!touch) return;
+            const sens = 0.004;
+            touchLookDeltaRef.current.dyaw += (touch.clientX - touchCamRef.current.x) * sens;
+            touchLookDeltaRef.current.dpitch += (touch.clientY - touchCamRef.current.y) * sens;
+            touchCamRef.current = { x: touch.clientX, y: touch.clientY, id: touch.identifier };
+          }}
+          onTouchEnd={() => { touchCamRef.current = null; }}
         />
         {!locked && (
           <div
             className="absolute inset-0 flex flex-col items-center justify-center bg-black/65 rounded-xl gap-3 cursor-pointer select-none"
             onClick={() => { setLocked(true); canvasRef.current?.requestPointerLock(); }}
+            onTouchStart={e => { e.preventDefault(); setLocked(true); }}
           >
             <div className="text-6xl">⛏️</div>
-            <p className="text-white text-xl font-black">Click to Enter World</p>
+            <p className="text-white text-xl font-black">{isMobile ? "Tap to Enter World" : "Click to Enter World"}</p>
             <div className="text-white/60 text-xs text-center space-y-0.5">
-              <p>🖱️ Left click = break block · Right click = place block</p>
-              <p>⌨️ WASD = move · Space = fly up · Shift = fly down</p>
-              <p>🔢 Keys 1–{BLOCK_TYPES.length} to select block type</p>
-              <p>ESC to exit mouse lock</p>
+              {isMobile ? (
+                <>
+                  <p>👆 Drag canvas = look around</p>
+                  <p>🕹️ Use D-pad below to move &amp; fly</p>
+                  <p>⬜ Tap block buttons to select</p>
+                </>
+              ) : (
+                <>
+                  <p>🖱️ Left click = break block · Right click = place block</p>
+                  <p>⌨️ WASD = move · Space = fly up · Shift = fly down</p>
+                  <p>🔢 Keys 1–{BLOCK_TYPES.length} to select block type</p>
+                  <p>ESC to exit mouse lock</p>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -395,14 +441,69 @@ export default function Minecraft() {
           const topHex="#"+col.top.toString(16).padStart(6,"0");
           return (
             <button key={bt} onClick={()=>{ setSelectedBlock(bt); selectedRef.current=bt; }}
+              onTouchStart={e=>{ e.preventDefault(); setSelectedBlock(bt); selectedRef.current=bt; }}
               className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg border text-xs font-bold transition-all ${selectedBlock===bt?"border-white scale-110":"border-border/50 opacity-65 hover:opacity-100"}`}
-              style={{background:topHex+"25",color:topHex}}>
+              style={{background:topHex+"25",color:topHex,touchAction:"manipulation"}}>
               <span className="text-[9px] text-muted-foreground">{i+1}</span>
               {bt}
             </button>
           );
         })}
       </div>
+
+      {/* Mobile D-pad — only shown on touch devices */}
+      {isMobile && locked && (
+        <div className="flex items-center gap-6 w-full justify-center select-none" style={{touchAction:"none"}}>
+          {/* Movement D-pad */}
+          <div className="grid grid-cols-3 gap-1" style={{gridTemplateRows:"repeat(3,44px)",width:136}}>
+            {/* row 1 */}
+            <div/>
+            <button className="rounded-lg bg-white/10 border border-white/20 text-white text-lg font-black flex items-center justify-center active:bg-white/30"
+              style={{touchAction:"manipulation"}}
+              onPointerDown={e=>{e.preventDefault();touchKeysRef.current.add("KeyW");}}
+              onPointerUp={()=>touchKeysRef.current.delete("KeyW")}
+              onPointerLeave={()=>touchKeysRef.current.delete("KeyW")}>▲</button>
+            <div/>
+            {/* row 2 */}
+            <button className="rounded-lg bg-white/10 border border-white/20 text-white text-lg font-black flex items-center justify-center active:bg-white/30"
+              style={{touchAction:"manipulation"}}
+              onPointerDown={e=>{e.preventDefault();touchKeysRef.current.add("KeyA");}}
+              onPointerUp={()=>touchKeysRef.current.delete("KeyA")}
+              onPointerLeave={()=>touchKeysRef.current.delete("KeyA")}>◀</button>
+            <button className="rounded-lg bg-white/5 border border-white/10 text-white/30 text-xs flex items-center justify-center"
+              style={{touchAction:"manipulation"}}>+</button>
+            <button className="rounded-lg bg-white/10 border border-white/20 text-white text-lg font-black flex items-center justify-center active:bg-white/30"
+              style={{touchAction:"manipulation"}}
+              onPointerDown={e=>{e.preventDefault();touchKeysRef.current.add("KeyD");}}
+              onPointerUp={()=>touchKeysRef.current.delete("KeyD")}
+              onPointerLeave={()=>touchKeysRef.current.delete("KeyD")}>▶</button>
+            {/* row 3 */}
+            <div/>
+            <button className="rounded-lg bg-white/10 border border-white/20 text-white text-lg font-black flex items-center justify-center active:bg-white/30"
+              style={{touchAction:"manipulation"}}
+              onPointerDown={e=>{e.preventDefault();touchKeysRef.current.add("KeyS");}}
+              onPointerUp={()=>touchKeysRef.current.delete("KeyS")}
+              onPointerLeave={()=>touchKeysRef.current.delete("KeyS")}>▼</button>
+            <div/>
+          </div>
+
+          {/* Fly buttons */}
+          <div className="flex flex-col gap-2">
+            <button className="w-16 h-11 rounded-xl bg-sky-500/20 border border-sky-400/40 text-sky-300 font-black text-sm flex items-center justify-center active:bg-sky-500/50"
+              style={{touchAction:"manipulation"}}
+              onPointerDown={e=>{e.preventDefault();touchKeysRef.current.add("Space");}}
+              onPointerUp={()=>touchKeysRef.current.delete("Space")}
+              onPointerLeave={()=>touchKeysRef.current.delete("Space")}>⬆ Up</button>
+            <button className="w-16 h-11 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-black text-sm flex items-center justify-center active:bg-amber-500/50"
+              style={{touchAction:"manipulation"}}
+              onPointerDown={e=>{e.preventDefault();touchKeysRef.current.add("ShiftLeft");}}
+              onPointerUp={()=>touchKeysRef.current.delete("ShiftLeft")}
+              onPointerLeave={()=>touchKeysRef.current.delete("ShiftLeft")}>⬇ Dn</button>
+          </div>
+          <p className="text-[10px] text-white/30 text-center">Drag<br/>canvas<br/>to look</p>
+        </div>
+      )}
+
       <p className="text-xs text-muted-foreground text-center">
         Free-flight mode · {WORLD_W}×{WORLD_H}×{WORLD_D} voxel world — biomes: sand, grass, stone &amp; snow peaks
       </p>

@@ -620,7 +620,7 @@ export default function FlappyBird() {
           <span className={`text-xs ${DIFF_COLORS[tc.diff]}`}>{tc.icon} {tc.diff}</span>
         </div>
       )}
-      <div className="relative cursor-pointer" onClick={()=>flap(1)}>
+      <div className="relative cursor-pointer" onClick={()=>flap(1)} onTouchStart={e=>{e.preventDefault();flap(1);}}>
         <canvas ref={cv} width={W} height={H} className="rounded-xl border border-slate-700" style={{maxHeight:"75vh"}}/>
         {gameState==="idle"&&(
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 rounded-xl gap-3">
@@ -657,6 +657,16 @@ export default function FlappyBird() {
           </div>
         )}
       </div>
+
+      {/* P2 tap button for 2P mode on mobile */}
+      {gameMode === "2p" && gameState !== "dead" && (
+        <button
+          className="sm:hidden w-full py-4 bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-black rounded-2xl text-lg active:bg-cyan-500/40 touch-manipulation select-none"
+          onPointerDown={e => { e.preventDefault(); flap(2); }}
+        >
+          🐦 P2 — Tap to Flap
+        </button>
+      )}
     </Shell>
   );
 }

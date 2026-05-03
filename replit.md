@@ -35,6 +35,16 @@ pnpm workspace monorepo using TypeScript. Contains two products:
 - Pack selector (Base/Expanded/All) + custom category picker in setup
 All games are in `artifacts/game-hub/src/games/`. Routing via `wouter`.
 
+**Mobile / Touch Support** (all 24 games playable on touch screens):
+- Snake: swipe-to-turn on canvas + on-screen D-pad (`sm:hidden`)
+- Pong: canvas drag-to-move + ▲▼ buttons (`sm:hidden`)
+- Tetris: canvas swipe gesture + 6-button fixed-bottom toolbar (`sm:hidden`)
+- Tetris Royale: same swipe + fixed-bottom toolbar (`sm:hidden`)
+- Flappy Bird: P1 fullscreen tap; P2 tap button (`sm:hidden`, 2P mode)
+- Minecraft: canvas touch-drag camera look + D-pad + fly buttons (shown only when `isMobile && locked`)
+- Pac-Man, Racing, Flow Free, Battleship, Tower Defense, Bubble Shooter, Pictionary: already touch-ready
+- All remaining games (Chess, Candy Crush, Uno, Mahjong, etc.): click/button-based — works natively on mobile
+
 **Online multiplayer** (via WebSocket relay in `artifacts/api-server`):
 - **UNO** — up to 8 players, full server-authoritative game logic (`uno-rooms.ts`, `uno-logic.ts`)
 - **Chess** — 2-player relay; host=White, guest=Black; board flips for Black; move sync over relay

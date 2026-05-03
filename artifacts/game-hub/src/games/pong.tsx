@@ -93,6 +93,7 @@ const DIFF_LABELS: Record<Difficulty, { label: string; color: string; desc: stri
 export default function Pong() {
   const cv = useRef<HTMLCanvasElement>(null);
   const g = useRef<PongState>(initState("local"));
+  const touchP1Y = useRef<number | null>(null);
   const [screen, setScreen] = useState<"menu" | "ai-diff" | "online-lobby" | "game">(() => getUrlRoomCode() ? "online-lobby" : "menu");
   const [scores, setScores] = useState([0, 0]);
   const [over, setOver] = useState(false);
@@ -305,8 +306,24 @@ export default function Pong() {
           ))}
         </div>
       )}
+      <div className="flex flex-col items-center gap-2 w-full">
       <div className="relative">
-        <canvas ref={cv} width={W} height={H} className="rounded-xl border border-slate-700 max-w-full" style={{ maxWidth: "min(800px, 95vw)" }} />
+        <canvas ref={cv} width={W} height={H} className="rounded-xl border border-slate-700 max-w-full touch-none" style={{ maxWidth: "min(800px, 95vw)" }}
+          onTouchStart={e => {
+            const c = cv.current; if (!c) return;
+            const rect = c.getBoundingClientRect();
+            touchP1Y.current = (e.touches[0].clientY - rect.top) * (H / rect.height);
+          }}
+          onTouchMove={e => {
+            e.preventDefault();
+            const c = cv.current; if (!c) return;
+            const rect = c.getBoundingClientRect();
+            const ty = (e.touches[0].clientY - rect.top) * (H / rect.height);
+            g.current.p1y = Math.max(0, Math.min(H - PH, ty - PH / 2));
+            touchP1Y.current = ty;
+          }}
+          onTouchEnd={() => { touchP1Y.current = null; }}
+        />
         {over && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-xl gap-4">
             <p className="text-3xl font-black text-primary">{winner}</p>
@@ -331,6 +348,27 @@ export default function Pong() {
             <button onClick={() => { pausedRef.current = false; setPaused(false); }} className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-bold transition-colors">▶ Resume</button>
           </div>
         )}
+      </div>
+
+      {/* Mobile on-screen paddle buttons for P1 */}
+      <div className="flex gap-4 sm:hidden select-none">
+        <button
+          className="w-24 h-14 flex items-center justify-center rounded-xl bg-sky-900/60 border border-sky-500/30 text-white text-2xl font-black active:bg-sky-500/40 touch-manipulation"
+          onPointerDown={e => { e.preventDefault(); g.current.keys.add("w"); }}
+          onPointerUp={() => g.current.keys.delete("w")}
+          onPointerLeave={() => g.current.keys.delete("w")}
+        >▲</button>
+        <div className="text-xs text-muted-foreground self-center text-center">Drag canvas<br />or tap here</div>
+        <button
+          className="w-24 h-14 flex items-center justify-center rounded-xl bg-sky-900/60 border border-sky-500/30 text-white text-2xl font-black active:bg-sky-500/40 touch-manipulation"
+          onPointerDown={e => { e.preventDefault(); g.current.keys.add("s"); }}
+          onPointerUp={() => g.current.keys.delete("s")}
+          onPointerLeave={() => g.current.keys.delete("s")}
+        >▼</button>
+      </div>
+      <p className="text-xs text-muted-foreground hidden sm:block">
+        {isAI ? `W/S to move  ·  vs ${DIFF_LABELS[difficulty].icon} ${DIFF_LABELS[difficulty].label} AI` : isOnline ? (role === "host" ? "🟢 HOST · W/S" : "🔴 GUEST · Arrows") : "P1: W/S  ·  P2: ↑/↓"}
+      </p>
       </div>
     </Shell>
   );

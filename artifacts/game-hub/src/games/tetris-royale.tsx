@@ -754,6 +754,7 @@ export default function TetrisRoyale() {
   const rafRef    = useRef(0);
   const hardRef   = useRef(false); // space held guard
   const pausedRef = useRef(false);
+  const touchSwipe = useRef<{x:number;y:number}|null>(null);
   const [paused, setPaused] = useState(false);
 
   const [screen,    setScreen]    = useState<Screen>(() => getUrlRoomCode() ? "setup" : "menu");
@@ -1155,11 +1156,36 @@ export default function TetrisRoyale() {
   );
 
   // GAME screen
+  const trPlayer = gameRef.current?.player;
+  const trCanTap = trPlayer && trPlayer.phase === "playing";
+
   return (
-    <div style={{minHeight:"100vh",background:"#02020a",display:"flex",alignItems:"center",justifyContent:"center",padding:8,position:"relative"}}>
+    <div style={{minHeight:"100vh",background:"#02020a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:8,position:"relative"}}>
       <Link href="/"><span style={{position:"absolute",top:12,left:16,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 14px",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",zIndex:10}}>← Menu</span></Link>
       <canvas ref={cvRef} width={canvasSize.cw} height={canvasSize.ch}
-        style={{transform:`scale(${scale})`,transformOrigin:"top center",display:"block",imageRendering:"pixelated"}} />
+        style={{transform:`scale(${scale})`,transformOrigin:"top center",display:"block",imageRendering:"pixelated",touchAction:"none"}}
+        onTouchStart={e=>{
+          const t=e.changedTouches[0];
+          touchSwipe.current={x:t.clientX,y:t.clientY};
+        }}
+        onTouchEnd={e=>{
+          if(!touchSwipe.current) return;
+          const t=e.changedTouches[0];
+          const dx=t.clientX-touchSwipe.current.x;
+          const dy=t.clientY-touchSwipe.current.y;
+          touchSwipe.current=null;
+          const g=gameRef.current;
+          if(!g||g.player.phase!=="playing") return;
+          if(Math.abs(dx)<15&&Math.abs(dy)<15){doHardDrop(g.player,()=>advanceQueue(g.player));return;}
+          if(Math.abs(dy)>Math.abs(dx)){
+            if(dy>0) g.keys.add("ArrowDown");
+            else doRotate(g.player,1);
+          } else {
+            doMove(g.player,dx>0?1:-1);
+          }
+        }}
+        onTouchMove={e=>e.preventDefault()}
+      />
       {paused && (
         <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.7)",gap:16,zIndex:20}}>
           <div style={{fontSize:64}}>⏸</div>
@@ -1168,6 +1194,23 @@ export default function TetrisRoyale() {
           <button onClick={() => { pausedRef.current = false; setPaused(false); }} style={{padding:"12px 32px",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:12,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer"}}>▶ Resume</button>
         </div>
       )}
+
+      {/* Mobile on-screen controls — fixed to bottom so transform:scale doesn't break layout */}
+      <div className="sm:hidden" style={{position:"fixed",bottom:0,left:0,right:0,padding:"8px 6px 12px",background:"rgba(2,2,10,0.94)",borderTop:"1px solid rgba(255,255,255,0.1)",display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",zIndex:50}}>
+        {([
+          { label:"⏮ Hold", fn: () => { const g=gameRef.current; if(g&&g.player.phase==="playing") doHold(g.player,()=>advanceQueue(g.player)); } },
+          { label:"◀",      fn: () => { const g=gameRef.current; if(g&&g.player.phase==="playing") doMove(g.player,-1); } },
+          { label:"↻ CW",   fn: () => { const g=gameRef.current; if(g&&g.player.phase==="playing") doRotate(g.player,1); } },
+          { label:"↺ CCW",  fn: () => { const g=gameRef.current; if(g&&g.player.phase==="playing") doRotate(g.player,-1); } },
+          { label:"▶",      fn: () => { const g=gameRef.current; if(g&&g.player.phase==="playing") doMove(g.player,1); } },
+          { label:"⬇ Drop", fn: () => { const g=gameRef.current; if(g&&g.player.phase==="playing") doHardDrop(g.player,()=>advanceQueue(g.player)); } },
+        ] as {label:string;fn:()=>void}[]).map(({label,fn})=>(
+          <button key={label} onPointerDown={e=>{e.preventDefault();fn();}}
+            style={{padding:"10px 14px",borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:trCanTap?"rgba(192,132,252,0.3)":"rgba(255,255,255,0.06)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",touchAction:"manipulation",userSelect:"none"}}>
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
