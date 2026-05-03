@@ -779,7 +779,7 @@ function SsOnlineGame({ ssState, ssActions, onBack }: { ssState: ReturnType<type
     if (!gs || gs.lastSegIdx === null || gs.lastSegIdx === prevSegIdxRef.current) return;
     prevSegIdxRef.current = gs.lastSegIdx;
     const segIdx = gs.lastSegIdx;
-    const targetDeg = (segIdx + 0.5) * SEG_DEG;
+    const targetDeg = 360 - ((segIdx + 0.5) * SEG_DEG);
     setWheelAngle(prev => {
       const prevNorm = ((prev % 360) + 360) % 360;
       const diff = ((targetDeg - prevNorm) + 360) % 360;
@@ -897,7 +897,7 @@ function AiGame({ initialGs, onMenu }: { initialGs: GS; onMenu: () => void }) {
       if (!prev || prev.spinning || prev.phase !== 'spin' || prev.players[prev.turn].isAI) return prev;
       const segIdx = Math.floor(Math.random() * NUM_SEGS);
       pendingSegRef.current = segIdx;
-      const targetDeg = (segIdx + 0.5) * SEG_DEG;
+      const targetDeg = 360 - ((segIdx + 0.5) * SEG_DEG);
       const prevNorm = ((prev.wheelAngle % 360) + 360) % 360;
       const diff = ((targetDeg - prevNorm) + 360) % 360;
       const newAngle = prev.wheelAngle + diff + (5 + Math.floor(Math.random() * 5)) * 360;
