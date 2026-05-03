@@ -177,28 +177,263 @@ function makeInitBoard(): Board {
   return b;
 }
 
-// ─── Canvas drawing ───────────────────────────────────────────────────────────
+// ─── 3-D piece drawing ────────────────────────────────────────────────────────
 function drawPiece3D(ctx: CanvasRenderingContext2D, piece: Piece, cx: number, cy: number) {
   const isW = piece.color === "w";
-  const r = SQ * 0.39;
-  ctx.fillStyle = "rgba(0,0,0,0.28)";
-  ctx.beginPath(); ctx.ellipse(cx+3, cy+r*0.22+6, r*0.92, r*0.27, 0, 0, Math.PI*2); ctx.fill();
-  const g = ctx.createRadialGradient(cx-r*0.28, cy-r*0.3, r*0.04, cx+r*0.12, cy+r*0.12, r*1.12);
-  if (isW) {
-    g.addColorStop(0,"#fffff8"); g.addColorStop(0.18,"#f5eccc"); g.addColorStop(0.5,"#d8b878"); g.addColorStop(0.8,"#b8905a"); g.addColorStop(1,"#7a5030");
-  } else {
-    g.addColorStop(0,"#808080"); g.addColorStop(0.18,"#3c3c3c"); g.addColorStop(0.5,"#181818"); g.addColorStop(0.8,"#0c0c0c"); g.addColorStop(1,"#030303");
+  const sq  = SQ; // 62
+
+  // Bottom of the piece sits here (slightly below centre so the piece looks "on" the square)
+  const bot = cy + sq * 0.34;
+
+  // ── Palette ────────────────────────────────────────────────────────────────
+  const [c0, c1, c2, c3] = isW
+    ? ["#fffff4","#e8d090","#b07830","#6a3e10"]
+    : ["#a0a0a0","#383838","#161616","#040404"];
+  const topFace  = isW ? "#fffff0" : "#5a5a5a";
+  const outline  = isW ? "rgba(160,100,30,0.45)" : "rgba(140,140,140,0.2)";
+  const hiStroke = isW ? "rgba(255,255,255,0.68)" : "rgba(200,200,200,0.2)";
+
+  // ── Gradient helpers ───────────────────────────────────────────────────────
+  // Horizontal (lit-from-left) gradient between two absolute x coords
+  const hg = (x0: number, x1: number): CanvasGradient => {
+    const g = ctx.createLinearGradient(x0, 0, x1, 0);
+    g.addColorStop(0, c0); g.addColorStop(0.25, c1); g.addColorStop(0.65, c2); g.addColorStop(1, c3);
+    return g;
+  };
+  // Radial gradient for a sphere at absolute (x,y) with radius r
+  const rg = (x: number, y: number, r: number): CanvasGradient => {
+    const g = ctx.createRadialGradient(x-r*0.3, y-r*0.32, r*0.04, x+r*0.08, y+r*0.08, r);
+    g.addColorStop(0, c0); g.addColorStop(0.28, c1); g.addColorStop(0.65, c2); g.addColorStop(1, c3);
+    return g;
+  };
+
+  // ── Ground shadow ──────────────────────────────────────────────────────────
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.27)";
+  ctx.beginPath();
+  ctx.ellipse(cx+2.5, bot+sq*0.08, sq*0.31, sq*0.055, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  // ── Cylinder (x, topY → botY, half-width rw) ──────────────────────────────
+  const cyl = (x: number, topY: number, btmY: number, rw: number) => {
+    if (topY >= btmY || rw <= 0) return;
+    const rh = rw * 0.22; // perspective flattening
+    ctx.save();
+    // Side body
+    ctx.beginPath();
+    ctx.moveTo(x-rw, topY); ctx.lineTo(x+rw, topY); ctx.lineTo(x+rw, btmY);
+    ctx.arc(x, btmY, rw, 0, Math.PI);
+    ctx.lineTo(x-rw, topY);
+    ctx.fillStyle = hg(x-rw, x+rw); ctx.fill();
+    ctx.strokeStyle = outline; ctx.lineWidth = 0.7; ctx.stroke();
+    // Top face ellipse
+    ctx.beginPath(); ctx.ellipse(x, topY, rw, rh, 0, 0, Math.PI*2);
+    ctx.fillStyle = topFace; ctx.fill();
+    ctx.strokeStyle = outline; ctx.lineWidth = 0.5; ctx.stroke();
+    // Left-side specular highlight
+    ctx.strokeStyle = hiStroke; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(x-rw+rw*0.08, topY+(btmY-topY)*0.1);
+    ctx.bezierCurveTo(x-rw*0.88, topY+(btmY-topY)*0.35, x-rw*0.88, topY+(btmY-topY)*0.68, x-rw*0.78, btmY-(btmY-topY)*0.08);
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  // ── Sphere at absolute (x,y) ───────────────────────────────────────────────
+  const sph = (x: number, y: number, r: number) => {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.fillStyle = rg(x, y, r); ctx.fill();
+    ctx.strokeStyle = outline; ctx.lineWidth = 0.7; ctx.stroke();
+    ctx.strokeStyle = hiStroke; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x-r*0.22, y-r*0.24, r*0.6, Math.PI*1.08, Math.PI*1.82);
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  const baseTopY = bot - sq*0.10;
+  const baseRw   = sq * 0.27;
+
+  // ── Pieces ─────────────────────────────────────────────────────────────────
+  switch (piece.type) {
+
+    // ── Pawn ─────────────────────────────────────────────────────────────────
+    case "P": {
+      const shaftTopY  = bot - sq*0.42;
+      const collarBotY = shaftTopY + sq*0.07;
+      const collarTopY = shaftTopY - sq*0.02;
+      const headCY     = bot - sq*0.57;
+      const headR      = sq * 0.13;
+      cyl(cx, baseTopY, bot, baseRw);
+      cyl(cx, shaftTopY, baseTopY, sq*0.085);
+      cyl(cx, collarTopY, collarBotY, sq*0.13);
+      sph(cx, headCY, headR);
+      break;
+    }
+
+    // ── Rook ─────────────────────────────────────────────────────────────────
+    case "R": {
+      const shaftTopY = bot - sq*0.48;
+      const platTopY  = shaftTopY - sq*0.10;
+      const merlonH   = sq * 0.13;
+      cyl(cx, baseTopY, bot, baseRw);
+      cyl(cx, shaftTopY, baseTopY, sq*0.14);
+      cyl(cx, platTopY, shaftTopY, sq*0.21);
+      // 3 merlons (battlements)
+      const mRw = sq * 0.055;
+      [-sq*0.11, 0, sq*0.11].forEach(ox => cyl(cx+ox, platTopY-merlonH, platTopY, mRw));
+      break;
+    }
+
+    // ── Knight (horse head profile) ───────────────────────────────────────────
+    case "N": {
+      const neckTopY = bot - sq*0.38;
+      const hH       = sq * 0.42; // head height from neck top
+      cyl(cx, baseTopY, bot, baseRw);
+      cyl(cx, neckTopY, baseTopY, sq*0.11);
+      // Horse head – drawn in local coords after translate(cx, neckTopY)
+      ctx.save();
+      ctx.translate(cx, neckTopY);
+      // Path (facing right)
+      const hp = new Path2D();
+      hp.moveTo(-sq*0.06, 0);
+      hp.bezierCurveTo(-sq*0.07,-hH*0.22, sq*0.14,-hH*0.28, sq*0.16,-hH*0.55);
+      hp.bezierCurveTo(sq*0.18, -hH*0.75, sq*0.13,-hH*0.86, sq*0.08,-hH*0.91);
+      hp.bezierCurveTo(sq*0.04, -hH*0.95,-sq*0.02,-hH*0.90,-sq*0.04,-hH*0.84);
+      hp.bezierCurveTo(-sq*0.09,-hH*0.77,-sq*0.10,-hH*0.66,-sq*0.08,-hH*0.54);
+      hp.bezierCurveTo(-sq*0.06,-hH*0.43,-sq*0.13,-hH*0.32,-sq*0.14,-hH*0.17);
+      hp.bezierCurveTo(-sq*0.14,-hH*0.07,-sq*0.10, 0, -sq*0.06, 0);
+      hp.closePath();
+      // Gradient in local (translated) space
+      const ng = ctx.createLinearGradient(-sq*0.14, 0, sq*0.18, 0);
+      ng.addColorStop(0,c0); ng.addColorStop(0.25,c1); ng.addColorStop(0.65,c2); ng.addColorStop(1,c3);
+      ctx.fillStyle = ng; ctx.fill(hp);
+      ctx.strokeStyle = outline; ctx.lineWidth = 0.8; ctx.stroke(hp);
+      // Left specular
+      ctx.strokeStyle = hiStroke; ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-sq*0.05,-hH*0.12);
+      ctx.bezierCurveTo(-sq*0.07,-hH*0.30, sq*0.10,-hH*0.34, sq*0.13,-hH*0.58);
+      ctx.stroke();
+      // Mane
+      ctx.strokeStyle = isW ? "rgba(180,120,40,0.65)" : "rgba(40,40,40,0.88)";
+      ctx.lineWidth = 3.2; ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-sq*0.03,-hH*0.06);
+      ctx.bezierCurveTo(sq*0.02,-hH*0.22, sq*0.13,-hH*0.26, sq*0.10,-hH*0.54);
+      ctx.stroke();
+      // Eye
+      ctx.fillStyle = isW ? "#3a2010" : "#f0c040";
+      ctx.beginPath(); ctx.arc(sq*0.07,-hH*0.67, sq*0.028, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.75)";
+      ctx.beginPath(); ctx.arc(sq*0.062,-hH*0.678, sq*0.01, 0, Math.PI*2); ctx.fill();
+      // Nostril
+      ctx.fillStyle = isW ? "rgba(80,40,10,0.55)" : "rgba(0,0,0,0.7)";
+      ctx.beginPath(); ctx.ellipse(sq*0.1,-hH*0.88, sq*0.022, sq*0.016, 0.2, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+      break;
+    }
+
+    // ── Bishop (mitre hat) ────────────────────────────────────────────────────
+    case "B": {
+      const collarTopY = bot - sq*0.42;
+      const shaftTopY  = bot - sq*0.52;
+      const mitreBotY  = shaftTopY;
+      const mitreH     = sq * 0.24;
+      const finialR    = sq * 0.058;
+      cyl(cx, baseTopY, bot, baseRw);
+      cyl(cx, shaftTopY, baseTopY, sq*0.085);
+      cyl(cx, collarTopY, collarTopY+sq*0.06, sq*0.15);
+      // Mitre body (bishop's tall pointed hat)
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx-sq*0.13, mitreBotY);
+      ctx.bezierCurveTo(cx-sq*0.08, mitreBotY-mitreH*0.32, cx-sq*0.03, mitreBotY-mitreH*0.62, cx, mitreBotY-mitreH);
+      ctx.bezierCurveTo(cx+sq*0.03, mitreBotY-mitreH*0.62, cx+sq*0.08, mitreBotY-mitreH*0.32, cx+sq*0.13, mitreBotY);
+      ctx.closePath();
+      ctx.fillStyle = hg(cx-sq*0.13, cx+sq*0.13); ctx.fill();
+      ctx.strokeStyle = outline; ctx.lineWidth = 0.7; ctx.stroke();
+      // Left specular
+      ctx.strokeStyle = hiStroke; ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(cx-sq*0.1, mitreBotY-mitreH*0.06);
+      ctx.bezierCurveTo(cx-sq*0.07, mitreBotY-mitreH*0.36, cx-sq*0.02, mitreBotY-mitreH*0.60, cx, mitreBotY-mitreH);
+      ctx.stroke();
+      // Mitre horizontal band
+      ctx.strokeStyle = isW ? "rgba(140,90,25,0.5)" : "rgba(100,100,100,0.38)";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(cx-sq*0.10, mitreBotY-mitreH*0.40);
+      ctx.lineTo(cx+sq*0.10, mitreBotY-mitreH*0.40);
+      ctx.stroke();
+      ctx.restore();
+      // Ball finial at the very tip
+      sph(cx, mitreBotY-mitreH-finialR*0.4, finialR);
+      break;
+    }
+
+    // ── Queen (orb crown with 5 points) ──────────────────────────────────────
+    case "Q": {
+      const shaftTopY  = bot - sq*0.46;
+      const crownTopY  = shaftTopY - sq*0.14;
+      const orbR       = sq * 0.092;
+      cyl(cx, baseTopY, bot, baseRw);
+      cyl(cx, shaftTopY, baseTopY, sq*0.10);
+      cyl(cx, crownTopY, shaftTopY, sq*0.18); // crown band
+      // 5 crown ball points arranged in an arc
+      const qPts: [number, number][] = [
+        [-sq*0.16, sq*0.055],
+        [-sq*0.09, sq*0.10],
+        [0,        sq*0.13],
+        [sq*0.09,  sq*0.10],
+        [sq*0.16,  sq*0.055],
+      ];
+      qPts.forEach(([ox, oy]) => sph(cx+ox, crownTopY-oy, sq*0.048));
+      // Centre orb (slightly larger, crowning the crown)
+      sph(cx, crownTopY-sq*0.15, orbR);
+      break;
+    }
+
+    // ── King (cross crown) ────────────────────────────────────────────────────
+    case "K": {
+      const shaftTopY = bot - sq*0.44;
+      const crownTopY = shaftTopY - sq*0.12;
+      cyl(cx, baseTopY, bot, baseRw);
+      cyl(cx, shaftTopY, baseTopY, sq*0.10);
+      cyl(cx, crownTopY, shaftTopY, sq*0.18);
+      // 3 crown ball points (left, centre-front, right)
+      [[-sq*0.15, sq*0.065], [0, sq*0.095], [sq*0.15, sq*0.065]].forEach(([ox, oy]) => {
+        sph(cx+ox as number, crownTopY-(oy as number), sq*0.046);
+      });
+      // Cross rising from centre
+      const crossBotY = crownTopY - sq*0.04;
+      const crossH    = sq * 0.24;
+      const stemW     = sq * 0.052;
+      const armW      = sq * 0.14;
+      const armH      = sq * 0.05;
+      const armY      = crossBotY - crossH * 0.62;
+      ctx.save();
+      // Vertical stem
+      ctx.fillStyle = hg(cx-stemW/2, cx+stemW/2);
+      ctx.fillRect(cx-stemW/2, crossBotY-crossH, stemW, crossH);
+      ctx.strokeStyle = outline; ctx.lineWidth = 0.7;
+      ctx.strokeRect(cx-stemW/2, crossBotY-crossH, stemW, crossH);
+      // Stem top face
+      ctx.beginPath(); ctx.ellipse(cx, crossBotY-crossH, stemW/2, stemW*0.18, 0, 0, Math.PI*2);
+      ctx.fillStyle = topFace; ctx.fill();
+      // Horizontal arm
+      ctx.fillStyle = hg(cx-armW/2, cx+armW/2);
+      ctx.fillRect(cx-armW/2, armY-armH/2, armW, armH);
+      ctx.strokeStyle = outline; ctx.lineWidth = 0.7;
+      ctx.strokeRect(cx-armW/2, armY-armH/2, armW, armH);
+      // Arm top face
+      ctx.beginPath(); ctx.ellipse(cx, armY-armH/2, armW/2, armH*0.2, 0, 0, Math.PI*2);
+      ctx.fillStyle = topFace; ctx.fill();
+      ctx.restore();
+      break;
+    }
   }
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
-  ctx.strokeStyle = isW ? "rgba(255,240,180,0.55)" : "rgba(140,140,140,0.45)"; ctx.lineWidth = 1.5; ctx.stroke();
-  ctx.strokeStyle = isW ? "rgba(255,255,255,0.75)" : "rgba(220,220,220,0.22)"; ctx.lineWidth = 2.2;
-  ctx.beginPath(); ctx.arc(cx-r*0.18, cy-r*0.2, r*0.66, Math.PI*1.08, Math.PI*1.88); ctx.stroke();
-  ctx.font = `bold ${Math.round(SQ*0.46)}px serif`;
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillStyle = isW ? "rgba(60,30,0,0.3)" : "rgba(255,230,80,0.2)";
-  ctx.fillText(SYMBOLS[piece.color][piece.type], cx+1, cy+2);
-  ctx.fillStyle = isW ? "#3c1e00" : "#f5d860";
-  ctx.fillText(SYMBOLS[piece.color][piece.type], cx, cy+1);
 }
 
 function drawBoard(
