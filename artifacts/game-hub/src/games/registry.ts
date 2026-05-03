@@ -19,6 +19,7 @@ import TetrisRoyale from "./tetris-royale";
 import Pictionary from "./pictionary";
 import Mahjong from "./mahjong";
 import SneezingKittens from "./sneezing-kittens";
+import TrainYard from "./trainyard";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -261,6 +262,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-pink-950/80 via-pink-900/30 to-transparent",
     borderColor: "#db277730",
     component: SneezingKittens,
+  },
+  {
+    id: "trainyard",
+    name: "TrainYard",
+    icon: "🚂",
+    tier: "🟡",
+    desc: "Mexican Train Dominoes! Build your private train from the hub and race to empty your hand across 13 rounds.",
+    color: "#d97706",
+    gradient: "from-yellow-950/80 via-yellow-900/30 to-transparent",
+    borderColor: "#d9770630",
+    component: TrainYard,
   },
 ];
 
