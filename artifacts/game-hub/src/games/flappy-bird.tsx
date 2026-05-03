@@ -6,9 +6,9 @@ function Shell({ title, controls, children }: { title: string; controls?: string
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center gap-4 px-4 py-3 border-b border-lime-500/30 bg-gradient-to-r from-lime-950/60 to-transparent">
-        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-sm transition-all">
           <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm">Hub</span>
+          <span>Menu</span>
         </Link>
         <span className="text-2xl select-none" style={{ filter: "drop-shadow(0 0 8px #a3e63580)" }}>🐦</span>
         <h1 className="text-lg font-bold text-lime-400">{title}</h1>
@@ -400,6 +400,8 @@ export default function FlappyBird() {
   const [theme, setTheme]         = useState<Theme>("sky");
   const pendingMode = useRef<"1p"|"2p">("1p");
   const raf = useRef(0);
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
 
   const draw = useCallback(() => {
     const c=cv.current; if(!c) return;
@@ -457,6 +459,7 @@ export default function FlappyBird() {
   const loop = useCallback(() => {
     const s=g.current;
     if(s.state!=="playing"){ draw(); return; }
+    if(pausedRef.current){ draw(); raf.current=requestAnimationFrame(loop); return; }
     s.frame++; s.bgOffset+=s.spd;
 
     // ── Difficulty ramp (every 5 pipe-points) ──────────────────────────────
@@ -540,6 +543,7 @@ export default function FlappyBird() {
   useEffect(()=>{
     if(screen!=="game") return;
     const onKey=(e:KeyboardEvent)=>{
+      if(e.code==="KeyP"){ pausedRef.current=!pausedRef.current; setPaused(pausedRef.current); return; }
       if(e.code==="Space"||e.code==="KeyZ"||e.code==="ArrowUp"){ e.preventDefault(); flap(1); }
       if(e.code==="Enter"||e.code==="ShiftRight"){ e.preventDefault(); flap(2); }
     };
@@ -642,6 +646,14 @@ export default function FlappyBird() {
               <button onClick={()=>setScreen("map")} className="px-5 py-2 bg-secondary text-foreground font-bold rounded-xl">Maps</button>
               <button onClick={()=>setScreen("menu")} className="px-5 py-2 bg-secondary text-foreground font-bold rounded-xl">Menu</button>
             </div>
+          </div>
+        )}
+        {paused && gameState==="playing" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 rounded-xl gap-4 z-10" onClick={e=>e.stopPropagation()}>
+            <div className="text-6xl">⏸</div>
+            <h2 className="text-4xl font-black text-white">PAUSED</h2>
+            <p className="text-sm text-white/50">Press P to resume</p>
+            <button onClick={() => { pausedRef.current = false; setPaused(false); }} className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-bold transition-colors">▶ Resume</button>
           </div>
         )}
       </div>

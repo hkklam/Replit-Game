@@ -738,6 +738,8 @@ export default function TetrisRoyale() {
   const gameRef   = useRef<GameRef|null>(null);
   const rafRef    = useRef(0);
   const hardRef   = useRef(false); // space held guard
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
 
   const [screen,    setScreen]    = useState<Screen>(() => getUrlRoomCode() ? "setup" : "menu");
   const [mode,      setMode]      = useState<Mode>("solo");
@@ -842,6 +844,7 @@ export default function TetrisRoyale() {
     const g=gameRef.current;
     const canvas=cvRef.current;
     if(!g||!canvas){rafRef.current=requestAnimationFrame(loop);return;}
+    if(pausedRef.current){rafRef.current=requestAnimationFrame(loop);return;}
     const ctx=canvas.getContext("2d")!;
 
     const dt=Math.min(time-g.prevTime,50);
@@ -990,6 +993,7 @@ export default function TetrisRoyale() {
     const kd=(e:KeyboardEvent)=>{
       const g=gameRef.current;if(!g) return;
       if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault();
+      if(e.key==="p"||e.key==="P"){pausedRef.current=!pausedRef.current;setPaused(pausedRef.current);return;}
       g.keys.add(e.key);
       const gs=g.player;if(gs.phase!=="playing") return;
       switch(e.key){
@@ -1038,7 +1042,7 @@ export default function TetrisRoyale() {
 
   if(screen==="menu") return (
     <div style={S}>
-      <Link href="/"><span style={{position:"absolute",top:16,left:20,color:"rgba(255,255,255,0.35)",fontSize:14,cursor:"pointer"}}>← Hub</span></Link>
+      <Link href="/"><span style={{position:"absolute",top:16,left:20,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 14px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Menu</span></Link>
       <div style={{fontSize:52,filter:"drop-shadow(0 0 24px #818cf8)",marginBottom:8}}>⬛</div>
       <h1 style={{fontSize:48,fontWeight:900,letterSpacing:-2,margin:"0 0 4px",background:"linear-gradient(135deg,#818cf8 0%,#c084fc 50%,#f472b6 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>TETRIS ROYALE</h1>
       <p style={{color:"rgba(255,255,255,0.35)",marginBottom:36,fontSize:13}}>Last stack standing wins · Eliminate opponents with garbage lines</p>
@@ -1056,7 +1060,7 @@ export default function TetrisRoyale() {
 
   if(screen==="setup") return (
     <div style={S}>
-      <Link href="/"><span style={{position:"absolute",top:16,left:20,color:"rgba(255,255,255,0.35)",fontSize:14,cursor:"pointer"}}>← Hub</span></Link>
+      <Link href="/"><span style={{position:"absolute",top:16,left:20,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 14px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Menu</span></Link>
       <h2 style={{fontSize:28,fontWeight:900,marginBottom:28,color:"#c084fc"}}>{mode==="solo"?"Setup vs AI":"Online Setup"}</h2>
       <div style={{display:"flex",flexDirection:"column",gap:18,width:"100%",maxWidth:340}}>
         <label style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -1115,7 +1119,7 @@ export default function TetrisRoyale() {
 
   if(screen==="results") return (
     <div style={S}>
-      <Link href="/"><span style={{position:"absolute",top:16,left:20,color:"rgba(255,255,255,0.35)",fontSize:14,cursor:"pointer"}}>← Hub</span></Link>
+      <Link href="/"><span style={{position:"absolute",top:16,left:20,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 14px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>← Menu</span></Link>
       <div style={{fontSize:64,marginBottom:16}}>🏆</div>
       <h2 style={{fontSize:36,fontWeight:900,color:"#ffd700",marginBottom:8}}>{winner} Wins!</h2>
       <p style={{color:"rgba(255,255,255,0.4)",marginBottom:32,fontSize:14}}>
@@ -1130,10 +1134,18 @@ export default function TetrisRoyale() {
 
   // GAME screen
   return (
-    <div style={{minHeight:"100vh",background:"#02020a",display:"flex",alignItems:"center",justifyContent:"center",padding:8}}>
-      <Link href="/"><span style={{position:"absolute",top:12,left:16,color:"rgba(255,255,255,0.2)",fontSize:13,cursor:"pointer",zIndex:10}}>← Hub</span></Link>
+    <div style={{minHeight:"100vh",background:"#02020a",display:"flex",alignItems:"center",justifyContent:"center",padding:8,position:"relative"}}>
+      <Link href="/"><span style={{position:"absolute",top:12,left:16,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 14px",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",zIndex:10}}>← Menu</span></Link>
       <canvas ref={cvRef} width={CW} height={CH}
         style={{transform:`scale(${scale})`,transformOrigin:"top center",display:"block",imageRendering:"pixelated"}} />
+      {paused && (
+        <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.7)",gap:16,zIndex:20}}>
+          <div style={{fontSize:64}}>⏸</div>
+          <h2 style={{fontSize:40,fontWeight:900,color:"#fff",margin:0}}>PAUSED</h2>
+          <p style={{color:"rgba(255,255,255,0.5)",fontSize:14,margin:0}}>Press P to resume</p>
+          <button onClick={() => { pausedRef.current = false; setPaused(false); }} style={{padding:"12px 32px",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:12,color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer"}}>▶ Resume</button>
+        </div>
+      )}
     </div>
   );
 }

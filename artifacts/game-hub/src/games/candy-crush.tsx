@@ -308,6 +308,8 @@ export default function CandyCrush() {
   const [hud, setHud] = useState<HUD>({ score:0, moves:20, target:400, lvIdx:0, cascade:0, phase:"idle" });
   const [overlay, setOverlay] = useState<"none"|"win"|"lose">("none");
   const restartRef = useRef<(next:boolean)=>void>(()=>{});
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     if (!started) return;
@@ -613,6 +615,8 @@ export default function CandyCrush() {
       }
     };
     canvas.addEventListener("click",onClick);
+    const onKey=(e:KeyboardEvent)=>{if(e.key==="p"||e.key==="P"){pausedRef.current=!pausedRef.current;setPaused(pausedRef.current);}};
+    window.addEventListener("keydown",onKey);
 
     restartRef.current=(next:boolean)=>{
       if(next&&lvIdx<LEVELS.length-1)lvIdx++;
@@ -627,7 +631,9 @@ export default function CandyCrush() {
     let lastT=performance.now(), rafId=0;
     const animate=()=>{
       rafId=requestAnimationFrame(animate);
-      const now=performance.now(); const dt=Math.min((now-lastT)/1000,.05); lastT=now; frame++;
+      const now=performance.now();
+      if(pausedRef.current){lastT=now;return;}
+      const dt=Math.min((now-lastT)/1000,.05); lastT=now; frame++;
 
       if(phaseOnEnd&&phaseUntil>0&&now>=phaseUntil){const fn=phaseOnEnd;phaseOnEnd=null;phaseUntil=0;fn();}
       if(phase==="idle"&&now-lastInput>HINT_DELAY&&!hintCells){
@@ -696,7 +702,7 @@ export default function CandyCrush() {
     };
     animate();
 
-    return ()=>{cancelAnimationFrame(rafId);canvas.removeEventListener("click",onClick);};
+    return ()=>{cancelAnimationFrame(rafId);canvas.removeEventListener("click",onClick);window.removeEventListener("keydown",onKey);};
   }, [started]);
 
   const lv=LEVELS[hud.lvIdx];
@@ -708,8 +714,8 @@ export default function CandyCrush() {
   if(!started) return (
     <div className="min-h-screen flex flex-col" style={{background:`linear-gradient(160deg,${LEVEL_BGS[0].top},${LEVEL_BGS[0].bot})`}}>
       <header className="flex items-center gap-4 px-4 py-3 border-b border-white/20">
-        <Link href="/" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors">
-          <ArrowLeft className="h-4 w-4"/><span className="text-sm">Hub</span>
+        <Link href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-sm transition-all">
+          <ArrowLeft className="h-4 w-4"/><span>Menu</span>
         </Link>
         <span className="text-2xl">💎</span>
         <h1 className="text-lg font-bold text-white">Gem Crush</h1>
@@ -762,8 +768,8 @@ export default function CandyCrush() {
   return (
     <div className="min-h-screen flex flex-col" style={{background:`linear-gradient(160deg,${bg.top} 0%,${bg.bot} 100%)`}}>
       <header className="flex items-center gap-3 px-4 py-2.5 border-b" style={{borderColor:"rgba(255,255,255,0.15)",background:"rgba(0,0,0,0.25)",backdropFilter:"blur(8px)"}}>
-        <Link href="/" className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors">
-          <ArrowLeft className="h-4 w-4"/><span className="text-xs">Hub</span>
+        <Link href="/" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-sm transition-all">
+          <ArrowLeft className="h-4 w-4"/><span>Menu</span>
         </Link>
         <span className="text-xl">💎</span>
         <span className="text-sm font-black text-white">Gem Crush</span>
@@ -824,6 +830,14 @@ export default function CandyCrush() {
               <p className="text-3xl font-black text-red-400">Out of Moves!</p>
               <p className="text-sm" style={{color:"rgba(255,255,255,0.5)"}}>{hud.score.toLocaleString()} / {lv.target.toLocaleString()} pts</p>
               <button onClick={()=>restartRef.current(false)} className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors">Try Again</button>
+            </div>
+          )}
+          {paused&&overlay==="none"&&(
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-2xl z-10" style={{background:"rgba(0,0,0,0.75)"}}>
+              <div className="text-6xl">⏸</div>
+              <h2 className="text-4xl font-black text-white">PAUSED</h2>
+              <p className="text-sm" style={{color:"rgba(255,255,255,0.5)"}}>Press P to resume</p>
+              <button onClick={() => { pausedRef.current = false; setPaused(false); }} className="px-8 py-3 rounded-xl font-bold text-white transition-colors" style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)"}}>▶ Resume</button>
             </div>
           )}
         </div>

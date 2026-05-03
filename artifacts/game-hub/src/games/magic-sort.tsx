@@ -256,7 +256,7 @@ function LevelSelect({ completed, onSelect }: { completed: Set<number>; onSelect
       color: "#fff", display: "flex", flexDirection: "column", alignItems: "center",
       padding: "16px 20px 40px" }}>
       <div style={{ alignSelf: "flex-start", marginBottom: 20 }}>
-        <Link href="/"><span style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, cursor: "pointer" }}>← Hub</span></Link>
+        <Link href="/"><span style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>← Menu</span></Link>
       </div>
       <div style={{ textAlign: "center", marginBottom: 36 }}>
         <div style={{ fontSize: 60, marginBottom: 10, filter: "drop-shadow(0 0 30px #a855f7)" }}>🧪</div>

@@ -432,7 +432,7 @@ export default function Pictionary() {
   // ─── LANDING ─────────────────────────────────────────────────────────────
   if (screen === "landing") return (
     <div style={panelStyle}>
-      <Link href="/"><span style={{ position: "absolute", top: 16, left: 20, color: "rgba(255,255,255,0.3)", fontSize: 14, cursor: "pointer" }}>← Hub</span></Link>
+      <Link href="/"><span style={{ position: "absolute", top: 16, left: 20, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>← Menu</span></Link>
       <div style={{ fontSize: 56, marginBottom: 8 }}>🎨</div>
       <h1 style={{ fontSize: 44, fontWeight: 900, margin: "0 0 4px", background: "linear-gradient(135deg,#c084fc,#818cf8,#38bdf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>DrawIt</h1>
       <p style={{ color: "rgba(255,255,255,0.4)", marginBottom: 36, fontSize: 13 }}>Draw · Guess · Score — up to 8 players</p>
@@ -467,7 +467,7 @@ export default function Pictionary() {
   // ─── LOBBY ────────────────────────────────────────────────────────────────
   if (screen === "lobby") return (
     <div style={panelStyle}>
-      <Link href="/"><span style={{ position: "absolute", top: 16, left: 20, color: "rgba(255,255,255,0.3)", fontSize: 14, cursor: "pointer" }}>← Hub</span></Link>
+      <Link href="/"><span style={{ position: "absolute", top: 16, left: 20, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>← Menu</span></Link>
       <h2 style={{ fontSize: 28, fontWeight: 900, color: "#c084fc", marginBottom: 4 }}>🎨 DrawIt Lobby</h2>
       <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: 6, color: "#ffd700", marginBottom: 8 }}>{roomCode}</div>
       {roomCode && (
@@ -529,7 +529,7 @@ export default function Pictionary() {
     const sorted = [...finalPlayers].sort((a, b) => b.score - a.score);
     return (
       <div style={panelStyle}>
-        <Link href="/"><span style={{ position: "absolute", top: 16, left: 20, color: "rgba(255,255,255,0.3)", fontSize: 14, cursor: "pointer" }}>← Hub</span></Link>
+        <Link href="/"><span style={{ position: "absolute", top: 16, left: 20, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>← Menu</span></Link>
         <div style={{ fontSize: 56, marginBottom: 12 }}>🏆</div>
         <h2 style={{ fontSize: 32, fontWeight: 900, color: "#ffd700", marginBottom: 28 }}>Game Over!</h2>
         <Card style={{ maxWidth: 420 }}>
@@ -553,7 +553,7 @@ export default function Pictionary() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#0c0c14", display: "flex", flexDirection: "column", fontFamily: "'Segoe UI', sans-serif", color: "#fff", overflow: "hidden" }}>
-      <Link href="/"><span style={{ position: "absolute", top: 8, left: 12, color: "rgba(255,255,255,0.2)", fontSize: 12, cursor: "pointer", zIndex: 50 }}>← Hub</span></Link>
+      <Link href="/"><span style={{ position: "absolute", top: 8, left: 12, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "4px 12px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", zIndex: 50 }}>← Menu</span></Link>
 
       {/* ── TOP BAR ─────────────────────────────────────────────────── */}
       <div style={{ background: "rgba(0,0,0,0.6)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "8px 16px", display: "flex", alignItems: "center", gap: 16 }}>

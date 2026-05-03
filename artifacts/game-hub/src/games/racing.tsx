@@ -537,9 +537,9 @@ function Shell({ title, controls, children }: { title: string; controls?: string
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center gap-4 px-4 py-3 border-b border-indigo-500/30 bg-gradient-to-r from-indigo-950/60 to-transparent">
-        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-sm transition-all">
           <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm">Hub</span>
+          <span>Menu</span>
         </Link>
         <span className="text-2xl select-none" style={{ filter: "drop-shadow(0 0 8px #818cf880)" }}>🏎️</span>
         <h1 className="text-lg font-bold text-indigo-400">{title}</h1>
@@ -568,6 +568,8 @@ export default function Racing() {
   const g     = useRef<GameState | null>(null);
   const raf   = useRef(0);
   const cache = useRef<Map<string, BuiltTrack>>(new Map());
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
 
   const [screen,   setScreen]   = useState<"menu" | "track-select" | "race">("menu");
   const [gameMode, setGameMode] = useState<"1p" | "2p">("1p");
@@ -633,6 +635,7 @@ export default function Racing() {
       draw(); raf.current = requestAnimationFrame(loop); return;
     }
     if (gs.phase === "done") return;
+    if (pausedRef.current) { draw(); raf.current = requestAnimationFrame(loop); return; }
 
     const k = gs.keys;
     const ts1 = (k.has("ArrowLeft") || k.has("left")) ? -1 : (k.has("ArrowRight") || k.has("right")) ? 1 : 0;
@@ -705,6 +708,7 @@ export default function Racing() {
   useEffect(() => {
     if (screen !== "race") return;
     const down = (e: KeyboardEvent) => {
+      if (e.key === 'p' || e.key === 'P') { pausedRef.current = !pausedRef.current; setPaused(pausedRef.current); return; }
       g.current?.keys.add(e.key);
       if (["Arrow", "w", "a", "s", "d"].some(kk => e.key.startsWith(kk) || e.key === kk)) e.preventDefault();
     };
@@ -780,6 +784,14 @@ export default function Racing() {
           className="rounded-xl border border-slate-700"
           style={{ width: "100%", maxWidth: CW, height: "auto" }}
         />
+        {paused && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 rounded-xl gap-4 z-10">
+            <div className="text-6xl">⏸</div>
+            <h2 className="text-4xl font-black text-white">PAUSED</h2>
+            <p className="text-sm text-white/50">Press P to resume</p>
+            <button onClick={() => { pausedRef.current = false; setPaused(false); }} className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-bold transition-colors">▶ Resume</button>
+          </div>
+        )}
         {phase === "done" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none">
             <div className="pointer-events-auto flex gap-3 mt-64 flex-wrap justify-center">

@@ -8,9 +8,9 @@ function Shell({ title, controls, children }: { title: string; controls?: string
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center gap-4 px-4 py-3 border-b border-cyan-500/30 bg-gradient-to-r from-cyan-950/60 to-transparent">
-        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-sm transition-all">
           <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm">Hub</span>
+          <span>Menu</span>
         </Link>
         <span className="text-2xl select-none" style={{ filter: "drop-shadow(0 0 8px #22d3ee80)" }}>⚓</span>
         <h1 className="text-lg font-bold text-cyan-400">{title}</h1>

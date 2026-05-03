@@ -6,8 +6,8 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center gap-4 px-4 py-3 border-b border-orange-500/30 bg-gradient-to-r from-orange-950/60 to-transparent">
-        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="h-4 w-4" /><span className="text-sm">Hub</span>
+        <Link href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-sm transition-all">
+          <ArrowLeft className="h-4 w-4" /><span>Menu</span>
         </Link>
         <span className="text-2xl select-none" style={{ filter:"drop-shadow(0 0 8px #fb923c80)" }}>🏰</span>
         <h1 className="text-lg font-bold text-orange-400">{title}</h1>
@@ -531,6 +531,8 @@ function drawHUD(ctx:CanvasRenderingContext2D, s:{gold:number;lives:number;score
 export default function TowerDefense() {
   const cv=useRef<HTMLCanvasElement>(null);
   const raf=useRef(0);
+  const pausedRef=useRef(false);
+  const [paused, setPaused]=useState(false);
   const g=useRef({
     level:0,wave:0,wavePhase:"idle" as "idle"|"spawning"|"waitclear",
     spawnQueue:[] as {type:EnemyType}[],spawnTimer:0,betweenTimer:0,
@@ -601,6 +603,7 @@ export default function TowerDefense() {
   const loop=useCallback(()=>{
     const s=g.current;
     if(s.state==="win"||s.state==="lose"){draw();return;}
+    if(pausedRef.current){draw();raf.current=requestAnimationFrame(loop);return;}
     s.frame++;
 
     if(s.wavePhase==="idle") spawnNextWave();
@@ -777,6 +780,7 @@ export default function TowerDefense() {
       placeTower(Math.floor((e.clientX-rect.left)*scX/CELL),Math.floor((e.clientY-rect.top)*scY/CELL));
     };
     const onKey=(e:KeyboardEvent)=>{
+      if(e.key==="p"||e.key==="P"){pausedRef.current=!pausedRef.current;setPaused(pausedRef.current);return;}
       const map:Record<string,TowerType>={1:"arrow",2:"cannon",3:"ice",4:"lightning",5:"sniper",6:"mortar",7:"poison"};
       if(map[e.key]){setSelTower(map[e.key]);e.preventDefault();}
     };
@@ -912,6 +916,14 @@ export default function TowerDefense() {
               <button onClick={()=>reset(difficulty)} className="px-6 py-3 bg-orange-500 hover:bg-orange-400 text-black font-black rounded-xl transition-colors">Play Again</button>
               <button onClick={()=>reset()} className="px-6 py-3 bg-secondary text-foreground font-bold rounded-xl transition-colors">Change Difficulty</button>
             </div>
+          </div>
+        )}
+        {paused && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 rounded-xl gap-4 z-10">
+            <div className="text-6xl">⏸</div>
+            <h2 className="text-4xl font-black text-white">PAUSED</h2>
+            <p className="text-sm text-white/50">Press P to resume</p>
+            <button onClick={() => { pausedRef.current = false; setPaused(false); }} className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-bold transition-colors">▶ Resume</button>
           </div>
         )}
       </div>

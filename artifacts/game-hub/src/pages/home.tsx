@@ -25,7 +25,7 @@ export default function Home() {
           <div className="inline-flex items-center gap-3 mb-4">
             <span className="text-5xl animate-bounce select-none" style={{ animationDuration: "2s" }}>🎮</span>
             <h1 className="text-6xl font-black tracking-tight bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              GAME HUB
+              Harry's Game Hub
             </h1>
           </div>
           <p className="text-muted-foreground text-base">{GAMES.length} fully playable games · MVP Edition</p>

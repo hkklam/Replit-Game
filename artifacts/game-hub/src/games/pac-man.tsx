@@ -7,8 +7,8 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center gap-4 px-4 py-3 border-b border-amber-500/30 bg-gradient-to-r from-amber-950/60 to-transparent">
-        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="h-4 w-4" /><span className="text-sm">Hub</span>
+        <Link href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-sm transition-all">
+          <ArrowLeft className="h-4 w-4" /><span>Menu</span>
         </Link>
         <span className="text-2xl select-none" style={{ filter: "drop-shadow(0 0 8px #fbbf2480)" }}>👾</span>
         <h1 className="text-lg font-bold text-amber-400">{title}</h1>
@@ -516,6 +516,8 @@ export default function PacMan() {
   const frameRef = useRef(0);
   const raf      = useRef(0);
   const swipe    = useRef<{ x: number; y: number } | null>(null);
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
 
   const [screen,   setScreen]   = useState<"menu" | "game">("menu");
   const [result,   setResult]   = useState<"idle" | "dead" | "win">("idle");
@@ -529,6 +531,7 @@ export default function PacMan() {
   const [p2Lives,  setP2Lives]  = useState(3);
 
   const loop = useCallback(() => {
+    if (pausedRef.current) { raf.current = requestAnimationFrame(loop); return; }
     const s = gs.current;
     const cfg = DIFF_CFG[s.diff];
     const frame = ++frameRef.current;
@@ -613,6 +616,7 @@ export default function PacMan() {
   useEffect(() => {
     if (screen !== "game") return;
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'p' || e.key === 'P') { pausedRef.current = !pausedRef.current; setPaused(pausedRef.current); return; }
       const m1: Record<string, number> = { ArrowRight: 0, ArrowDown: 1, ArrowLeft: 2, ArrowUp: 3 };
       const m2: Record<string, number> = { d: 0, s: 1, a: 2, w: 3 };
       if (m1[e.key] !== undefined) { setWant(m1[e.key], 1); e.preventDefault(); }
@@ -753,6 +757,14 @@ export default function PacMan() {
           className="rounded-xl touch-none"
           style={{ width: "100%", maxWidth: CW, height: "auto", boxShadow: "0 0 32px #4f46e580, 0 0 4px #818cf840" }}
         />
+        {paused && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 rounded-xl gap-4 z-10">
+            <div className="text-6xl">⏸</div>
+            <h2 className="text-4xl font-black text-white">PAUSED</h2>
+            <p className="text-sm text-white/50">Press P to resume</p>
+            <button onClick={() => { pausedRef.current = false; setPaused(false); }} className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-bold transition-colors">▶ Resume</button>
+          </div>
+        )}
         {(result === "dead" || result === "win") && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-xl gap-4">
             {result === "win"  && <p className="text-2xl font-black text-yellow-400">{winner2p ?? "You Win! 🎉"}</p>}

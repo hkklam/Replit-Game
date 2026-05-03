@@ -20,7 +20,7 @@ function Router() {
         <div className="min-h-screen flex items-center justify-center text-muted-foreground">
           <div className="text-center">
             <p className="text-2xl mb-4">404 — Game not found</p>
-            <a href="/" className="text-primary hover:underline">← Back to Hub</a>
+            <a href="/" className="text-primary hover:underline">← Back to Menu</a>
           </div>
         </div>
       </Route>

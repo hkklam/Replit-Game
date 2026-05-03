@@ -9,9 +9,9 @@ function Shell({ title, controls, children }: { title: string; controls?: string
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center gap-4 px-4 py-3 border-b border-emerald-500/30 bg-gradient-to-r from-emerald-950/60 to-transparent">
-        <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+        <Link href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-sm transition-all">
           <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm">Hub</span>
+          <span>Menu</span>
         </Link>
         <span className="text-2xl select-none" style={{ filter: "drop-shadow(0 0 8px #34d39980)" }}>🐍</span>
         <h1 className="text-lg font-bold text-emerald-400">{title}</h1>
@@ -299,6 +299,8 @@ export default function SnakeGame() {
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const diffRef = useRef<Difficulty>("medium");
   const raf = useRef(0);
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
 
   const mp = useOnlineMultiplayer({
     onGuestJoined: useCallback(() => { startOnlineGame("host"); }, []),
@@ -353,6 +355,7 @@ export default function SnakeGame() {
     const done1p = st.mode === "1p" && !st.s1.alive;
     const done2p = st.mode !== "1p" && !st.s1.alive && !st.s2.alive;
     if (done1p || done2p) { draw(); return; }
+    if (pausedRef.current) { draw(); raf.current = requestAnimationFrame(loop); return; }
     if (now - st.last > st.spd) {
       st.last = now;
       if (st.mode === "ai" && st.s2.alive) {
@@ -407,6 +410,7 @@ export default function SnakeGame() {
   useEffect(() => {
     if (screen !== "game") return;
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'p' || e.key === 'P') { pausedRef.current = !pausedRef.current; setPaused(pausedRef.current); return; }
       const isGuest = gameMode === "online" && mp.role === "guest";
       const m1: Record<string, P> = { w: { x: 0, y: -1 }, s: { x: 0, y: 1 }, a: { x: -1, y: 0 }, d: { x: 1, y: 0 } };
       const m2: Record<string, P> = { ArrowUp: { x: 0, y: -1 }, ArrowDown: { x: 0, y: 1 }, ArrowLeft: { x: -1, y: 0 }, ArrowRight: { x: 1, y: 0 } };
@@ -548,6 +552,14 @@ export default function SnakeGame() {
               </button>}
               <button onClick={() => { mp.disconnect(); setScreen("menu"); }} className="px-6 py-2 bg-secondary text-foreground font-bold rounded-lg">Menu</button>
             </div>
+          </div>
+        )}
+        {paused && screen === "game" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 rounded-lg gap-4 z-10">
+            <div className="text-6xl">⏸</div>
+            <h2 className="text-4xl font-black text-white">PAUSED</h2>
+            <p className="text-sm text-white/50">Press P to resume</p>
+            <button onClick={() => { pausedRef.current = false; setPaused(false); }} className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-bold transition-colors">▶ Resume</button>
           </div>
         )}
       </div>

@@ -479,7 +479,7 @@ export default function FlowFree() {
         background:"#f0f0eb", padding:"16px 16px 40px", fontFamily:"'Segoe UI',sans-serif",
       }}>
         <div style={{ alignSelf:"flex-start", marginBottom:16 }}>
-          <Link href="/"><span style={{ color:"#888", fontSize:14, cursor:"pointer" }}>← Hub</span></Link>
+          <Link href="/"><span style={{ background:"rgba(0,0,0,0.08)", border:"1.5px solid rgba(0,0,0,0.15)", borderRadius:8, padding:"6px 14px", color:"#333", fontSize:14, fontWeight:700, cursor:"pointer" }}>← Menu</span></Link>
         </div>
 
         {/* Title */}

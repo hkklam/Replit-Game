@@ -478,8 +478,8 @@ function PlayerSetup({ onStart, onBack }: { onStart: (configs: PlayerConfig[], v
     <div className="min-h-screen bg-[#0d0d1f] flex flex-col">
       {showRules && <RulesPanel variant={variant} onClose={() => setShowRules(false)}/>}
       <header className="flex items-center gap-4 px-4 py-3 border-b border-red-500/30 bg-gradient-to-r from-red-950/60 to-transparent">
-        <Link href="/" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-          <ArrowLeft className="h-4 w-4"/><span className="text-sm">Hub</span>
+        <Link href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-sm transition-all">
+          <ArrowLeft className="h-4 w-4"/><span>Menu</span>
         </Link>
         <span className="text-2xl">🃏</span>
         <h1 className="text-lg font-black text-red-400">UNO — Setup</h1>
@@ -857,8 +857,8 @@ export default function Uno() {
   if (screen === "menu") return (
     <div className="min-h-screen bg-[#0d0d1f] flex flex-col">
       <header className="flex items-center gap-4 px-4 py-3 border-b border-red-500/30 bg-gradient-to-r from-red-950/60 to-transparent">
-        <Link href="/" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-          <ArrowLeft className="h-4 w-4"/><span className="text-sm">Hub</span>
+        <Link href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-sm transition-all">
+          <ArrowLeft className="h-4 w-4"/><span>Menu</span>
         </Link>
         <span className="text-2xl">🃏</span>
         <h1 className="text-lg font-black text-red-400">UNO</h1>
@@ -891,7 +891,7 @@ export default function Uno() {
   if (screen === "online-lobby") return (
     <div className="min-h-screen bg-[#0d0d1f] flex flex-col">
       <header className="flex items-center gap-4 px-4 py-3 border-b border-red-500/30">
-        <Link href="/" className="flex items-center gap-2 text-gray-400 hover:text-white"><ArrowLeft className="h-4 w-4"/><span className="text-sm">Hub</span></Link>
+        <Link href="/" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-sm transition-all"><ArrowLeft className="h-4 w-4"/><span>Menu</span></Link>
         <span className="text-2xl">🃏</span>
         <h1 className="text-lg font-black text-red-400">UNO — Online</h1>
       </header>
@@ -958,8 +958,8 @@ export default function Uno() {
 
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-2.5 border-b border-red-900/40 bg-gray-950">
-        <Link href="/" className="flex items-center gap-1.5 text-gray-500 hover:text-white transition-colors">
-          <ArrowLeft className="h-4 w-4"/><span className="text-xs">Hub</span>
+        <Link href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-xs transition-all">
+          <ArrowLeft className="h-4 w-4"/><span>Menu</span>
         </Link>
         <span className="text-xl">🃏</span>
         <span className="text-sm font-black text-red-400 flex-1">UNO · {VARIANT_INFO[gs.variant].name}</span>

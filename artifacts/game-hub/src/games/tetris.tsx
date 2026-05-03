@@ -803,7 +803,7 @@ export default function Tetris() {
         userSelect: "none",
       }}>
         <Link href="/">
-          <span style={{ position:"absolute", top:16, left:20, color:"rgba(255,255,255,0.35)", fontSize:14, cursor:"pointer" }}>← Hub</span>
+          <span style={{ position:"absolute", top:16, left:20, background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, padding:"6px 14px", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>← Menu</span>
         </Link>
 
         {/* Logo */}
@@ -873,7 +873,7 @@ export default function Tetris() {
       padding: 8,
     }}>
       <Link href="/">
-        <span style={{ position:"absolute", top:12, left:16, color:"rgba(255,255,255,0.25)", fontSize:13, cursor:"pointer", zIndex:10 }}>← Hub</span>
+        <span style={{ position:"absolute", top:12, left:16, background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"6px 14px", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", zIndex:10 }}>← Menu</span>
       </Link>
       <canvas
         ref={canvasRef}
