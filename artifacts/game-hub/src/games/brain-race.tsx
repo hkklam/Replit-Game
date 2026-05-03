@@ -1811,7 +1811,7 @@ function SoloGame({ gs, setGs, onMenu }: { gs: GameState; setGs: (gs: GameState 
   }, [gs.mode, gs.qIdx, setGs]);
 
   const handleAnswer = (optIdx: number) => {
-    if (!canAnswerRef.current || gs.mode !== 'question' || gs.answers[0] !== null) return;
+    if (!canAnswerRef.current || gs.mode !== 'question' || gs.answers[0] !== null || gs.questions.length <= gs.qIdx) return;
     canAnswerRef.current = false;
     
     // Reveal immediately without waiting for timer
@@ -1876,7 +1876,7 @@ function SoloGame({ gs, setGs, onMenu }: { gs: GameState; setGs: (gs: GameState 
         {gs.mode === 'question' && (
           <QuestionScreen gs={gs} onAnswer={(_, oi) => handleAnswer(oi)} />
         )}
-        {gs.mode === 'reveal' && (
+        {gs.mode === 'reveal' && gs.questions.length > gs.qIdx && (
           <RevealScreen gs={gs} onNext={handleNext} earned={[gs.answers[0] === gs.questions[gs.qIdx].ans ? calcPoints(gs.questions[gs.qIdx], gs.timeLeft, gs.maxTime, gs.players[0].streak) : 0]} />
         )}
         {paused && gs.mode === 'question' && (
