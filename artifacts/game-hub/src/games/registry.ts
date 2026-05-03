@@ -18,6 +18,7 @@ import FlowFree from "./flow-free";
 import TetrisRoyale from "./tetris-royale";
 import Pictionary from "./pictionary";
 import Mahjong from "./mahjong";
+import SneezingKittens from "./sneezing-kittens";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -249,6 +250,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-red-950/80 via-red-900/30 to-transparent",
     borderColor: "#dc262630",
     component: Mahjong,
+  },
+  {
+    id: "sneezing-kittens",
+    name: "Sneezing Kittens",
+    icon: "🤧",
+    tier: "🟡",
+    desc: "Avoid the Sneezing Kitten! Play action cards, Nope your opponents, and be the last cat standing.",
+    color: "#db2777",
+    gradient: "from-pink-950/80 via-pink-900/30 to-transparent",
+    borderColor: "#db277730",
+    component: SneezingKittens,
   },
 ];
 
