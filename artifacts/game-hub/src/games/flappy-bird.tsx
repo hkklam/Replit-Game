@@ -395,7 +395,7 @@ export default function FlappyBird() {
   const [p2Score, setP2Score]     = useState(0);
   const [p1Coins, setP1Coins]     = useState(0);
   const [currentLevel, setCurrentLevel] = useState(0);
-  const [best, setBest]           = useState(()=>+localStorage.getItem("fb-best")!||0);
+  const [best, setBest]           = useState(()=>{ try { return +localStorage.getItem("fb-best")!||0; } catch { return 0; } });
   const [gameMode, setGameMode]   = useState<"1p"|"2p">("1p");
   const [theme, setTheme]         = useState<Theme>("sky");
   const pendingMode = useRef<"1p"|"2p">("1p");
@@ -518,8 +518,8 @@ export default function FlappyBird() {
     const allDead=!s.b1.alive&&(s.mode==="1p"||!s.b2.alive);
     if(allDead){
       s.state="dead"; setGameState("dead");
-      const nb=Math.max(s.b1.score,+localStorage.getItem("fb-best")!||0);
-      localStorage.setItem("fb-best",String(nb)); setBest(nb);
+      const nb=Math.max(s.b1.score,(()=>{ try { return +localStorage.getItem("fb-best")!||0; } catch { return 0; } })());
+      try { localStorage.setItem("fb-best",String(nb)); } catch {}; setBest(nb);
       draw(); return;
     }
     draw(); raf.current=requestAnimationFrame(loop);

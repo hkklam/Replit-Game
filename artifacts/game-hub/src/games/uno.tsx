@@ -676,7 +676,7 @@ export default function Uno() {
     onStateUpdate: useCallback((view: PlayerView) => {
       setOnlineView(view);
     }, []),
-    onPlayerLeft: useCallback((_, name: string) => {
+    onPlayerLeft: useCallback((_idx: number, name: string) => {
       setMsg(`${name} left the game`);
     }, []),
   });
@@ -804,7 +804,7 @@ export default function Uno() {
     const s = gsRef.current;
     if (!pendingWild || !s) return;
     if (mode === "online") {
-      unoOnline.playCard(pendingWild.id, color as string);
+      unoOnline.playCard(pendingWild.id, color);
     } else {
       const ns = applyPlay(s, pendingWild, color);
       if (ns.hands[s.turn].length === 1 && !ns.winner) startUnoTimer(s.turn);

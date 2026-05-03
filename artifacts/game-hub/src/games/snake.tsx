@@ -37,8 +37,11 @@ const DIFF_LABELS: Record<Difficulty, { label: string; color: string; desc: stri
 
 function rnd(occupied: P[]): P {
   let p: P;
-  do { p = { x: (Math.random() * GRID) | 0, y: (Math.random() * GRID) | 0 }; }
-  while (occupied.some(s => s.x === p.x && s.y === p.y));
+  let attempts = 0;
+  do {
+    p = { x: (Math.random() * GRID) | 0, y: (Math.random() * GRID) | 0 };
+    attempts++;
+  } while (attempts < GRID * GRID && occupied.some(s => s.x === p.x && s.y === p.y));
   return p;
 }
 
@@ -304,7 +307,7 @@ export default function SnakeGame() {
   const [screen, setScreen] = useState<"menu" | "ai-diff" | "game" | "over" | "online-lobby">(() => getUrlRoomCode() ? "online-lobby" : "menu");
   const [p1Score, setP1Score] = useState(0);
   const [p2Score, setP2Score] = useState(0);
-  const [best, setBest] = useState(() => +localStorage.getItem("snk-best")! || 0);
+  const [best, setBest] = useState(() => { try { return +localStorage.getItem("snk-best")! || 0; } catch { return 0; } });
   const [gameMode, setGameMode] = useState<GameMode>("1p");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const diffRef = useRef<Difficulty>("medium");
@@ -397,8 +400,8 @@ export default function SnakeGame() {
       }
       if (isDone) {
         if (st.mode === "1p") {
-          const nb = Math.max(st.s1.score, +localStorage.getItem("snk-best")! || 0);
-          localStorage.setItem("snk-best", String(nb)); setBest(nb);
+          const nb = Math.max(st.s1.score, (() => { try { return +localStorage.getItem("snk-best")! || 0; } catch { return 0; } })());
+          try { localStorage.setItem("snk-best", String(nb)); } catch {}; setBest(nb);
         }
         setScreen("over"); draw(); return;
       }
@@ -425,6 +428,8 @@ export default function SnakeGame() {
     if (gameMode === "online" && mp.role === "guest") mp.sendInput({ nd });
     else s1.nd = nd;
   }, [gameMode, mp.role, mp.sendInput]);
+
+  useEffect(() => () => cancelAnimationFrame(raf.current), []);
 
   useEffect(() => {
     if (screen !== "game") return;
