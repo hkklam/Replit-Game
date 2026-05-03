@@ -37,8 +37,8 @@ const BLOCK_COLORS: Record<BlockType, { top:number; side:number; bottom:number }
 
 const BLOCK_TYPES = Object.keys(BLOCK_COLORS) as BlockType[];
 
-// ─── World dimensions (10× the original surface area) ─────────────────────────
-const WORLD_W = 90, WORLD_H = 20, WORLD_D = 90;
+// ─── World dimensions (≈50% surface area of the previous 90×90 world) ────────
+const WORLD_W = 64, WORLD_H = 20, WORLD_D = 64;
 
 // Multi-octave terrain — richer hills, valleys and ridges across the larger map
 function terrainHeight(x: number, z: number): number {
@@ -163,10 +163,9 @@ export default function Minecraft() {
     // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb);
-    scene.fog = new THREE.FogExp2(0x87ceeb, 0.012); // less dense fog for bigger world
+    scene.fog = new THREE.FogExp2(0x87ceeb, 0.018);
 
-    // Camera — far plane extended for the larger world
-    const camera = new THREE.PerspectiveCamera(75, W/H, 0.1, 220);
+    const camera = new THREE.PerspectiveCamera(75, W/H, 0.1, 160);
     const sx=WORLD_W/2, sz=WORLD_D/2;
     const sy=terrainHeight(Math.floor(sx),Math.floor(sz))+3;
     camera.position.set(sx, sy, sz);
@@ -181,11 +180,11 @@ export default function Minecraft() {
     // Lights
     const ambient = new THREE.AmbientLight(0xffffff, 0.55); scene.add(ambient);
     const sun = new THREE.DirectionalLight(0xfff5e0, 1.1);
-    sun.position.set(60, 90, 45); sun.castShadow=true;
-    sun.shadow.mapSize.width=2048; sun.shadow.mapSize.height=2048;
-    sun.shadow.camera.near=0.5; sun.shadow.camera.far=300;
-    sun.shadow.camera.left=-80; sun.shadow.camera.right=80;
-    sun.shadow.camera.top=80; sun.shadow.camera.bottom=-80;
+    sun.position.set(40, 70, 35); sun.castShadow=true;
+    sun.shadow.mapSize.width=1024; sun.shadow.mapSize.height=1024;
+    sun.shadow.camera.near=0.5; sun.shadow.camera.far=200;
+    sun.shadow.camera.left=-55; sun.shadow.camera.right=55;
+    sun.shadow.camera.top=55; sun.shadow.camera.bottom=-55;
     scene.add(sun);
     const fill = new THREE.DirectionalLight(0xadd8e6,0.25);
     fill.position.set(-30,10,-30); scene.add(fill);
@@ -405,7 +404,7 @@ export default function Minecraft() {
         })}
       </div>
       <p className="text-xs text-muted-foreground text-center">
-        Free-flight mode · {WORLD_W}×{WORLD_H}×{WORLD_D} voxel world — biomes: sand, grass, stone & snow peaks
+        Free-flight mode · {WORLD_W}×{WORLD_H}×{WORLD_D} voxel world — biomes: sand, grass, stone &amp; snow peaks
       </p>
     </Shell>
   );
