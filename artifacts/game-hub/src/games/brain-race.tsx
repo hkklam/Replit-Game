@@ -1061,12 +1061,10 @@ function OnlineBrainGame({ isHost, relaySend, onMessage, onMenu }: {
 // ─── SOLO GAME WRAPPER ────────────────────────────────────────────────────────
 function SoloGameWrapper({ onMenu }: { onMenu: () => void }) {
   const [setupDone, setSetupDone] = useState(false);
-  const [soloQuestions, setSoloQuestions] = useState<Q[]>([]);
   const [soloGs, setSoloGs] = useState<GameState | null>(null);
 
   const startSoloGame = (grades: Grade[], subjects: Subject[], count: number) => {
     const qs = filterQuestions(grades, subjects, count);
-    setSoloQuestions(qs);
     setSoloGs({
       mode: 'question',
       isSolo: true,
@@ -1098,12 +1096,13 @@ function SoloGameWrapper({ onMenu }: { onMenu: () => void }) {
 }
 
 // ─── SOLO GAME ────────────────────────────────────────────────────────────────
-function SoloGame({ gs, setGs, onMenu }: { gs: GameState; setGs: (gs: GameState) => void; onMenu: () => void }) {
+function SoloGame({ gs, setGs, onMenu }: { gs: GameState; setGs: (gs: GameState | ((prev: GameState) => GameState)) => void; onMenu: () => void }) {
   const [paused, setPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const timeLeftRef = useRef(gs.timeLeft);
-  const maxTimeRef = useRef(gs.maxTime);
+  const timeLeftRef = useRef(0);
+  const maxTimeRef = useRef(0);
   const pausedRef = useRef(false);
+  const canAnswerRef = useRef(true);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -1127,9 +1126,10 @@ function SoloGame({ gs, setGs, onMenu }: { gs: GameState; setGs: (gs: GameState)
           const q = prev.questions[prev.qIdx];
           const ans = prev.answers[0];
           const correct = ans === q.ans;
-          const pts = ans === null || !correct ? 0 : calcPoints(q, timeLeftRef.current, maxTimeRef.current, prev.players[0].streak);
+          const remainingTime = Math.max(0, timeLeftRef.current);
+          const pts = ans === null || !correct ? 0 : calcPoints(q, remainingTime, maxTimeRef.current, prev.players[0].streak);
           const newPlayer = { ...prev.players[0], score: prev.players[0].score + pts, streak: correct ? prev.players[0].streak + 1 : 0, correct: prev.players[0].correct + (correct ? 1 : 0), total: prev.players[0].total + 1 };
-          return { ...prev, mode: 'reveal', players: [newPlayer], timeLeft: timeLeftRef.current };
+          return { ...prev, mode: 'reveal', players: [newPlayer], timeLeft: remainingTime };
         }
         return { ...prev, timeLeft: timeLeftRef.current };
       });
@@ -1137,7 +1137,8 @@ function SoloGame({ gs, setGs, onMenu }: { gs: GameState; setGs: (gs: GameState)
   }, [gs.mode, gs.qIdx, setGs]);
 
   const handleAnswer = (optIdx: number) => {
-    if (gs.mode !== 'question' || gs.answers[0] !== null) return;
+    if (!canAnswerRef.current || gs.mode !== 'question' || gs.answers[0] !== null) return;
+    canAnswerRef.current = false;
     setGs({ ...gs, answers: [optIdx], answerTimes: [gs.timeLeft] });
   };
 
@@ -1147,6 +1148,7 @@ function SoloGame({ gs, setGs, onMenu }: { gs: GameState; setGs: (gs: GameState)
     } else {
       const nextQ = gs.questions[gs.qIdx + 1];
       const nextTime = DIFF_TIMER[nextQ.d];
+      canAnswerRef.current = true;
       setGs({
         ...gs, qIdx: gs.qIdx + 1, mode: 'question', answers: [null], answerTimes: [null],
         timeLeft: nextTime, maxTime: nextTime,
