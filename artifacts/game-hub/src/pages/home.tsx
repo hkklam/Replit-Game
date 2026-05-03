@@ -22,6 +22,11 @@ export default function Home() {
       <div className="relative max-w-5xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-14">
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <Link href="/tutor" className="px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 hover:border-amber-400/50 hover:bg-amber-500/20 text-amber-300 font-semibold text-sm transition-all">
+              📚 Learn Programming
+            </Link>
+          </div>
           <div className="inline-flex items-center gap-3 mb-4">
             <span className="text-5xl animate-bounce select-none" style={{ animationDuration: "2s" }}>🎮</span>
             <h1 className="text-6xl font-black tracking-tight bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">

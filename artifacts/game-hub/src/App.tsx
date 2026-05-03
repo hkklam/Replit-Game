@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/home";
+import Tutor from "@/pages/tutor";
 import { GAMES } from "@/games/registry";
 
 const queryClient = new QueryClient();
@@ -10,6 +11,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/tutor" component={Tutor} />
 
       {/* Routes are auto-generated from the game registry — no manual edits needed here */}
       {GAMES.map((g) => (
