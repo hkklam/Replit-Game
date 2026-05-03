@@ -1058,9 +1058,152 @@ function OnlineBrainGame({ isHost, relaySend, onMessage, onMenu }: {
   );
 }
 
+// ─── SOLO GAME WRAPPER ────────────────────────────────────────────────────────
+function SoloGameWrapper({ onMenu }: { onMenu: () => void }) {
+  const [setupDone, setSetupDone] = useState(false);
+  const [soloQuestions, setSoloQuestions] = useState<Q[]>([]);
+  const [soloGs, setSoloGs] = useState<GameState | null>(null);
+
+  const startSoloGame = (grades: Grade[], subjects: Subject[], count: number) => {
+    const qs = filterQuestions(grades, subjects, count);
+    setSoloQuestions(qs);
+    setSoloGs({
+      mode: 'question',
+      isSolo: true,
+      players: [{ name: 'You', score: 0, streak: 0, correct: 0, total: 0 }],
+      questions: qs,
+      qIdx: 0,
+      timeLeft: DIFF_TIMER[qs[0].d],
+      maxTime: DIFF_TIMER[qs[0].d],
+      answers: [null],
+      answerTimes: [null],
+    });
+    setSetupDone(true);
+  };
+
+  if (!setupDone) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <button onClick={onMenu} style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '5px 12px', color: 'rgba(255,255,255,0.6)', fontSize: 13, cursor: 'pointer' }}>← Menu</button>
+        <SetupScreen onStart={startSoloGame} />
+      </div>
+    );
+  }
+
+  if (!soloGs) return null;
+
+  return (
+    <SoloGame gs={soloGs} setGs={setSoloGs} onMenu={onMenu} />
+  );
+}
+
+// ─── SOLO GAME ────────────────────────────────────────────────────────────────
+function SoloGame({ gs, setGs, onMenu }: { gs: GameState; setGs: (gs: GameState) => void; onMenu: () => void }) {
+  const [paused, setPaused] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeLeftRef = useRef(gs.timeLeft);
+  const maxTimeRef = useRef(gs.maxTime);
+  const pausedRef = useRef(false);
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
+
+  useEffect(() => {
+    if (gs.mode !== 'question') return;
+    timeLeftRef.current = gs.timeLeft;
+    maxTimeRef.current = gs.maxTime;
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      if (pausedRef.current) return;
+      timeLeftRef.current -= 1;
+      setGs(prev => {
+        if (prev.mode !== 'question' || timeLeftRef.current <= 0) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          const q = prev.questions[prev.qIdx];
+          const ans = prev.answers[0];
+          const correct = ans === q.ans;
+          const pts = ans === null || !correct ? 0 : calcPoints(q, timeLeftRef.current, maxTimeRef.current, prev.players[0].streak);
+          const newPlayer = { ...prev.players[0], score: prev.players[0].score + pts, streak: correct ? prev.players[0].streak + 1 : 0, correct: prev.players[0].correct + (correct ? 1 : 0), total: prev.players[0].total + 1 };
+          return { ...prev, mode: 'reveal', players: [newPlayer], timeLeft: timeLeftRef.current };
+        }
+        return { ...prev, timeLeft: timeLeftRef.current };
+      });
+    }, 1000);
+  }, [gs.mode, gs.qIdx, setGs]);
+
+  const handleAnswer = (optIdx: number) => {
+    if (gs.mode !== 'question' || gs.answers[0] !== null) return;
+    setGs({ ...gs, answers: [optIdx], answerTimes: [gs.timeLeft] });
+  };
+
+  const handleNext = () => {
+    if (gs.qIdx + 1 >= gs.questions.length) {
+      setGs({ ...gs, mode: 'results' });
+    } else {
+      const nextQ = gs.questions[gs.qIdx + 1];
+      const nextTime = DIFF_TIMER[nextQ.d];
+      setGs({
+        ...gs, qIdx: gs.qIdx + 1, mode: 'question', answers: [null], answerTimes: [null],
+        timeLeft: nextTime, maxTime: nextTime,
+      });
+    }
+  };
+
+  const bgStyle = { minHeight: '100vh', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', fontFamily: "'Segoe UI', sans-serif" };
+
+  if (gs.mode === 'results') {
+    return (
+      <div style={{ ...bgStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <ResultsScreen gs={gs} onMenu={onMenu} onRematch={onMenu} />
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...bgStyle, maxHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px', background: 'rgba(0,0,0,0.6)', borderBottom: '1px solid rgba(255,215,0,0.15)', flexShrink: 0 }}>
+        <button onClick={onMenu} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, padding: '4px 10px', color: '#aaa', fontSize: 12, cursor: 'pointer' }}>✕</button>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: '#f0c040' }}>🧠 BrainRace · Solo</span>
+          <span style={{ marginLeft: 8, fontSize: 11, color: '#555' }}>Q{gs.qIdx + 1}/{gs.questions.length}</span>
+        </div>
+        {gs.mode === 'question' && (
+          <button onClick={() => setPaused(!paused)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, padding: '4px 10px', color: '#aaa', fontSize: 14, cursor: 'pointer', width: 56 }}>{paused ? '▶' : '⏸'}</button>
+        )}
+      </div>
+
+      {/* Score bar */}
+      <ScoreBar gs={gs} />
+
+      {/* Content */}
+      <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
+        {gs.mode === 'question' && (
+          <QuestionScreen gs={gs} onAnswer={(_, oi) => handleAnswer(oi)} />
+        )}
+        {gs.mode === 'reveal' && (
+          <RevealScreen gs={gs} onNext={handleNext} earned={[gs.answers[0] === gs.questions[gs.qIdx].ans ? calcPoints(gs.questions[gs.qIdx], gs.timeLeft, gs.maxTime, gs.players[0].streak) : 0]} />
+        )}
+        {paused && gs.mode === 'question' && (
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(5,5,24,0.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+            <div style={{ fontSize: 48 }}>⏸</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#f0c040' }}>Paused</div>
+            <button onClick={() => setPaused(false)} style={{ padding: '12px 36px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#1e3a8a,#3b82f6)', color: '#fff', fontWeight: 800, fontSize: 16, cursor: 'pointer' }}>▶ Resume</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function BrainRace() {
-  const [screen, setScreen] = useState<'menu' | 'lobby' | 'game'>(() => getUrlRoomCode() ? 'lobby' : 'menu');
+  const [screen, setScreen] = useState<'menu' | 'solo' | 'lobby' | 'game'>(() => getUrlRoomCode() ? 'lobby' : 'menu');
   const [isHost, setIsHost] = useState(false);
   const [gameKey, setGameKey] = useState(0);
   const [error, setError] = useState('');
@@ -1078,17 +1221,28 @@ export default function BrainRace() {
   const registerHandler = useCallback((h: (d: unknown) => void) => { onlineMsgHandlerRef.current = h; }, []);
   const goMenu = useCallback(() => { disconnect(); setScreen('menu'); }, [disconnect]);
 
+  // ── SOLO SCREEN ──
+  if (screen === 'solo') return (
+    <SoloGameWrapper onMenu={() => setScreen('menu')} />
+  );
+
   // ── MENU ──
   if (screen === 'menu') return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', fontFamily: "'Segoe UI', sans-serif", position: 'relative' }}>
       <Link href="/"><span style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '5px 12px', color: 'rgba(255,255,255,0.6)', fontSize: 13, cursor: 'pointer' }}>← Menu</span></Link>
       <div style={{ fontSize: 64, marginBottom: 8 }}>🧠</div>
       <h1 style={{ color: '#f0c040', fontSize: 32, margin: '0 0 4px', textAlign: 'center', letterSpacing: 1 }}>BrainRace</h1>
-      <p style={{ color: '#888', marginBottom: 32, textAlign: 'center', fontSize: 14 }}>Online Multiplayer Trivia · Grades 5–8<br/>Science · History · Geography · Math</p>
-      <button onClick={() => { setError(''); setScreen('lobby'); }}
-        style={{ padding: '18px 32px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,#7c2d12,#ea580c)', color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer', boxShadow: '0 4px 20px rgba(234,88,12,0.5)' }}>
-        🌐 Play Online
-      </button>
+      <p style={{ color: '#888', marginBottom: 32, textAlign: 'center', fontSize: 14 }}>Trivia Challenges · Grades 5–8<br/>Science · History · Geography · Math</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 320 }}>
+        <button onClick={() => { setError(''); setScreen('solo'); }}
+          style={{ padding: '18px 32px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,#1e3a8a,#3b82f6)', color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer', boxShadow: '0 4px 20px rgba(59,130,246,0.5)' }}>
+          🎯 Solo Practice
+        </button>
+        <button onClick={() => { setError(''); setScreen('lobby'); }}
+          style={{ padding: '18px 32px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,#7c2d12,#ea580c)', color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer', boxShadow: '0 4px 20px rgba(234,88,12,0.5)' }}>
+          🌐 Play Online
+        </button>
+      </div>
       {error && <p style={{ color: '#ef4444', marginTop: 16, fontSize: 14 }}>{error}</p>}
       <div style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 400 }}>
         {SUBJECTS.map(s => (
