@@ -692,7 +692,9 @@ const QUESTIONS: Q[] = [
   { g:8, s:'Math', t:'Probability',              d:'Medium', q:"If you flip a coin twice, the probability of getting two heads is:",                        opts:["1/2","1/3","1/4","1/8"],                                                                  ans:2 },
   { g:8, s:'Math', t:'Statistics',               d:'Easy',   q:"The median of {2, 4, 6, 8, 10} is:",                                                       opts:["4","6","8","5"],                                                                           ans:1 },
   { g:8, s:'Math', t:'Statistics',               d:'Medium', q:"The mode of {1, 2, 2, 3, 4, 4, 4, 5} is:",                                                  opts:["2","3","4","2.5"],                                                                        ans:2 },
-];
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // ── SCIENCE Grades 9 & 10 (75 questions) ────────────────────────────────────
   // ════════════════════════════════════════════════════════════════════════════
   // – Biology –
   { g:9,  s:'Science', t:'Cell Biology',          d:'Easy',   q:"The process by which cells divide to produce two identical daughter cells is:",               opts:["Meiosis","Mitosis","Fertilization","Budding"],                                              ans:1 },
@@ -959,9 +961,48 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+// Question memory: track recently used questions to deprioritize them
+function loadRecentQuestions(): Set<string> {
+  try {
+    const stored = localStorage.getItem('brainrace_recent_questions');
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveRecentQuestions(recent: Set<string>) {
+  try {
+    const arr = Array.from(recent).slice(-30); // Keep last 30 (3 sessions of ~10 questions each)
+    localStorage.setItem('brainrace_recent_questions', JSON.stringify(arr));
+  } catch {
+    // Fail silently
+  }
+}
+
+function getQuestionKey(q: Q): string {
+  return `${q.g}_${q.s}_${q.t}_${q.q}`;
+}
+
 function filterQuestions(grades: Grade[], subjects: Subject[], count: number): Q[] {
+  const recent = loadRecentQuestions();
   const pool = QUESTIONS.filter(q => grades.includes(q.g) && subjects.includes(q.s));
-  return shuffle(pool).slice(0, count);
+  
+  // Shuffle and weight by recency: recently used questions have lower priority
+  const weighted = shuffle(pool).sort((a, b) => {
+    const aRecent = recent.has(getQuestionKey(a)) ? 1 : 0;
+    const bRecent = recent.has(getQuestionKey(b)) ? 1 : 0;
+    return aRecent - bRecent; // Recent questions sort later (lower priority)
+  });
+  
+  const selected = weighted.slice(0, count);
+  
+  // Update recent questions memory
+  const updated = new Set(recent);
+  selected.forEach(q => updated.add(getQuestionKey(q)));
+  saveRecentQuestions(updated);
+  
+  return selected;
 }
 
 function calcPoints(q: Q, timeLeft: number, maxTime: number, streak: number): number {
@@ -1549,9 +1590,11 @@ function OnlineBrainGame({ isHost, relaySend, onMessage, onMenu }: {
     if (isHost) {
       hostAnsRef.current = { ans: optIdx, time: timeLeftRef.current };
       relaySend({ type: 'opp_answered' });
+      // Reveal immediately if guest already answered
       if (guestAnsRef.current.ans !== null) doRevealHost();
     } else {
       relaySend({ type: 'answer', qIdx, optIdx, timeLeft: timeLeftForSend });
+      // Guest: ask host to reveal if it has both answers
     }
   }, [myAns, innerPhase, paused, isHost, doRevealHost, relaySend, qIdx, timeLeftForSend]);
 
@@ -1770,7 +1813,21 @@ function SoloGame({ gs, setGs, onMenu }: { gs: GameState; setGs: (gs: GameState 
   const handleAnswer = (optIdx: number) => {
     if (!canAnswerRef.current || gs.mode !== 'question' || gs.answers[0] !== null) return;
     canAnswerRef.current = false;
-    setGs({ ...gs, answers: [optIdx], answerTimes: [gs.timeLeft] });
+    
+    // Reveal immediately without waiting for timer
+    const q = gs.questions[gs.qIdx];
+    const correct = optIdx === q.ans;
+    const pts = correct ? calcPoints(q, gs.timeLeft, gs.maxTime, gs.players[0].streak) : 0;
+    const newPlayer = { 
+      ...gs.players[0], 
+      score: gs.players[0].score + pts, 
+      streak: correct ? gs.players[0].streak + 1 : 0, 
+      correct: gs.players[0].correct + (correct ? 1 : 0), 
+      total: gs.players[0].total + 1 
+    };
+    
+    if (timerRef.current) clearInterval(timerRef.current);
+    setGs({ ...gs, answers: [optIdx], answerTimes: [gs.timeLeft], mode: 'reveal', players: [newPlayer] });
   };
 
   const handleNext = () => {
