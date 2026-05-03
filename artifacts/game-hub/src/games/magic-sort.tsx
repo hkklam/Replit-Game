@@ -155,6 +155,30 @@ function getStars(moves: number, minPours: number): 1 | 2 | 3 {
   if (moves <= Math.ceil(minPours * 2.5)) return 2;
   return 1;
 }
+// Greedy hint: pick the pour that maximises (completed bottles × 20 − total colour groups × 2)
+function findHint(bottles: string[][]): { src: number; dst: number } | null {
+  const countGroups = (btls: string[][]): number => {
+    let t = 0;
+    for (const b of btls) {
+      if (!b.length) continue;
+      t++;
+      for (let i = 1; i < b.length; i++) if (b[i] !== b[i-1]) t++;
+    }
+    return t;
+  };
+  const countComplete = (btls: string[][]): number => btls.filter(isBottleDone).length;
+  let best: { src: number; dst: number } | null = null;
+  let bestScore = -Infinity;
+  for (let si = 0; si < bottles.length; si++) {
+    for (let di = 0; di < bottles.length; di++) {
+      if (si === di || !canPour(bottles[si], bottles[di])) continue;
+      const next = applyPour(bottles, si, di);
+      const score = countComplete(next) * 20 - countGroups(next) * 2;
+      if (score > bestScore) { bestScore = score; best = { src: si, dst: di }; }
+    }
+  }
+  return best;
+}
 
 function generateLevel(levelIdx: number): string[][] {
   const { numColors, numEmpty } = LEVEL_CONFIGS[levelIdx];
@@ -189,6 +213,8 @@ interface BottleProps {
   isSelected: boolean;
   isDone: boolean;
   isShaking: boolean;
+  isHintSrc?: boolean;
+  isHintDst?: boolean;
   onClick: () => void;
   size: BSize;
   pourDir?: "left" | "right" | "down" | null;
@@ -198,15 +224,16 @@ interface BottleProps {
 // Segments: index 0 = physical bottom, last = physical top (what gets poured first).
 // We render in REVERSE so top color is visually at the top (near neck), bottom color at the base.
 const BottleView = forwardRef<HTMLDivElement, BottleProps>(function BottleView(
-  { segments, isSelected, isDone, isShaking, onClick, size, pourDir, pourMs = POUR_MS },
+  { segments, isSelected, isDone, isShaking, isHintSrc, isHintDst, onClick, size, pourDir, pourMs = POUR_MS },
   ref,
 ) {
   const d = DIMS[size];
   const bodyH = d.segH * CAP;
   const borderColor = isSelected
     ? "rgba(192,132,252,0.9)"
-    : isDone
-    ? "rgba(74,222,128,0.7)"
+    : isDone     ? "rgba(74,222,128,0.7)"
+    : isHintSrc  ? "rgba(251,191,36,0.95)"
+    : isHintDst  ? "rgba(52,211,153,0.95)"
     : "rgba(255,255,255,0.18)";
 
   // Rendered top-to-bottom in the flex column = visual top first.
@@ -248,17 +275,19 @@ const BottleView = forwardRef<HTMLDivElement, BottleProps>(function BottleView(
       <div style={{ width: d.neckW, height: d.neck, border: `2px solid ${borderColor}`,
         borderBottom: "none", borderRadius: `${d.r / 2}px ${d.r / 2}px 0 0`,
         background: "rgba(255,255,255,0.02)", flexShrink: 0,
-        boxShadow: isDone ? "0 0 10px rgba(74,222,128,0.2)" : undefined }} />
+        boxShadow: isDone ? "0 0 10px rgba(74,222,128,0.2)"
+          : isHintSrc ? "0 0 10px rgba(251,191,36,0.4)"
+          : isHintDst ? "0 0 10px rgba(52,211,153,0.4)" : undefined }} />
 
       {/* Body */}
       <div style={{ width: d.w, height: bodyH, border: `2px solid ${borderColor}`,
         borderTop: "none", borderRadius: `0 0 ${d.r}px ${d.r}px`,
         background: "rgba(8,4,24,0.6)", overflow: "hidden", position: "relative",
         display: "flex", flexDirection: "column", justifyContent: "flex-end",
-        boxShadow: isDone
-          ? "0 0 18px rgba(74,222,128,0.2)"
-          : isSelected
-          ? "0 0 18px rgba(192,132,252,0.25)"
+        boxShadow: isDone     ? "0 0 18px rgba(74,222,128,0.2)"
+          : isSelected        ? "0 0 18px rgba(192,132,252,0.25)"
+          : isHintSrc         ? "0 0 22px rgba(251,191,36,0.45)"
+          : isHintDst         ? "0 0 22px rgba(52,211,153,0.45)"
           : undefined,
         transition: "box-shadow 0.2s" }}>
 
@@ -480,6 +509,7 @@ export default function MagicSort() {
   const [history, setHistory]   = useState<string[][][]>([]);
   const [moves, setMoves]       = useState(0);
   const [minPours, setMinPours] = useState(1);
+  const [hintMove, setHintMove] = useState<{ src: number; dst: number } | null>(null);
   const [shaking, setShaking]   = useState<number | null>(null);
   const [won, setWon]           = useState(false);
   const [pourAnim, setPourAnim] = useState<PourAnim | null>(null);
@@ -501,6 +531,7 @@ export default function MagicSort() {
     setLevelIdx(idx); setBottles(lvl); setInitBottles(lvl.map(b => [...b]));
     setSelected(null); setUndos(INIT_UNDOS); setHistory([]); setMoves(0);
     setMinPours(computeMinPours(lvl));
+    setHintMove(null);
     setWon(false); setShaking(null); setPourAnim(null); setScreen("game");
   }, []);
 
@@ -543,6 +574,7 @@ export default function MagicSort() {
       setBottles(next);
       setMoves(m => m + 1);
       setSelected(null);
+      setHintMove(null);
       if (isSolved(next)) {
         setWon(true);
         setCompleted(prev => { const u = new Set(prev); u.add(levelIdx); saveCompleted(u); return u; });
@@ -567,7 +599,7 @@ export default function MagicSort() {
   const handleRestart = useCallback(() => {
     setBottles(initBottles.map(b => [...b]));
     setSelected(null); setUndos(INIT_UNDOS); setHistory([]);
-    setMoves(0); setWon(false); setShaking(null); setPourAnim(null);
+    setMoves(0); setWon(false); setShaking(null); setPourAnim(null); setHintMove(null);
   }, [initBottles]);
 
   if (screen === "menu") return <LevelSelect completed={completed} onSelect={startLevel} />;
@@ -585,6 +617,10 @@ export default function MagicSort() {
       userSelect: "none", overflowX: "hidden" }}>
 
       <style>{`
+        @keyframes ms-hint-glow {
+          0%,100% { opacity: 1; }
+          50%      { opacity: 0.45; }
+        }
         @keyframes ms-shake {
           0%,100% { transform: translateX(0); }
           20%      { transform: translateX(-7px); }
@@ -678,19 +714,37 @@ export default function MagicSort() {
                 const globalIdx = start + i;
                 const isPourSrc = pourAnim?.srcIdx === globalIdx;
                 const tiltDir = isPourSrc ? pourAnim!.dir : undefined;
+                const isHintSrc = hintMove?.src === globalIdx;
+                const isHintDst = hintMove?.dst === globalIdx;
                 return (
-                  <BottleView
-                    key={globalIdx}
-                    ref={el => { bottleRefs.current[globalIdx] = el; }}
-                    segments={b}
-                    isSelected={selected === globalIdx}
-                    isDone={isBottleDone(b)}
-                    isShaking={shaking === globalIdx}
-                    onClick={() => handleBottleClick(globalIdx)}
-                    size={bottleSize}
-                    pourDir={tiltDir}
-                    pourMs={POUR_MS}
-                  />
+                  <div key={globalIdx} style={{ position: "relative", display: "flex",
+                    flexDirection: "column", alignItems: "center" }}>
+                    {isHintSrc && (
+                      <div style={{ position: "absolute", top: -2, fontSize: 11,
+                        color: "#fbbf24", fontWeight: 800, whiteSpace: "nowrap", zIndex: 10,
+                        animation: "ms-hint-glow 0.9s ease-in-out infinite",
+                        textShadow: "0 0 8px rgba(251,191,36,0.8)" }}>▲ pour from</div>
+                    )}
+                    {isHintDst && (
+                      <div style={{ position: "absolute", top: -2, fontSize: 11,
+                        color: "#34d399", fontWeight: 800, whiteSpace: "nowrap", zIndex: 10,
+                        animation: "ms-hint-glow 0.9s ease-in-out infinite",
+                        textShadow: "0 0 8px rgba(52,211,153,0.8)" }}>▼ pour here</div>
+                    )}
+                    <BottleView
+                      ref={el => { bottleRefs.current[globalIdx] = el; }}
+                      segments={b}
+                      isSelected={selected === globalIdx}
+                      isDone={isBottleDone(b)}
+                      isShaking={shaking === globalIdx}
+                      isHintSrc={isHintSrc}
+                      isHintDst={isHintDst}
+                      onClick={() => handleBottleClick(globalIdx)}
+                      size={bottleSize}
+                      pourDir={tiltDir}
+                      pourMs={POUR_MS}
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -714,6 +768,17 @@ export default function MagicSort() {
             fontWeight: 600, fontSize: 14,
             cursor: history.length === 0 || undos <= 0 ? "not-allowed" : "pointer", transition: "color 0.15s" }}>
           ↩ Undo ({undos})
+        </button>
+        <button onClick={() => {
+            if (hintMove) { setHintMove(null); return; }
+            setHintMove(findHint(bottles));
+          }}
+          style={{ padding: "10px 18px", borderRadius: 12, fontWeight: 700, fontSize: 14,
+            cursor: "pointer", transition: "all 0.15s",
+            background: hintMove ? "rgba(251,191,36,0.18)" : "rgba(255,255,255,0.06)",
+            border: hintMove ? "1px solid rgba(251,191,36,0.55)" : "1px solid rgba(255,255,255,0.11)",
+            color: hintMove ? "#fbbf24" : "rgba(255,255,255,0.65)" }}>
+          💡 Hint
         </button>
         <button onClick={handleRestart}
           style={{ padding: "10px 20px", background: "rgba(255,255,255,0.06)",

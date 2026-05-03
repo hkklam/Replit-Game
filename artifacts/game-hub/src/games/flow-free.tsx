@@ -894,6 +894,64 @@ const SMALL_SAVE = "flow-free-small-v2";
 const LARGE_SAVE = "flow-free-large-v2";
 const OFF = 10;
 
+// BFS hint: find the next step toward connecting the most-constrained unfinished pipe
+function findFlowHint(
+  level: Level,
+  board: Board,
+  pipes: Record<string, [number,number][]>
+): { color: string; r: number; c: number } | null {
+  const n = level.size;
+  const DIRS: [number,number][] = [[0,1],[0,-1],[1,0],[-1,0]];
+  const colors = [...new Set(level.dots.map(d => d.color))];
+  const key = (r: number, c: number) => r * n + c;
+
+  for (const color of colors) {
+    const dots = level.dots.filter(d => d.color === color);
+    if (dots.length < 2) continue;
+    const [A, B] = dots;
+    const path = pipes[color] ?? [];
+    // Skip already connected pipes
+    if (path.length >= 2) {
+      const f = path[0], l = path[path.length-1];
+      if ((f[0]===A.r&&f[1]===A.c&&l[0]===B.r&&l[1]===B.c) ||
+          (f[0]===B.r&&f[1]===B.c&&l[0]===A.r&&l[1]===A.c)) continue;
+    }
+    const start: [number,number] = path.length > 0 ? path[path.length-1] : [A.r, A.c];
+    const target: [number,number] = (start[0]===B.r && start[1]===B.c) ? [A.r,A.c] : [B.r,B.c];
+
+    // BFS avoiding other colours' cells
+    const parent = new Map<number, [number,number] | null>();
+    parent.set(key(start[0], start[1]), null);
+    const queue: [number,number][] = [start];
+    let found: [number,number] | null = null;
+    outer: while (queue.length > 0) {
+      const [cr, cc] = queue.shift()!;
+      for (const [dr, dc] of DIRS) {
+        const nr = cr+dr, nc = cc+dc;
+        if (nr<0||nr>=n||nc<0||nc>=n) continue;
+        const k = key(nr, nc);
+        if (parent.has(k)) continue;
+        const isTarget = nr===target[0] && nc===target[1];
+        const cellColor = board[nr][nc];
+        if (cellColor && cellColor !== color && !isTarget) continue;
+        parent.set(k, [cr, cc]);
+        if (isTarget) { found = [nr, nc]; break outer; }
+        queue.push([nr, nc]);
+      }
+    }
+    if (!found) continue;
+    // Trace path back to find the first step from start
+    let cur = found;
+    while (true) {
+      const par = parent.get(key(cur[0], cur[1]));
+      if (!par || (par[0]===start[0] && par[1]===start[1])) break;
+      cur = par;
+    }
+    return { color, r: cur[0], c: cur[1] };
+  }
+  return null;
+}
+
 // ─── GAME STATE ───────────────────────────────────────────────────────────────
 type Board = (string|null)[][];
 interface GS {
@@ -1069,6 +1127,7 @@ export default function FlowFree() {
   const [moves, setMoves]       = useState(0);
   const [cov, setCov]           = useState(0);
   const [cSize, setCSize]       = useState(400);
+  const [hintCell, setHintCell] = useState<{ color: string; r: number; c: number } | null>(null);
 
   const [smallDone, setSmallDone] = useState<Set<number>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem(SMALL_SAVE)||"[]") as number[]); }
@@ -1174,6 +1233,7 @@ export default function FlowFree() {
     const cell = posToCell(pos.x, pos.y); if (!cell) return;
     if (pointerDown(gsRef.current!, cell[0], cell[1])) {
       dragging.current = true;
+      setHintCell(null);
       doRender(gsRef.current!);
     }
   };
@@ -1213,7 +1273,7 @@ export default function FlowFree() {
     cancelAnimationFrame(animRef.current);
     winPulse.current = 0;
     gsRef.current = initGS(currentLevels[lvlIdx]);
-    setWon(false); setMoves(0); setCov(0);
+    setWon(false); setMoves(0); setCov(0); setHintCell(null);
     doRender(gsRef.current);
   };
 
@@ -1331,13 +1391,36 @@ export default function FlowFree() {
         </div>
       </div>
 
-      <canvas
-        ref={canvasRef}
-        width={cSize} height={cSize}
-        style={{ display:"block", borderRadius:12, boxShadow:"0 2px 16px rgba(0,0,0,0.10)", touchAction:"none" }}
-        onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
-        onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
-      />
+      <div style={{ position:"relative", lineHeight:0 }}>
+        <canvas
+          ref={canvasRef}
+          width={cSize} height={cSize}
+          style={{ display:"block", borderRadius:12, boxShadow:"0 2px 16px rgba(0,0,0,0.10)", touchAction:"none" }}
+          onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
+          onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
+        />
+        {/* Hint overlay — pulsing ring at the suggested cell */}
+        {hintCell && !won && (() => {
+          const n = gsRef.current?.level.size ?? 8;
+          const CS = (cSize - OFF*2) / n;
+          const cx = OFF + hintCell.c * CS + CS/2;
+          const cy = OFF + hintCell.r * CS + CS/2;
+          const ring = CS * 0.44;
+          const hex  = PAL[hintCell.color] ?? "#888";
+          return (
+            <>
+              <style>{`@keyframes ff-hint-ring{0%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)}50%{opacity:0.35;transform:translate(-50%,-50%) scale(1.18)}}`}</style>
+              <div style={{
+                position:"absolute", left:cx, top:cy, width:ring*2, height:ring*2,
+                borderRadius:"50%", pointerEvents:"none",
+                border:`3px solid ${hex}`,
+                boxShadow:`0 0 14px ${hex}, inset 0 0 10px ${hex}40`,
+                animation:"ff-hint-ring 0.85s ease-in-out infinite",
+              }}/>
+            </>
+          );
+        })()}
+      </div>
 
       {won && (() => {
         const ffStars = moves <= colorCount ? 3 : moves <= colorCount * 2 ? 2 : 1;
@@ -1393,6 +1476,19 @@ export default function FlowFree() {
         <button onClick={reset} style={{ padding:"9px 20px", background:"#fff", border:"1.5px solid #e0e0da",
           borderRadius:11, fontSize:14, fontWeight:600, color:"#555", cursor:"pointer",
           boxShadow:"0 1px 4px rgba(0,0,0,0.07)" }}>↺ Reset</button>
+        {!won && (
+          <button onClick={() => {
+            if (hintCell) { setHintCell(null); return; }
+            const gs = gsRef.current;
+            if (gs) setHintCell(findFlowHint(gs.level, gs.board, gs.pipes));
+          }} style={{
+            padding:"9px 18px", borderRadius:11, fontSize:14, fontWeight:700, cursor:"pointer",
+            transition:"all 0.15s",
+            background: hintCell ? "#fff9e6" : "#fff",
+            border: hintCell ? "1.5px solid #f59e0b" : "1.5px solid #e0e0da",
+            color: hintCell ? "#d97706" : "#555",
+            boxShadow:"0 1px 4px rgba(0,0,0,0.07)" }}>💡 Hint</button>
+        )}
         {lvlIdx+1 < currentLevels.length && !won && (
           <button onClick={() => startLevel(lvlIdx+1, lvlCat)} style={{
             padding:"9px 20px", background:"#fff", border:"1.5px solid #e0e0da",
