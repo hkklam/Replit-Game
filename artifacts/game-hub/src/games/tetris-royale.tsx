@@ -880,13 +880,22 @@ export default function TetrisRoyale() {
       if(cleared>0){
         const garbage=GARBAGE_FOR[Math.min(cleared,4)];
         if(garbage>0){
-          // Send to a random alive bot or online opponent
-          const targets:[string,()=>void][]=[];
-          for(let i=0;i<g.bots.length;i++){
-            if(g.bots[i].gs.phase!=="dead") targets.push([`bot${i}`,()=>{g.bots[i].gs.garbagePending+=garbage;}]);
+          if(isOnline){
+            // Online: always hit the real opponent so garbage never gets "lost" to a bot roll
+            if(g.onlineOpponent?.alive) relay.send({kind:"garbage",count:garbage} as unknown);
+            // Host also owns the bots — randomly ping one of the alive bots too
+            if(isHost){
+              const aliveBots=g.bots.filter(b=>b.gs.phase!=="dead");
+              if(aliveBots.length>0) aliveBots[Math.floor(Math.random()*aliveBots.length)].gs.garbagePending+=garbage;
+            }
+          } else {
+            // Offline: existing behaviour — pick one random alive bot target
+            const targets:[string,()=>void][]=[];
+            for(let i=0;i<g.bots.length;i++){
+              if(g.bots[i].gs.phase!=="dead") targets.push([`bot${i}`,()=>{g.bots[i].gs.garbagePending+=garbage;}]);
+            }
+            if(targets.length>0){const pick=targets[Math.floor(Math.random()*targets.length)];pick[1]();}
           }
-          if(isOnline&&g.onlineOpponent?.alive) targets.push(["online",()=>relay.send({kind:"garbage",count:garbage} as unknown)]);
-          if(targets.length>0){const pick=targets[Math.floor(Math.random()*targets.length)];pick[1]();}
         }
       }
     }
