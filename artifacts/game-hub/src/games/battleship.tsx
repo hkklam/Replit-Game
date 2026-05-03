@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
+import { useRelaySocket } from "../lib/relay-socket";
 
 function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
   return (
@@ -19,22 +20,22 @@ function Shell({ title, controls, children }: { title: string; controls?: string
   );
 }
 
+// ─── Types & constants ────────────────────────────────────────────────────────
 const SIZE = 10;
 const SHIPS = [
   { name: "Carrier", len: 5 }, { name: "Battleship", len: 4 },
   { name: "Cruiser", len: 3 }, { name: "Submarine", len: 3 }, { name: "Destroyer", len: 2 },
 ];
-
-type Cell = "empty" | "ship" | "hit" | "miss";
-type Grid = Cell[][];
-type Board = { grid: Grid; ships: { cells: [number, number][] }[] };
+type Cell  = "empty" | "ship" | "hit" | "miss";
+type Grid  = Cell[][];
+type Board = { grid: Grid; ships: { name: string; cells: [number, number][] }[] };
 
 function emptyGrid(): Grid { return Array.from({ length: SIZE }, () => Array(SIZE).fill("empty")); }
-function clone(g: Grid): Grid { return g.map(r => [...r]); }
+function cloneGrid(g: Grid): Grid { return g.map(r => [...r]); }
 
 function placeShipsRandom(): Board {
   const grid = emptyGrid();
-  const ships: { cells: [number, number][] }[] = [];
+  const ships: { name: string; cells: [number, number][] }[] = [];
   for (const ship of SHIPS) {
     let placed = false;
     while (!placed) {
@@ -44,129 +45,448 @@ function placeShipsRandom(): Board {
       const cells: [number, number][] = [];
       let ok = true;
       for (let i = 0; i < ship.len; i++) {
-        const rr = r + (horiz ? 0 : i); const cc = c + (horiz ? i : 0);
+        const rr = r + (horiz ? 0 : i), cc = c + (horiz ? i : 0);
         if (grid[rr][cc] !== "empty") { ok = false; break; }
         cells.push([rr, cc]);
       }
-      if (ok) { cells.forEach(([rr, cc]) => { grid[rr][cc] = "ship"; }); ships.push({ cells }); placed = true; }
+      if (ok) { cells.forEach(([rr, cc]) => { grid[rr][cc] = "ship"; }); ships.push({ name: ship.name, cells }); placed = true; }
     }
   }
   return { grid, ships };
 }
 
-function isSunk(ship: { cells: [number, number][] }, grid: Grid) { return ship.cells.every(([r, c]) => grid[r][c] === "hit"); }
+function isSunk(ship: { cells: [number, number][] }, grid: Grid) {
+  return ship.cells.every(([r, c]) => grid[r][c] === "hit");
+}
 
-type Phase = "p1-place" | "p2-place" | "p1-attack" | "p2-attack" | "done";
-
-export default function Battleship() {
-  const [phase, setPhase] = useState<Phase>("p1-place");
-  const [p1board, setP1Board] = useState<Board>({ grid: emptyGrid(), ships: [] });
-  const [p2board, setP2Board] = useState<Board>({ grid: emptyGrid(), ships: [] });
-  const [winner, setWinner] = useState<string | null>(null);
-  const [msg, setMsg] = useState("Player 1: Place your ships by clicking 'Auto-Place Ships'");
-
-  const autoPlace = useCallback((player: 1 | 2) => {
-    const board = placeShipsRandom();
-    if (player === 1) { setP1Board(board); }
-    else { setP2Board(board); }
-  }, []);
-
-  const confirm = useCallback(() => {
-    if (phase === "p1-place") {
-      if (!p1board.ships.length) { setMsg("Player 1: please place ships first!"); return; }
-      setPhase("p2-place"); setMsg("Player 2: Place your ships — Player 1 look away!");
-    } else if (phase === "p2-place") {
-      if (!p2board.ships.length) { setMsg("Player 2: please place ships first!"); return; }
-      setPhase("p1-attack"); setMsg("Player 1: Click a cell to attack Player 2's grid");
-    }
-  }, [phase, p1board, p2board]);
-
-  const attack = useCallback((row: number, col: number) => {
-    if (phase !== "p1-attack" && phase !== "p2-attack") return;
-    const attacking = phase === "p1-attack" ? 2 : 1;
-    const defBoard = attacking === 2 ? p2board : p1board;
-    const setDefBoard = attacking === 2 ? setP2Board : setP1Board;
-    if (defBoard.grid[row][col] === "hit" || defBoard.grid[row][col] === "miss") return;
-    const newGrid = clone(defBoard.grid);
-    const isHit = newGrid[row][col] === "ship";
-    newGrid[row][col] = isHit ? "hit" : "miss";
-    const newShips = defBoard.ships.map(s => ({ ...s }));
-    const newBoard: Board = { grid: newGrid, ships: newShips };
-    setDefBoard(newBoard);
-    // Check win
-    const allSunk = newShips.every(s => s.cells.every(([r, c]) => newGrid[r][c] === "hit"));
-    if (allSunk) {
-      setWinner(`Player ${phase === "p1-attack" ? 1 : 2}`);
-      setPhase("done"); return;
-    }
-    const nextPhase = phase === "p1-attack" ? "p2-attack" : "p1-attack";
-    setPhase(nextPhase);
-    setMsg(`Player ${nextPhase === "p1-attack" ? 1 : 2}: Your turn — click to attack!${isHit ? " 💥 Hit!" : " Miss!"}`);
-  }, [phase, p1board, p2board]);
-
-  const reset = () => { setPhase("p1-place"); setP1Board({ grid: emptyGrid(), ships: [] }); setP2Board({ grid: emptyGrid(), ships: [] }); setWinner(null); setMsg("Player 1: Place your ships by clicking 'Auto-Place Ships'"); };
-
-  const renderGrid = (board: Board, isTarget: boolean) => {
-    const visGrid = board.grid;
-    return (
+// ─── Shared grid renderer ─────────────────────────────────────────────────────
+function GridView({ board, isTarget, onAttack, disabled, label }: {
+  board: Board; isTarget: boolean; disabled?: boolean; label: string;
+  onAttack?: (r: number, c: number) => void;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <p className={`text-xs font-bold tracking-widest uppercase ${isTarget ? "text-cyan-400" : "text-muted-foreground"}`}>{label}</p>
       <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: `repeat(${SIZE}, 1fr)` }}>
-        {visGrid.map((row, r) => row.map((cell, c) => {
-          let bg = "bg-slate-800 hover:bg-slate-700";
+        {board.grid.map((row, r) => row.map((cell, c) => {
+          let bg = "bg-slate-800";
           if (isTarget) {
-            if (cell === "hit") bg = "bg-red-500";
+            if (cell === "hit")  bg = "bg-red-500";
             else if (cell === "miss") bg = "bg-slate-600";
+            else if (!disabled) bg = "bg-slate-800 hover:bg-cyan-900/60 cursor-pointer";
           } else {
-            if (cell === "ship") bg = "bg-sky-700";
-            else if (cell === "hit") bg = "bg-red-500";
+            if (cell === "ship")  bg = "bg-sky-700";
+            else if (cell === "hit")  bg = "bg-red-500";
             else if (cell === "miss") bg = "bg-slate-600";
           }
           return (
-            <div key={`${r}-${c}`} onClick={() => isTarget && attack(r, c)}
-              className={`w-7 h-7 rounded-sm ${bg} ${isTarget ? "cursor-pointer" : "cursor-default"} flex items-center justify-center text-xs`}
+            <div
+              key={`${r}-${c}`}
+              onClick={() => !disabled && isTarget && cell !== "hit" && cell !== "miss" && onAttack?.(r, c)}
+              className={`w-7 h-7 rounded-sm ${bg} flex items-center justify-center text-xs select-none transition-colors`}
             >
               {cell === "hit" ? "💥" : cell === "miss" ? "○" : ""}
             </div>
           );
         }))}
       </div>
-    );
+    </div>
+  );
+}
+
+// ─── LOCAL GAME ──────────────────────────────────────────────────────────────
+type LocalPhase = "p1-place" | "p2-place" | "p1-attack" | "p2-attack" | "done";
+
+function LocalGame({ onMenu }: { onMenu: () => void }) {
+  const [phase,   setPhase]   = useState<LocalPhase>("p1-place");
+  const [p1board, setP1Board] = useState<Board>({ grid: emptyGrid(), ships: [] });
+  const [p2board, setP2Board] = useState<Board>({ grid: emptyGrid(), ships: [] });
+  const [winner,  setWinner]  = useState<string | null>(null);
+  const [msg,     setMsg]     = useState("Player 1: Auto-place your ships, then confirm.");
+
+  const autoPlace = (player: 1 | 2) => {
+    const b = placeShipsRandom();
+    if (player === 1) setP1Board(b); else setP2Board(b);
   };
 
+  const confirm = () => {
+    if (phase === "p1-place") {
+      if (!p1board.ships.length) { setMsg("Player 1: place ships first!"); return; }
+      setPhase("p2-place"); setMsg("Player 2: Auto-place your ships — Player 1, look away!");
+    } else if (phase === "p2-place") {
+      if (!p2board.ships.length) { setMsg("Player 2: place ships first!"); return; }
+      setPhase("p1-attack"); setMsg("Player 1: Click a cell to attack Player 2's grid.");
+    }
+  };
+
+  const attack = (row: number, col: number) => {
+    if (phase !== "p1-attack" && phase !== "p2-attack") return;
+    const isP1 = phase === "p1-attack";
+    const defBoard = isP1 ? p2board : p1board;
+    const setDef   = isP1 ? setP2Board : setP1Board;
+    if (defBoard.grid[row][col] === "hit" || defBoard.grid[row][col] === "miss") return;
+    const newGrid = cloneGrid(defBoard.grid);
+    const isHit = newGrid[row][col] === "ship";
+    newGrid[row][col] = isHit ? "hit" : "miss";
+    const newBoard: Board = { grid: newGrid, ships: defBoard.ships };
+    setDef(newBoard);
+    if (newBoard.ships.every(s => s.cells.every(([r, c]) => newGrid[r][c] === "hit"))) {
+      setWinner(`Player ${isP1 ? 1 : 2}`); setPhase("done"); return;
+    }
+    const next = isP1 ? "p2-attack" : "p1-attack";
+    setPhase(next);
+    setMsg(`Player ${next === "p1-attack" ? 1 : 2}: Your turn!${isHit ? " 💥 Hit!" : " Miss!"}`);
+  };
+
+  const reset = () => {
+    setPhase("p1-place"); setP1Board({ grid: emptyGrid(), ships: [] });
+    setP2Board({ grid: emptyGrid(), ships: [] }); setWinner(null);
+    setMsg("Player 1: Auto-place your ships, then confirm.");
+  };
+
+  if (winner) return (
+    <div className="flex flex-col items-center gap-4">
+      <p className="text-3xl font-black text-cyan-300">🏆 {winner} Wins!</p>
+      <div className="flex gap-3">
+        <button onClick={reset}  className="px-6 py-2 bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 font-bold rounded-xl">Play Again</button>
+        <button onClick={onMenu} className="px-6 py-2 bg-secondary text-foreground font-bold rounded-xl">Menu</button>
+      </div>
+    </div>
+  );
+
   return (
-    <Shell title="Battleship" controls="Local 2-player hotseat">
-      {winner ? (
+    <div className="flex flex-col items-center gap-4 w-full max-w-3xl">
+      <div className="text-center px-4 py-2 bg-card border border-border rounded-xl text-sm">{msg}</div>
+      {(phase === "p1-place" || phase === "p2-place") && (
         <div className="flex flex-col items-center gap-4">
-          <p className="text-3xl font-black text-primary">🏆 {winner} Wins!</p>
-          <button onClick={reset} className="px-8 py-2 bg-primary text-black font-bold rounded-xl">Play Again</button>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center gap-4 w-full max-w-3xl">
-          <div className="text-center px-4 py-2 bg-card border border-border rounded-xl text-sm text-foreground">{msg}</div>
-          {(phase === "p1-place" || phase === "p2-place") && (
-            <div className="flex flex-col items-center gap-4">
-              <p className="text-sm text-muted-foreground">Ships will be placed randomly on a 10×10 grid</p>
-              <div className="flex gap-3">
-                <button onClick={() => autoPlace(phase === "p1-place" ? 1 : 2)} className="px-5 py-2 bg-secondary hover:bg-secondary/80 rounded-lg font-semibold">⚡ Auto-Place Ships</button>
-                <button onClick={confirm} className="px-5 py-2 bg-primary text-black font-bold rounded-lg">Confirm →</button>
-              </div>
-              {phase === "p1-place" && p1board.ships.length > 0 && <div className="mt-2">{renderGrid(p1board, false)}</div>}
-              {phase === "p2-place" && p2board.ships.length > 0 && <div className="mt-2">{renderGrid(p2board, false)}</div>}
-            </div>
-          )}
-          {(phase === "p1-attack" || phase === "p2-attack") && (
-            <div className="flex gap-8 flex-wrap justify-center">
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-xs font-semibold text-muted-foreground">YOUR GRID</p>
-                {renderGrid(phase === "p1-attack" ? p1board : p2board, false)}
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-xs font-semibold text-primary">ENEMY GRID — Click to attack</p>
-                {renderGrid(phase === "p1-attack" ? p2board : p1board, true)}
-              </div>
-            </div>
-          )}
+          <div className="flex gap-3">
+            <button onClick={() => autoPlace(phase === "p1-place" ? 1 : 2)}
+              className="px-5 py-2 bg-secondary hover:bg-secondary/80 rounded-lg font-semibold">⚡ Auto-Place</button>
+            <button onClick={confirm}
+              className="px-5 py-2 bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 font-bold rounded-lg">Confirm →</button>
+          </div>
+          {phase === "p1-place" && p1board.ships.length > 0 && <GridView board={p1board} isTarget={false} label="Your Fleet" />}
+          {phase === "p2-place" && p2board.ships.length > 0 && <GridView board={p2board} isTarget={false} label="Your Fleet" />}
         </div>
       )}
+      {(phase === "p1-attack" || phase === "p2-attack") && (
+        <div className="flex gap-8 flex-wrap justify-center">
+          <GridView board={phase === "p1-attack" ? p1board : p2board} isTarget={false} label="Your Grid" />
+          <GridView board={phase === "p1-attack" ? p2board : p1board} isTarget={true}
+            label="Enemy — Click to attack" onAttack={attack} />
+        </div>
+      )}
+      <button onClick={onMenu} className="text-sm text-muted-foreground hover:text-foreground">← Menu</button>
+    </div>
+  );
+}
+
+// ─── ONLINE LOBBY ─────────────────────────────────────────────────────────────
+function OnlineLobby({ status, roomCode, error, onHost, onJoin, onBack }: {
+  status: string; roomCode: string; error: string;
+  onHost: () => void; onJoin: (code: string) => void; onBack: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const [view, setView] = useState<"pick"|"host"|"join">("pick");
+
+  if (view === "pick") return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-xs">
+      <p className="text-cyan-300 font-black text-lg">Online Battleship</p>
+      <button onClick={() => { setView("host"); onHost(); }}
+        className="w-full py-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 font-bold rounded-2xl transition-colors">
+        🏠 Host a Game
+        <span className="text-xs font-normal block text-muted-foreground mt-0.5">Create a room · share the code</span>
+      </button>
+      <button onClick={() => setView("join")}
+        className="w-full py-3 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/50 text-sky-300 font-bold rounded-2xl transition-colors">
+        🔗 Join a Game
+        <span className="text-xs font-normal block text-muted-foreground mt-0.5">Enter the host's 4-letter code</span>
+      </button>
+      <button onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">← Back</button>
+    </div>
+  );
+
+  if (view === "host") return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-xs text-center">
+      <p className="text-cyan-300 font-black text-lg">Hosting a Game</p>
+      {status === "connecting" && <p className="text-muted-foreground text-sm animate-pulse">Connecting…</p>}
+      {status === "waiting" && (
+        <>
+          <p className="text-muted-foreground text-sm">Share this code with your opponent:</p>
+          <div className="text-5xl font-black text-cyan-300 tracking-widest font-mono bg-cyan-500/10 border border-cyan-500/30 rounded-2xl px-6 py-4">{roomCode}</div>
+          <p className="text-muted-foreground text-xs animate-pulse">Waiting for opponent…</p>
+        </>
+      )}
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+      <button onClick={() => { setView("pick"); onBack(); }} className="text-sm text-muted-foreground hover:text-foreground">← Cancel</button>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-xs text-center">
+      <p className="text-sky-300 font-black text-lg">Join a Game</p>
+      <p className="text-muted-foreground text-sm">Enter the 4-letter room code:</p>
+      <input
+        value={code} onChange={e => setCode(e.target.value.toUpperCase().slice(0, 4))}
+        placeholder="ABCD"
+        className="text-center text-3xl font-black font-mono tracking-widest bg-background border border-border rounded-xl px-4 py-3 w-40 focus:outline-none focus:border-sky-500 text-foreground"
+      />
+      <button
+        onClick={() => code.length === 4 && onJoin(code)}
+        disabled={code.length !== 4 || status === "connecting"}
+        className="w-full py-3 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/50 text-sky-300 font-bold rounded-2xl transition-colors disabled:opacity-40"
+      >
+        {status === "connecting" ? "Connecting…" : "Join →"}
+      </button>
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+      <button onClick={() => { setView("pick"); onBack(); }} className="text-sm text-muted-foreground hover:text-foreground">← Back</button>
+    </div>
+  );
+}
+
+// ─── ONLINE GAME ─────────────────────────────────────────────────────────────
+type OnlinePhase = "placement" | "waiting-ready" | "battle" | "done";
+
+function OnlineGame({ isHost, relaySend, onMenu, onMessage }: {
+  isHost: boolean;
+  relaySend: (d: unknown) => void;
+  onMenu: () => void;
+  onMessage: (handler: (d: unknown) => void) => void;
+}) {
+  const [myBoard,    setMyBoard]    = useState<Board>({ grid: emptyGrid(), ships: [] });
+  const [enemyGrid,  setEnemyGrid]  = useState<Grid>(emptyGrid());
+  const [phase,      setPhase]      = useState<OnlinePhase>("placement");
+  const [myTurn,     setMyTurn]     = useState(false);
+  const [waitResult, setWaitResult] = useState(false);
+  const [winner,     setWinner]     = useState<"me"|"opponent"|null>(null);
+  const [statusMsg,  setStatusMsg]  = useState("Auto-place your ships, then click Ready.");
+  const [lastLabel,  setLastLabel]  = useState("");
+
+  // Keep refs to see latest state inside callbacks
+  const myBoardRef       = useRef<Board>({ grid: emptyGrid(), ships: [] });
+  const phaseRef         = useRef<OnlinePhase>("placement");
+  const opponentReadyRef = useRef(false);
+  phaseRef.current       = phase;
+
+  const startBattle = useCallback(() => {
+    const goFirst = isHost;
+    setMyTurn(goFirst);
+    setPhase("battle");
+    setStatusMsg(goFirst
+      ? "Battle! Your turn — click the enemy grid to fire."
+      : "Battle! Waiting for opponent's first shot…");
+  }, [isHost]);
+
+  const handleMessage = useCallback((data: unknown) => {
+    const msg = data as { type: string; row?: number; col?: number; hit?: boolean; sunk?: boolean; won?: boolean };
+
+    // ── Opponent is ready ─────────────────────────────────────────────────
+    if (msg.type === "ready") {
+      opponentReadyRef.current = true;
+      // Only start if we've already confirmed our own readiness
+      if (phaseRef.current === "waiting-ready") {
+        startBattle();
+      }
+      // If we're still in placement, opponent's flag is stored; startBattle fires when we click Ready
+    }
+
+    // ── Opponent fired at us ──────────────────────────────────────────────
+    if (msg.type === "fire" && msg.row !== undefined && msg.col !== undefined) {
+      const board   = myBoardRef.current;
+      const newGrid = cloneGrid(board.grid);
+      const isHit   = newGrid[msg.row][msg.col] === "ship";
+      newGrid[msg.row][msg.col] = isHit ? "hit" : "miss";
+      const updatedBoard = { grid: newGrid, ships: board.ships };
+      myBoardRef.current = updatedBoard;
+      setMyBoard(updatedBoard);
+
+      const allSunk = updatedBoard.ships.every(s => isSunk(s, newGrid));
+      relaySend({ type: "fire_result", row: msg.row, col: msg.col, hit: isHit, sunk: allSunk && isHit, won: allSunk });
+
+      if (allSunk) { setWinner("opponent"); setPhase("done"); return; }
+
+      setMyTurn(true);
+      setStatusMsg(isHit ? "💥 They hit you! Fire back." : "They missed! Your turn — click to fire.");
+    }
+
+    // ── Result of our shot ────────────────────────────────────────────────
+    if (msg.type === "fire_result" && msg.row !== undefined && msg.col !== undefined) {
+      setEnemyGrid(prev => {
+        const g = cloneGrid(prev);
+        g[msg.row!][msg.col!] = msg.hit ? "hit" : "miss";
+        return g;
+      });
+      setWaitResult(false);
+
+      if (msg.won) { setWinner("me"); setPhase("done"); return; }
+
+      const label = msg.hit ? (msg.sunk ? "💥 Hit & sunk!" : "💥 Hit!") : "Miss…";
+      setLastLabel(label);
+      setMyTurn(false);
+      setStatusMsg(`${label} Opponent's turn.`);
+    }
+  }, [isHost, relaySend]);
+
+  // Register handler with parent every render
+  useEffect(() => { onMessage(handleMessage); }, [handleMessage, onMessage]);
+
+  const autoPlace = () => {
+    const b = placeShipsRandom();
+    myBoardRef.current = b;
+    setMyBoard(b);
+  };
+
+  const confirmReady = () => {
+    if (!myBoardRef.current.ships.length) { setStatusMsg("Place your ships first!"); return; }
+    relaySend({ type: "ready" });
+    if (opponentReadyRef.current) {
+      // Opponent already signalled — start battle immediately
+      startBattle();
+    } else {
+      setPhase("waiting-ready");
+      setStatusMsg("Waiting for your opponent to be ready…");
+    }
+  };
+
+  const fire = (row: number, col: number) => {
+    if (!myTurn || waitResult || phase !== "battle") return;
+    if (enemyGrid[row][col] === "hit" || enemyGrid[row][col] === "miss") return;
+    setWaitResult(true);
+    relaySend({ type: "fire", row, col });
+    setStatusMsg("Fired! Waiting for result…");
+  };
+
+  const enemyBoardDisplay: Board = { grid: enemyGrid, ships: [] };
+  const canFire = myTurn && !waitResult && phase === "battle";
+
+  if (winner) return (
+    <div className="flex flex-col items-center gap-5">
+      <p className="text-4xl font-black" style={{ color: winner === "me" ? "#22d3ee" : "#f87171" }}>
+        {winner === "me" ? "🏆 You Win!" : "💀 You Lose!"}
+      </p>
+      <button onClick={onMenu} className="px-8 py-2 bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 font-bold rounded-xl">Menu</button>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-3xl">
+      <div className="text-center px-4 py-2 bg-card border border-border rounded-xl text-sm max-w-sm">{statusMsg}</div>
+      {lastLabel && phase === "battle" && <p className="text-xs text-cyan-400 -mt-2">{lastLabel}</p>}
+
+      {phase === "placement" && (
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex gap-3">
+            <button onClick={autoPlace}
+              className="px-5 py-2 bg-secondary hover:bg-secondary/80 rounded-lg font-semibold">⚡ Auto-Place</button>
+            <button onClick={confirmReady}
+              className="px-5 py-2 bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 font-bold rounded-lg">✓ Ready</button>
+          </div>
+          {myBoard.ships.length > 0 && <GridView board={myBoard} isTarget={false} label="Your Fleet" />}
+        </div>
+      )}
+
+      {phase === "waiting-ready" && myBoard.ships.length > 0 && (
+        <GridView board={myBoard} isTarget={false} label="Your Fleet (locked in)" />
+      )}
+
+      {phase === "battle" && (
+        <div className="flex gap-6 flex-wrap justify-center">
+          <GridView board={myBoard} isTarget={false} label="Your Grid" />
+          <GridView
+            board={enemyBoardDisplay} isTarget label={canFire ? "Enemy Grid — Click to fire!" : "Enemy Grid"}
+            onAttack={fire} disabled={!canFire}
+          />
+        </div>
+      )}
+
+      <button onClick={onMenu} className="text-sm text-muted-foreground hover:text-foreground">← Menu</button>
+    </div>
+  );
+}
+
+// ─── ROOT ─────────────────────────────────────────────────────────────────────
+type Screen = "menu" | "local" | "online-lobby" | "online-game";
+
+export default function Battleship() {
+  const [screen,      setScreen]      = useState<Screen>("menu");
+  const [onlineError, setOnlineError] = useState("");
+  const [isHost,      setIsHost]      = useState(false);
+  const [gameKey,     setGameKey]     = useState(0);
+
+  // Stable ref so the relay callback can always reach the latest OnlineGame handler
+  const onlineMsgHandlerRef = useRef<((d: unknown) => void) | null>(null);
+
+  const { status: relayStatus, roomCode: onlineCode, role: relayRole,
+          createRoom, joinRoom, send: relaySend, disconnect: relayDisconnect } =
+    useRelaySocket("battleship", {
+      onRoomCreated:    () => { /* relayStatus → "waiting" is visible via state */ },
+      onRoomJoined:     () => { setIsHost(false);  setGameKey(k => k + 1); setScreen("online-game"); },
+      onOpponentJoined: () => { setIsHost(true);   setGameKey(k => k + 1); setScreen("online-game"); },
+      onMessage:        (data) => { onlineMsgHandlerRef.current?.(data); },
+      onOpponentLeft:   () => { setOnlineError("Opponent disconnected."); relayDisconnect(); setScreen("menu"); },
+      onError:          (msg)  => setOnlineError(msg),
+    });
+
+  // Called by OnlineGame to register its handler
+  const registerHandler = useCallback((handler: (d: unknown) => void) => {
+    onlineMsgHandlerRef.current = handler;
+  }, []);
+
+  const goMenu = useCallback(() => { relayDisconnect(); setScreen("menu"); }, [relayDisconnect]);
+
+  if (screen === "menu") return (
+    <Shell title="Battleship">
+      <div className="flex flex-col items-center gap-6 max-w-xs w-full text-center py-4">
+        <div className="text-7xl select-none" style={{ filter: "drop-shadow(0 6px 18px #22d3ee60)" }}>⚓</div>
+        <h2 className="text-2xl font-black text-cyan-300">Battleship</h2>
+        <div className="w-full flex flex-col gap-3">
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest">2 Players</p>
+          <button onClick={() => setScreen("local")}
+            className="py-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 font-bold rounded-2xl transition-colors">
+            👥 Local Hotseat
+            <span className="text-xs font-normal text-muted-foreground block mt-0.5">Pass &amp; play on one screen</span>
+          </button>
+          <button onClick={() => { setOnlineError(""); setScreen("online-lobby"); }}
+            className="py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-bold rounded-2xl transition-colors">
+            🌐 Online Multiplayer
+            <span className="text-xs font-normal text-muted-foreground block mt-0.5">Play against a friend online</span>
+          </button>
+        </div>
+        {onlineError && <p className="text-red-400 text-sm">{onlineError}</p>}
+      </div>
+    </Shell>
+  );
+
+  if (screen === "local") return (
+    <Shell title="Battleship" controls="Local 2-player hotseat">
+      <LocalGame onMenu={() => setScreen("menu")} />
+    </Shell>
+  );
+
+  if (screen === "online-lobby") return (
+    <Shell title="Battleship · Online">
+      <OnlineLobby
+        status={relayStatus}
+        roomCode={onlineCode}
+        error={onlineError}
+        onHost={() => { setOnlineError(""); createRoom(); }}
+        onJoin={(code) => { setOnlineError(""); joinRoom(code); }}
+        onBack={() => { relayDisconnect(); setScreen("menu"); }}
+      />
+    </Shell>
+  );
+
+  // online-game
+  return (
+    <Shell title="Battleship · Online"
+      controls={`You are ${relayRole === "host" ? "Player 1 (fires first)" : "Player 2"}`}>
+      <OnlineGame
+        key={gameKey}
+        isHost={isHost}
+        relaySend={relaySend}
+        onMenu={goMenu}
+        onMessage={registerHandler}
+      />
     </Shell>
   );
 }

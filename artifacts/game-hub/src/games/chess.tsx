@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
+import { useRelaySocket } from "../lib/relay-socket";
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -19,20 +20,20 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type PType = "P" | "N" | "B" | "R" | "Q" | "K";
-type Color = "w" | "b";
-type Piece = { type: PType; color: Color };
-type Board = (Piece | null)[][];
+type PType   = "P" | "N" | "B" | "R" | "Q" | "K";
+type Color   = "w" | "b";
+type Piece   = { type: PType; color: Color };
+type Board   = (Piece | null)[][];
 type Castling = { wK: boolean; wQ: boolean; bK: boolean; bQ: boolean };
-type Move = { from: [number, number]; to: [number, number]; promo?: PType };
-type AIDiff = "easy" | "medium" | "hard";
-type Mode = "ai" | "local";
+type Move    = { from: [number, number]; to: [number, number]; promo?: PType };
+type AIDiff  = "easy" | "medium" | "hard";
+type Mode    = "ai" | "local" | "online";
 
 // ─── Canvas constants ─────────────────────────────────────────────────────────
-const SQ = 62;
+const SQ     = 62;
 const BORDER = 34;
-const CW = SQ * 8 + BORDER * 2;
-const CH = SQ * 8 + BORDER * 2;
+const CW     = SQ * 8 + BORDER * 2;
+const CH     = SQ * 8 + BORDER * 2;
 
 const SYMBOLS: Record<Color, Record<PType, string>> = {
   w: { K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙" },
@@ -149,7 +150,7 @@ function evalBoard(board: Board, col: Color): number {
   for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=board[r][c];if(!p)continue;s+=p.color===col?PIECE_VAL[p.type]:-PIECE_VAL[p.type];}
   return s;
 }
-function minimax(b: Board,col:Color,cast:Castling,ep:[number,number]|null,depth:number,alpha:number,beta:number,max:boolean,aiCol:Color):number{
+function minimax(b:Board,col:Color,cast:Castling,ep:[number,number]|null,depth:number,alpha:number,beta:number,max:boolean,aiCol:Color):number{
   if(depth===0)return evalBoard(b,aiCol);
   const mvs=legalMoves(b,col,cast,ep);
   if(!mvs.length)return isInCheck(b,col)?(max?-9999:9999):0;
@@ -180,10 +181,8 @@ function makeInitBoard(): Board {
 function drawPiece3D(ctx: CanvasRenderingContext2D, piece: Piece, cx: number, cy: number) {
   const isW = piece.color === "w";
   const r = SQ * 0.39;
-  // Shadow
   ctx.fillStyle = "rgba(0,0,0,0.28)";
   ctx.beginPath(); ctx.ellipse(cx+3, cy+r*0.22+6, r*0.92, r*0.27, 0, 0, Math.PI*2); ctx.fill();
-  // Base disc — radial gradient for 3D sphere feel
   const g = ctx.createRadialGradient(cx-r*0.28, cy-r*0.3, r*0.04, cx+r*0.12, cy+r*0.12, r*1.12);
   if (isW) {
     g.addColorStop(0,"#fffff8"); g.addColorStop(0.18,"#f5eccc"); g.addColorStop(0.5,"#d8b878"); g.addColorStop(0.8,"#b8905a"); g.addColorStop(1,"#7a5030");
@@ -191,15 +190,11 @@ function drawPiece3D(ctx: CanvasRenderingContext2D, piece: Piece, cx: number, cy
     g.addColorStop(0,"#808080"); g.addColorStop(0.18,"#3c3c3c"); g.addColorStop(0.5,"#181818"); g.addColorStop(0.8,"#0c0c0c"); g.addColorStop(1,"#030303");
   }
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
-  // Edge ring
   ctx.strokeStyle = isW ? "rgba(255,240,180,0.55)" : "rgba(140,140,140,0.45)"; ctx.lineWidth = 1.5; ctx.stroke();
-  // Specular arc (top-left)
   ctx.strokeStyle = isW ? "rgba(255,255,255,0.75)" : "rgba(220,220,220,0.22)"; ctx.lineWidth = 2.2;
   ctx.beginPath(); ctx.arc(cx-r*0.18, cy-r*0.2, r*0.66, Math.PI*1.08, Math.PI*1.88); ctx.stroke();
-  // Symbol
   ctx.font = `bold ${Math.round(SQ*0.46)}px serif`;
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  // text shadow
   ctx.fillStyle = isW ? "rgba(60,30,0,0.3)" : "rgba(255,230,80,0.2)";
   ctx.fillText(SYMBOLS[piece.color][piece.type], cx+1, cy+2);
   ctx.fillStyle = isW ? "#3c1e00" : "#f5d860";
@@ -213,44 +208,41 @@ function drawBoard(
   legalMs: Move[],
   lastMove: Move|null,
   checkSq: [number,number]|null,
+  flipped = false,
 ) {
   // ── Outer wooden frame ──
   const fg = ctx.createLinearGradient(0,0,CW,CH);
   fg.addColorStop(0,"#a07035"); fg.addColorStop(0.45,"#7a4e18"); fg.addColorStop(0.7,"#6b4311"); fg.addColorStop(1,"#4e2e0a");
   ctx.fillStyle = fg; ctx.fillRect(0,0,CW,CH);
-  // Bevel highlights
   ctx.fillStyle = "rgba(255,200,100,0.22)"; ctx.fillRect(0,0,CW,5); ctx.fillRect(0,0,5,CH);
   ctx.fillStyle = "rgba(0,0,0,0.38)"; ctx.fillRect(0,CH-5,CW,5); ctx.fillRect(CW-5,0,5,CH);
-  // Inner frame bevel
   ctx.strokeStyle = "rgba(255,190,60,0.45)"; ctx.lineWidth = 1.5;
   ctx.strokeRect(BORDER-5,BORDER-5,SQ*8+10,SQ*8+10);
   ctx.strokeStyle = "rgba(0,0,0,0.5)"; ctx.lineWidth = 1;
   ctx.strokeRect(BORDER-7,BORDER-7,SQ*8+14,SQ*8+14);
 
   // ── Squares ──
+  // ri/ci = canvas row/col; boardR/boardC = logical board position
   for (let ri=0;ri<8;ri++) for (let ci=0;ci<8;ci++) {
+    const boardR = flipped ? 7-ri : ri;
+    const boardC = flipped ? 7-ci : ci;
     const x=BORDER+ci*SQ, y=BORDER+ri*SQ;
-    const boardR = ri, boardC = ci;
-    const isLight = (ri+ci)%2===0;
+    const isLight = (boardR+boardC)%2===0;
     let baseLight = isLight ? "#f0d9b5" : "#b58863";
 
-    // Last move tint
     if (lastMove && ((lastMove.from[0]===boardR&&lastMove.from[1]===boardC)||(lastMove.to[0]===boardR&&lastMove.to[1]===boardC)))
       baseLight = isLight ? "#cdd16f" : "#a9a030";
-    // Selected
     if (selected && selected[0]===boardR && selected[1]===boardC)
       baseLight = isLight ? "#f8f870" : "#d0d020";
 
     ctx.fillStyle = baseLight; ctx.fillRect(x,y,SQ,SQ);
 
-    // Check glow
     if (checkSq && checkSq[0]===boardR && checkSq[1]===boardC) {
       const g=ctx.createRadialGradient(x+SQ/2,y+SQ/2,2,x+SQ/2,y+SQ/2,SQ/2);
       g.addColorStop(0,"rgba(230,0,0,0.92)"); g.addColorStop(0.55,"rgba(200,0,0,0.45)"); g.addColorStop(1,"rgba(0,0,0,0)");
       ctx.fillStyle=g; ctx.fillRect(x,y,SQ,SQ);
     }
 
-    // Legal moves
     const isLegal = legalMs.some(m=>m.to[0]===boardR&&m.to[1]===boardC);
     if (isLegal) {
       const hasCapture = !!board[boardR][boardC];
@@ -267,7 +259,8 @@ function drawBoard(
   // ── Coordinates ──
   ctx.font = `bold 11px Georgia, serif`;
   for (let i=0;i<8;i++) {
-    const rank = 8-i, file = "abcdefgh"[i];
+    const rank = flipped ? i+1 : 8-i;
+    const file = flipped ? "hgfedcba"[i] : "abcdefgh"[i];
     const col = i%2===0 ? "#c8a248" : "#d4b460";
     ctx.fillStyle=col; ctx.textAlign="center"; ctx.textBaseline="middle";
     ctx.fillText(String(rank), BORDER/2, BORDER+i*SQ+SQ/2);
@@ -278,49 +271,142 @@ function drawBoard(
 
   // ── Pieces ──
   for (let ri=0;ri<8;ri++) for(let ci=0;ci<8;ci++) {
-    const p=board[ri][ci]; if(!p)continue;
+    const boardR = flipped ? 7-ri : ri;
+    const boardC = flipped ? 7-ci : ci;
+    const p=board[boardR][boardC]; if(!p)continue;
     drawPiece3D(ctx,p,BORDER+ci*SQ+SQ/2,BORDER+ri*SQ+SQ/2);
   }
+}
+
+// ─── Online Lobby ─────────────────────────────────────────────────────────────
+function OnlineLobby({
+  status, roomCode, error,
+  onHost, onJoin, onBack,
+}: {
+  status: string; roomCode: string; error: string;
+  onHost: () => void;
+  onJoin: (code: string) => void;
+  onBack: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const [view, setView] = useState<"pick"|"host"|"join">("pick");
+
+  if (view === "pick") return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-xs">
+      <p className="text-violet-300 font-black text-lg">Online Chess</p>
+      <button onClick={() => { setView("host"); onHost(); }}
+        className="w-full py-3 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/50 text-violet-300 font-bold rounded-2xl transition-colors">
+        🏠 Host a Game <span className="text-xs font-normal block text-muted-foreground mt-0.5">Play as White · share a 4-letter code</span>
+      </button>
+      <button onClick={() => setView("join")}
+        className="w-full py-3 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/50 text-indigo-300 font-bold rounded-2xl transition-colors">
+        🔗 Join a Game <span className="text-xs font-normal block text-muted-foreground mt-0.5">Play as Black · enter the host's code</span>
+      </button>
+      <button onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
+    </div>
+  );
+
+  if (view === "host") return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-xs text-center">
+      <p className="text-violet-300 font-black text-lg">Hosting a Game</p>
+      {status === "connecting" && <p className="text-muted-foreground text-sm">Connecting…</p>}
+      {status === "waiting" && (
+        <>
+          <p className="text-muted-foreground text-sm">Share this code with your opponent:</p>
+          <div className="text-5xl font-black text-violet-300 tracking-widest font-mono bg-violet-500/10 border border-violet-500/30 rounded-2xl px-6 py-4">{roomCode}</div>
+          <p className="text-muted-foreground text-xs animate-pulse">Waiting for opponent to join…</p>
+        </>
+      )}
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+      <button onClick={() => { setView("pick"); onBack(); }} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Cancel</button>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-xs text-center">
+      <p className="text-indigo-300 font-black text-lg">Join a Game</p>
+      <p className="text-muted-foreground text-sm">Enter the 4-letter room code:</p>
+      <input
+        value={code} onChange={e => setCode(e.target.value.toUpperCase().slice(0,4))}
+        placeholder="ABCD"
+        className="text-center text-3xl font-black font-mono tracking-widest bg-background border border-border rounded-xl px-4 py-3 w-40 focus:outline-none focus:border-indigo-500 text-foreground"
+      />
+      <button
+        onClick={() => code.length === 4 && onJoin(code)}
+        disabled={code.length !== 4 || status === "connecting"}
+        className="w-full py-3 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/50 text-indigo-300 font-bold rounded-2xl transition-colors disabled:opacity-40"
+      >
+        {status === "connecting" ? "Connecting…" : "Join →"}
+      </button>
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+      <button onClick={() => { setView("pick"); onBack(); }} className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
+    </div>
+  );
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Chess() {
   const cv = useRef<HTMLCanvasElement>(null);
-  // Game state in refs (no re-render needed for canvas)
-  const boardRef = useRef<Board>(makeInitBoard());
+
+  const boardRef    = useRef<Board>(makeInitBoard());
   const castlingRef = useRef<Castling>({wK:true,wQ:true,bK:true,bQ:true});
-  const epRef = useRef<[number,number]|null>(null);
-  const turnRef = useRef<Color>("w");
+  const epRef       = useRef<[number,number]|null>(null);
+  const turnRef     = useRef<Color>("w");
   const selectedRef = useRef<[number,number]|null>(null);
-  const legalMsRef = useRef<Move[]>([]);
+  const legalMsRef  = useRef<Move[]>([]);
   const lastMoveRef = useRef<Move|null>(null);
-  const promoRef = useRef<{from:[number,number];to:[number,number]}|null>(null);
+  const promoRef    = useRef<{from:[number,number];to:[number,number]}|null>(null);
   const gameOverRef = useRef(false);
-  const aiThinking = useRef(false);
+  const aiThinking  = useRef(false);
+  // Online-specific refs
+  const myColorRef  = useRef<Color>("w");   // which color this client controls
+  const flippedRef  = useRef(false);        // true when playing as Black
 
-  const [mode, setMode] = useState<Mode>("ai");
-  const [aiDiff, setAiDiff] = useState<AIDiff>("medium");
-  const [screen, setScreen] = useState<"menu"|"game">("menu");
-  const [status, setStatus] = useState("White's turn");
+  const [mode,         setMode]         = useState<Mode>("ai");
+  const [aiDiff,       setAiDiff]       = useState<AIDiff>("medium");
+  const [screen,       setScreen]       = useState<"menu"|"online-lobby"|"game">("menu");
+  const [status,       setStatus]       = useState("White's turn");
   const [promoVisible, setPromoVisible] = useState(false);
-  const [result, setResult] = useState<string|null>(null);
-  const [, forceUpdate] = useState(0);
+  const [result,       setResult]       = useState<string|null>(null);
+  const [onlineError,  setOnlineError]  = useState("");
+  const [,             forceUpdate]     = useState(0);
 
+  // ─── Relay socket ────────────────────────────────────────────────────────────
+  const { status: relayStatus, roomCode: onlineCode, role: relayRole,
+          createRoom, joinRoom, send: relaySend, disconnect: relayDisconnect } =
+    useRelaySocket("chess", {
+      onRoomCreated: () => { /* status updates handled by relayStatus */ },
+      onRoomJoined:  () => startOnlineGame("guest"),
+      onOpponentJoined: () => startOnlineGame("host"),
+      onMessage: (data) => {
+        const msg = data as { type?: string; from?: [number,number]; to?: [number,number]; promo?: PType };
+        if (msg?.type === "move" && msg.from && msg.to) {
+          applyRemoteMove({ from: msg.from, to: msg.to, promo: msg.promo });
+        }
+      },
+      onOpponentLeft: () => {
+        gameOverRef.current = true;
+        setResult("Opponent disconnected 😔");
+      },
+      onError: (msg) => setOnlineError(msg),
+    });
+
+  // ─── Drawing ─────────────────────────────────────────────────────────────────
   const redraw = useCallback(() => {
     const c = cv.current; if(!c)return;
     const ctx = c.getContext("2d")!;
     const checkSq = isInCheck(boardRef.current, turnRef.current) ? findKing(boardRef.current, turnRef.current) : null;
-    drawBoard(ctx, boardRef.current, selectedRef.current, legalMsRef.current, lastMoveRef.current, checkSq);
+    drawBoard(ctx, boardRef.current, selectedRef.current, legalMsRef.current, lastMoveRef.current, checkSq, flippedRef.current);
   }, []);
 
+  // ─── Game logic ──────────────────────────────────────────────────────────────
   const checkGameOver = useCallback(() => {
     const col = turnRef.current;
     const mvs = legalMoves(boardRef.current, col, castlingRef.current, epRef.current);
     if (mvs.length===0) {
       gameOverRef.current = true;
       if (isInCheck(boardRef.current, col)) {
-        const winner = col==="w"?"Black":"White";
-        setResult(`${winner} wins by checkmate! 🏆`);
+        setResult(`${col==="w"?"Black":"White"} wins by checkmate! 🏆`);
       } else {
         setResult("Draw by stalemate 🤝");
       }
@@ -339,6 +425,11 @@ export default function Chess() {
     redraw(); checkGameOver();
   }, [redraw, checkGameOver]);
 
+  // Apply a move received from the network (no sending back)
+  const applyRemoteMove = useCallback((move: Move) => {
+    performMove(move);
+  }, [performMove]);
+
   const triggerAI = useCallback((diff: AIDiff) => {
     if (aiThinking.current||gameOverRef.current) return;
     aiThinking.current=true; setStatus("AI thinking…");
@@ -353,13 +444,22 @@ export default function Chess() {
   const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (gameOverRef.current||promoRef.current) return;
     const currentMode = mode, currentDiff = aiDiff;
+
+    // Online: block when not your turn or not connected
+    if (currentMode==="online") {
+      if (relayStatus !== "connected") return;
+      if (turnRef.current !== myColorRef.current) return;
+    }
     if (currentMode==="ai"&&turnRef.current==="b") return;
+
     const rect = cv.current!.getBoundingClientRect();
     const px=(e.clientX-rect.left)*(CW/rect.width);
     const py=(e.clientY-rect.top)*(CH/rect.height);
     const ci=Math.floor((px-BORDER)/SQ), ri=Math.floor((py-BORDER)/SQ);
     if(ci<0||ci>=8||ri<0||ri>=8)return;
-    const boardR=ri, boardC=ci;
+    // Flip canvas coords → board coords
+    const boardR = flippedRef.current ? 7-ri : ri;
+    const boardC = flippedRef.current ? 7-ci : ci;
 
     const sel=selectedRef.current;
     if (sel) {
@@ -369,14 +469,15 @@ export default function Chess() {
           promoRef.current={from:matches[0].from,to:matches[0].to};
           setPromoVisible(true); redraw(); return;
         }
+        if (currentMode==="online") {
+          relaySend({ type:"move", from:matches[0].from, to:matches[0].to });
+        }
         performMove(matches[0]);
         if(currentMode==="ai"&&turnRef.current==="b"&&!gameOverRef.current) triggerAI(currentDiff);
         return;
       }
-      // Deselect or re-select
       selectedRef.current=null; legalMsRef.current=[];
     }
-    // Select piece
     const piece=boardRef.current[boardR][boardC];
     if (piece&&piece.color===turnRef.current) {
       const mvs=legalMoves(boardRef.current,turnRef.current,castlingRef.current,epRef.current)
@@ -384,7 +485,7 @@ export default function Chess() {
       selectedRef.current=[boardR,boardC]; legalMsRef.current=mvs;
     }
     redraw();
-  }, [mode, aiDiff, redraw, performMove, triggerAI]);
+  }, [mode, aiDiff, relayStatus, redraw, performMove, triggerAI, relaySend]);
 
   const handlePromo = useCallback((p: PType) => {
     const pr=promoRef.current; if(!pr)return;
@@ -393,9 +494,12 @@ export default function Chess() {
     promoRef.current=null; setPromoVisible(false);
     if(!m)return;
     const currentMode=mode, currentDiff=aiDiff;
+    if (currentMode==="online") {
+      relaySend({ type:"move", from:m.from, to:m.to, promo:m.promo });
+    }
     performMove(m);
     if(currentMode==="ai"&&turnRef.current==="b"&&!gameOverRef.current) triggerAI(currentDiff);
-  }, [mode, aiDiff, performMove, triggerAI]);
+  }, [mode, aiDiff, performMove, triggerAI, relaySend]);
 
   const startGame = useCallback((m: Mode, diff: AIDiff="medium") => {
     boardRef.current=makeInitBoard();
@@ -403,7 +507,21 @@ export default function Chess() {
     epRef.current=null; turnRef.current="w"; selectedRef.current=null;
     legalMsRef.current=[]; lastMoveRef.current=null; promoRef.current=null;
     gameOverRef.current=false; aiThinking.current=false;
+    flippedRef.current=false; myColorRef.current="w";
     setMode(m); setAiDiff(diff); setScreen("game");
+    setStatus("White's turn"); setResult(null); setPromoVisible(false);
+    forceUpdate(n=>n+1);
+  }, []);
+
+  const startOnlineGame = useCallback((role: "host"|"guest") => {
+    boardRef.current=makeInitBoard();
+    castlingRef.current={wK:true,wQ:true,bK:true,bQ:true};
+    epRef.current=null; turnRef.current="w"; selectedRef.current=null;
+    legalMsRef.current=[]; lastMoveRef.current=null; promoRef.current=null;
+    gameOverRef.current=false; aiThinking.current=false;
+    myColorRef.current = role === "host" ? "w" : "b";
+    flippedRef.current = role === "guest";
+    setMode("online"); setScreen("game");
     setStatus("White's turn"); setResult(null); setPromoVisible(false);
     forceUpdate(n=>n+1);
   }, []);
@@ -412,6 +530,7 @@ export default function Chess() {
     if(screen==="game") { setTimeout(()=>redraw(),10); }
   }, [screen, redraw]);
 
+  // ─── Screens ──────────────────────────────────────────────────────────────────
   if (screen==="menu") return (
     <Shell title="Chess">
       <div className="flex flex-col items-center gap-6 max-w-xs w-full text-center py-4">
@@ -422,6 +541,10 @@ export default function Chess() {
           <button onClick={()=>startGame("local")}
             className="py-3 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/50 text-violet-300 font-bold rounded-2xl transition-colors">
             👥 Local vs Local
+          </button>
+          <button onClick={()=>{ setOnlineError(""); setScreen("online-lobby"); }}
+            className="py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-bold rounded-2xl transition-colors">
+            🌐 Online Multiplayer
           </button>
           <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest mt-2">vs Computer</p>
           <div className="flex gap-2">
@@ -437,17 +560,39 @@ export default function Chess() {
     </Shell>
   );
 
+  if (screen==="online-lobby") return (
+    <Shell title="Chess · Online">
+      <OnlineLobby
+        status={relayStatus}
+        roomCode={onlineCode}
+        error={onlineError}
+        onHost={() => { setOnlineError(""); createRoom(); }}
+        onJoin={(code) => { setOnlineError(""); joinRoom(code); }}
+        onBack={() => { relayDisconnect(); setScreen("menu"); }}
+      />
+    </Shell>
+  );
+
+  const myColor = myColorRef.current;
+  const isOnlineMyTurn = mode === "online" && turnRef.current === myColor && relayStatus === "connected";
+
   return (
     <Shell title="Chess">
       <p className="text-sm font-mono font-bold" style={{color: result ? "#f59e0b" : "#a5b4fc"}}>
         {result ?? status}
       </p>
+      {mode === "online" && !result && (
+        <p className="text-xs text-muted-foreground -mt-1">
+          You are <span className="font-bold" style={{color: myColor==="w"?"#f5eccc":"#aaa"}}>{myColor==="w"?"White ♔":"Black ♚"}</span>
+          {isOnlineMyTurn ? " — Your turn" : " — Opponent's turn"}
+        </p>
+      )}
       <div className="relative">
         <canvas ref={cv} width={CW} height={CH}
           onClick={handleCanvasClick}
           className="cursor-pointer block rounded-sm select-none"
           style={{
-            maxWidth:"min(95vw,calc(95vh - 160px))", height:"auto",
+            maxWidth:"min(95vw,calc(95vh - 180px))", height:"auto",
             boxShadow:"0 24px 80px rgba(0,0,0,0.7),0 8px 24px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,200,80,0.08)"
           }}
         />
@@ -466,19 +611,26 @@ export default function Chess() {
             </div>
           </div>
         )}
+        {mode==="online" && relayStatus==="disconnected" && !result && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-sm">
+            <p className="text-white font-bold text-lg">Opponent disconnected</p>
+          </div>
+        )}
       </div>
       <div className="flex gap-3">
-        <button onClick={()=>startGame(mode,aiDiff)}
-          className="px-5 py-2 bg-secondary hover:bg-secondary/70 text-foreground rounded-xl font-bold text-sm transition-colors">
-          New Game
-        </button>
-        <button onClick={()=>setScreen("menu")}
+        {mode !== "online" && (
+          <button onClick={()=>startGame(mode,aiDiff)}
+            className="px-5 py-2 bg-secondary hover:bg-secondary/70 text-foreground rounded-xl font-bold text-sm transition-colors">
+            New Game
+          </button>
+        )}
+        <button onClick={()=>{ relayDisconnect(); setScreen("menu"); }}
           className="px-5 py-2 bg-secondary hover:bg-secondary/70 text-foreground rounded-xl font-bold text-sm transition-colors">
           Menu
         </button>
       </div>
       <p className="text-xs text-muted-foreground">
-        {mode==="ai"?`🤖 vs AI (${aiDiff})`:"👥 Local 2P"} · Click piece then destination
+        {mode==="ai"?`🤖 vs AI (${aiDiff})`:mode==="local"?"👥 Local 2P":"🌐 Online · Click piece then destination"}
       </p>
     </Shell>
   );

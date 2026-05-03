@@ -22,11 +22,19 @@ pnpm workspace monorepo using TypeScript. Contains two products:
 ## Artifacts
 
 ### `artifacts/game-hub` — React+Vite Game Hub (port 23091, path `/game-hub`)
-12 browser games, all pure React/Canvas (no backend needed):
+12 browser games, all pure React/Canvas:
 - 🟢 Simple: Snake, Pong, Typing Racer, Uno, Chess
 - 🟡 Medium: Flappy Bird, Tower Defense, Bubble Shooter, Battleship, Pac-Man
 - 🔴 Hard: Minecraft Voxel (isometric canvas builder), Racing Game (top-down)
 All games are in `artifacts/game-hub/src/games/`. Routing via `wouter`.
+
+**Online multiplayer** (via WebSocket relay in `artifacts/api-server`):
+- **UNO** — up to 8 players, full server-authoritative game logic (`uno-rooms.ts`, `uno-logic.ts`)
+- **Chess** — 2-player relay; host=White, guest=Black; board flips for Black; move sync over relay
+- **Battleship** — 2-player relay; simultaneous ship placement; fire/result protocol keeps ships private
+
+Shared relay hook: `artifacts/game-hub/src/lib/relay-socket.ts`  
+WebSocket server: `artifacts/api-server/src/ws.ts` (path `/api/ws`)
 
 ### `artifacts/zeta-meetings` — React+Vite frontend (port 24296, path `/`)
 Pages: Record (`/`), History (`/meetings`), Meeting Detail (`/meetings/:id`)
