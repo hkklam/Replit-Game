@@ -14,6 +14,7 @@ import Racing from "./racing";
 import CandyCrush from "./candy-crush";
 import MagicSort from "./magic-sort";
 import Tetris from "./tetris";
+import FlowFree from "./flow-free";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -201,6 +202,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-indigo-950/80 via-indigo-900/30 to-transparent",
     borderColor: "#818cf830",
     component: Tetris,
+  },
+  {
+    id: "flow-free",
+    name: "Flow Free",
+    icon: "🔵",
+    tier: "🟡",
+    desc: "Connect matching dots with pipes. Cover every cell to solve.",
+    color: "#2176AE",
+    gradient: "from-blue-950/80 via-blue-900/30 to-transparent",
+    borderColor: "#2176AE30",
+    component: FlowFree,
   },
 ];
 
