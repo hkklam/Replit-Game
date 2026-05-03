@@ -893,21 +893,40 @@ export default function Tetris() {
         onTouchStart={e => {
           const t = e.changedTouches[0];
           touchSwipe.current = { x: t.clientX, y: t.clientY };
+          e.preventDefault();
         }}
         onTouchEnd={e => {
           if (!touchSwipe.current) return;
           const t = e.changedTouches[0];
           const dx = t.clientX - touchSwipe.current.x;
           const dy = t.clientY - touchSwipe.current.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
           touchSwipe.current = null;
           const gs = gsRef.current;
           if (!gs || gs.phase !== "playing") return;
-          if (Math.abs(dx) < 15 && Math.abs(dy) < 15) { doHardDrop(gs); return; }
-          if (Math.abs(dy) > Math.abs(dx)) {
-            if (dy > 0) keysRef.current.add("ArrowDown");
-            else doRotate(gs, 1);
-          } else {
-            doMove(gs, dx > 0 ? 1 : -1);
+          
+          // Tap = hard drop (movement < 30px)
+          if (dist < 30) { doHardDrop(gs); return; }
+          
+          // Determine swipe direction
+          const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+          
+          // Vertical swipe (between -45° and 45° from vertical)
+          if (Math.abs(angle - 90) < 45 || Math.abs(angle + 90) < 45) {
+            if (dy > 40) {
+              // Swipe down = soft drop (hold key briefly)
+              keysRef.current.add("ArrowDown");
+              setTimeout(() => keysRef.current.delete("ArrowDown"), 100);
+            } else if (dy < -40) {
+              // Swipe up = rotate CW
+              doRotate(gs, 1);
+            }
+          }
+          // Horizontal swipe (between -45° and 45° from horizontal)
+          else if (Math.abs(angle) < 45 || Math.abs(angle) > 135) {
+            if (Math.abs(dx) > 30) {
+              doMove(gs, dx > 0 ? 1 : -1);
+            }
           }
         }}
         onTouchMove={e => e.preventDefault()}
