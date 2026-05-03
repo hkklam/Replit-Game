@@ -136,6 +136,58 @@ function drawGem(
     gemPath(ctx, type, r); ctx.stroke();
   }
 
+  // Wrapped: concentric pulsing rings inside the gem shape
+  if (special === "wrapped") {
+    ctx.save(); gemPath(ctx, type, r); ctx.clip();
+    for (let i = 1; i <= 3; i++) {
+      const pr = r * (0.28 * i);
+      const a  = 0.55 + 0.45 * Math.sin(frame * 0.22 + i * 1.4);
+      ctx.strokeStyle = `rgba(255,255,255,${a})`; ctx.lineWidth = 2.6;
+      ctx.beginPath(); ctx.arc(0, 0, pr, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
+    // Pulsing outer ring with gem-colour glow
+    const ps = 1.05 + 0.05 * Math.sin(frame * 0.18);
+    ctx.shadowColor = GEM_M[type]; ctx.shadowBlur = 16;
+    ctx.strokeStyle = `rgba(255,255,255,${0.55 + 0.45 * Math.sin(frame * 0.18)})`;
+    ctx.lineWidth = 2.4;
+    gemPath(ctx, type, r * ps); ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  // Cross: rotating + crosshair with glowing ticks
+  if (special === "cross") {
+    const rot = frame * 0.026;
+    ctx.save(); ctx.rotate(rot); gemPath(ctx, type, r); ctx.clip();
+    // Arms
+    ctx.strokeStyle = "rgba(255,255,255,0.92)"; ctx.lineWidth = 4.5; ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.72, 0); ctx.lineTo(r * 0.72, 0);
+    ctx.moveTo(0, -r * 0.72); ctx.lineTo(0, r * 0.72);
+    ctx.stroke();
+    // Centre glow
+    const cg = ctx.createRadialGradient(0,0,0,0,0,r*.42);
+    cg.addColorStop(0,"rgba(255,255,255,0.75)"); cg.addColorStop(1,"rgba(255,255,255,0)");
+    ctx.fillStyle=cg; ctx.fillRect(-r,-r,r*2,r*2);
+    ctx.restore();
+    // Outer crosshair ticks (unclipped)
+    ctx.save(); ctx.rotate(rot);
+    const tickAlpha = 0.55 + 0.45 * Math.sin(frame * 0.18);
+    ctx.strokeStyle = `rgba(255,255,255,${tickAlpha})`; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+    const tickR = r * 1.14;
+    [0, Math.PI/2, Math.PI, 3*Math.PI/2].forEach(a => {
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a)*r*0.9, Math.sin(a)*r*0.9);
+      ctx.lineTo(Math.cos(a)*tickR,  Math.sin(a)*tickR);
+      ctx.stroke();
+    });
+    ctx.restore();
+    ctx.shadowColor = GEM_M[type]; ctx.shadowBlur = 22;
+    ctx.strokeStyle = `rgba(255,255,255,${0.4+0.4*Math.sin(frame*0.2)})`; ctx.lineWidth = 2;
+    gemPath(ctx, type, r * 1.08); ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
   // Color bomb rainbow border
   if (special === "colorbomb") {
     const h = frame*3%360;
@@ -306,11 +358,61 @@ export default function CandyCrush() {
       if(score>=LEVELS[lvIdx].target){phase="win";setOverlay("win");upHud();return;}
       if(moves<=0){phase="lose";setOverlay("lose");upHud();}
     }
+
+    // ── Particle & flash system ────────────────────────────────────────────────
+    interface Particle { x:number;y:number;vx:number;vy:number;life:number;r:number;color:string; }
+    interface Flash     { x:number;y:number;w:number;h:number;life:number;color:string; }
+    const particles:Particle[]=[];
+    const flashes:Flash[]=[];
+
+    function emitBurst(px:number,py:number,color:string,count:number,speed:number){
+      for(let i=0;i<count;i++){
+        const a=Math.PI*2*(i/count)+(Math.random()-.5)*.9;
+        const v=speed*(.5+Math.random()*.85);
+        particles.push({x:px,y:py,vx:Math.cos(a)*v,vy:Math.sin(a)*v-40,life:1,r:2.2+Math.random()*3.2,color});
+      }
+    }
+    function emitLineH(row:number,color:string){
+      for(let c=0;c<COLS;c++) emitBurst(gcx(c),gcy(row),color,5,210);
+    }
+    function emitLineV(col:number,color:string){
+      for(let r=0;r<ROWS;r++) emitBurst(gcx(col),gcy(r),color,5,210);
+    }
+    function addFlash(r:number,c:number,color:string){
+      flashes.push({x:PAD+c*CELL+2,y:PAD+r*CELL+2,w:CELL-4,h:CELL-4,life:1,color});
+    }
+
     function expandSpecials(s:Set<string>){
       const ex=new Set<string>();
-      s.forEach(k=>{const[r,c]=k.split(",").map(Number);const cell=board[r][c];if(!cell)return;
-        if(cell.special==="striped_h") for(let i=0;i<COLS;i++)ex.add(`${r},${i}`);
-        else if(cell.special==="striped_v") for(let i=0;i<ROWS;i++)ex.add(`${i},${c}`);
+      s.forEach(k=>{
+        const[r,c]=k.split(",").map(Number);
+        const cell=board[r][c]; if(!cell?.special)return;
+        const color=GEM_M[cell.type];
+        const cx=gcx(c),cy=gcy(r);
+
+        if(cell.special==="striped_h"){
+          for(let i=0;i<COLS;i++){ ex.add(`${r},${i}`); addFlash(r,i,"rgba(255,255,255,0.75)"); }
+          emitLineH(r,color);
+        }
+        else if(cell.special==="striped_v"){
+          for(let i=0;i<ROWS;i++){ ex.add(`${i},${c}`); addFlash(i,c,"rgba(255,255,255,0.75)"); }
+          emitLineV(c,color);
+        }
+        else if(cell.special==="wrapped"){
+          for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+            const nr=r+dr,nc=c+dc;
+            if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS){ ex.add(`${nr},${nc}`); addFlash(nr,nc,color+"bb"); }
+          }
+          emitBurst(cx,cy,color,38,330);
+          // second shockwave ring
+          setTimeout(()=>emitBurst(cx,cy,"#ffffff",18,260),140);
+        }
+        else if(cell.special==="cross"){
+          for(let i=0;i<COLS;i++){ ex.add(`${r},${i}`); addFlash(r,i,color+"99"); }
+          for(let i=0;i<ROWS;i++){ ex.add(`${i},${c}`); addFlash(i,c,color+"99"); }
+          emitLineH(r,color); emitLineV(c,color);
+          emitBurst(cx,cy,"#ffffff",24,300);
+        }
       });
       ex.forEach(k=>s.add(k));
     }
@@ -362,13 +464,99 @@ export default function CandyCrush() {
       setPhase("swapping", 230, ()=>{
         a1.ty=y2; a2.ty=y1;
         const isCB1=cell1.special==="colorbomb", isCB2=cell2.special==="colorbomb";
+        const isStr1=cell1.special==="striped_h"||cell1.special==="striped_v";
+        const isStr2=cell2.special==="striped_h"||cell2.special==="striped_v";
+        const isWr1=cell1.special==="wrapped", isWr2=cell2.special==="wrapped";
+        const isCr1=cell1.special==="cross",   isCr2=cell2.special==="cross";
+
+        // ── Special combos ──────────────────────────────────────────────────
         if(isCB1||isCB2){
+          // ColorBomb + ColorBomb → wipe entire board
+          if(isCB1&&isCB2){
+            const rem=new Set<string>();
+            for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(board[r][c]) rem.add(`${r},${c}`);
+            board[r1][c1]=cell2; board[r2][c2]=cell1; a1.col=c2; a1.row=r2; a2.col=c1; a2.row=r1;
+            emitBurst(gcx(c1),gcy(r1),"#ffd700",50,400);
+            moves--; cascade=0; doRemoval(rem,rem.size*120); return;
+          }
+          // ColorBomb + Wrapped → all matching gems explode 3×3
+          const cbSpecial=isCB1?cell2.special:cell1.special;
           const tgt=isCB1?cell2.type:cell1.type;
           const rem=new Set<string>();
-          for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
-            if(board[r][c]?.type===tgt||board[r][c]?.special==="colorbomb") rem.add(`${r},${c}`);
           board[r1][c1]=cell2; board[r2][c2]=cell1; a1.col=c2; a1.row=r2; a2.col=c1; a2.row=r1;
+          if(cbSpecial==="wrapped"){
+            for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+              if(board[r][c]?.type===tgt||board[r][c]?.special==="colorbomb"){
+                rem.add(`${r},${c}`);
+                for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+                  const nr=r+dr,nc=c+dc;
+                  if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS) rem.add(`${nr},${nc}`);
+                }
+              }
+            }
+          } else {
+            for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++)
+              if(board[r][c]?.type===tgt||board[r][c]?.special==="colorbomb") rem.add(`${r},${c}`);
+          }
           moves--; cascade=0; doRemoval(rem,rem.size*80); return;
+        }
+
+        // Striped + Striped → fire both rows AND both columns (cross blast)
+        if((isStr1&&isStr2)||(isStr1&&isCr2)||(isCr1&&isStr2)){
+          board[r1][c1]=cell2; board[r2][c2]=cell1; a1.col=c2; a1.row=r2; a2.col=c1; a2.row=r1;
+          const rem=new Set<string>();
+          for(let i=0;i<COLS;i++){ rem.add(`${r1},${i}`); rem.add(`${r2},${i}`); }
+          for(let i=0;i<ROWS;i++){ rem.add(`${i},${c1}`); rem.add(`${i},${c2}`); }
+          emitLineH(r1,GEM_M[cell1.type]); emitLineH(r2,GEM_M[cell2.type]);
+          emitLineV(c1,GEM_M[cell1.type]); emitLineV(c2,GEM_M[cell2.type]);
+          moves--; cascade=0; doRemoval(rem,rem.size*60); return;
+        }
+
+        // Wrapped + Striped → sweep 3 rows + 3 columns
+        if((isWr1&&isStr2)||(isStr1&&isWr2)){
+          board[r1][c1]=cell2; board[r2][c2]=cell1; a1.col=c2; a1.row=r2; a2.col=c1; a2.row=r1;
+          const rem=new Set<string>();
+          for(let dr=-1;dr<=1;dr++){
+            const rr=r1+dr; if(rr<0||rr>=ROWS) continue;
+            for(let i=0;i<COLS;i++) rem.add(`${rr},${i}`);
+            emitLineH(rr,GEM_M[cell1.type]);
+          }
+          for(let dc=-1;dc<=1;dc++){
+            const cc=c1+dc; if(cc<0||cc>=COLS) continue;
+            for(let i=0;i<ROWS;i++) rem.add(`${i},${cc}`);
+            emitLineV(cc,GEM_M[cell2.type]);
+          }
+          moves--; cascade=0; doRemoval(rem,rem.size*70); return;
+        }
+
+        // Wrapped + Wrapped → 5×5 area blast
+        if(isWr1&&isWr2){
+          board[r1][c1]=cell2; board[r2][c2]=cell1; a1.col=c2; a1.row=r2; a2.col=c1; a2.row=r1;
+          const rem=new Set<string>();
+          const mr=Math.round((r1+r2)/2), mc=Math.round((c1+c2)/2);
+          for(let dr=-2;dr<=2;dr++) for(let dc=-2;dc<=2;dc++){
+            const nr=mr+dr,nc=mc+dc;
+            if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS) rem.add(`${nr},${nc}`);
+          }
+          emitBurst(gcx(mc),gcy(mr),GEM_M[cell1.type],48,380);
+          setTimeout(()=>emitBurst(gcx(mc),gcy(mr),"#ffffff",24,300),160);
+          moves--; cascade=0; doRemoval(rem,rem.size*80); return;
+        }
+
+        // Cross + Cross → clear 3 rows + 3 columns
+        if(isCr1&&isCr2){
+          board[r1][c1]=cell2; board[r2][c2]=cell1; a1.col=c2; a1.row=r2; a2.col=c1; a2.row=r1;
+          const rem=new Set<string>();
+          for(let dr=-1;dr<=1;dr++){
+            const rr=r1+dr; if(rr<0||rr>=ROWS) continue;
+            for(let i=0;i<COLS;i++) rem.add(`${rr},${i}`);
+          }
+          for(let dc=-1;dc<=1;dc++){
+            const cc=c1+dc; if(cc<0||cc>=COLS) continue;
+            for(let i=0;i<ROWS;i++) rem.add(`${i},${cc}`);
+          }
+          emitBurst(gcx(c1),gcy(r1),"#ffffff",36,350);
+          moves--; cascade=0; doRemoval(rem,rem.size*90); return;
         }
         board[r1][c1]=cell2; board[r2][c2]=cell1; a1.col=c2; a1.row=r2; a2.col=c1; a2.row=r1;
         const groups=getMatchGroups(board);
@@ -379,17 +567,18 @@ export default function CandyCrush() {
           a1.tx=x1; a1.ty=y1; a2.tx=x2; a2.ty=y2;
           setPhase("snapback", 240, ()=>{phase="idle";upHud();}); return;
         }
-        // Specials for match-4/5
+        // Create special gems for qualifying match groups
         groups.forEach(g=>{
-          if(g.cells.length<4)return;
-          const sp:SpecialType=g.cells.length>=5?"colorbomb":(g.dir==="h"?"striped_h":"striped_v");
+          if(!g.special)return;
+          const sp=g.special;
+          // Prefer the swapped cell as the anchor; fall back to midpoint
           const moved=g.cells.find(([gr,gc])=>(gr===r2&&gc===c2)||(gr===r1&&gc===c1))??g.cells[Math.floor(g.cells.length/2)];
           matchSet.delete(`${moved[0]},${moved[1]}`);
           const old=board[moved[0]][moved[1]]!; const newCell=mkCell(g.type,sp);
           board[moved[0]][moved[1]]=newCell;
           const aOld=anims.get(old.id)!; anims.delete(old.id);
-          anims.set(newCell.id,{...aOld,id:newCell.id,special:sp,ts:1.3});
-          setTimeout(()=>{const aa=anims.get(newCell.id);if(aa)aa.ts=1;},200);
+          anims.set(newCell.id,{...aOld,id:newCell.id,special:sp,ts:1.45});
+          setTimeout(()=>{const aa=anims.get(newCell.id);if(aa)aa.ts=1;},240);
         });
         moves--; cascade=0; doRemoval(matchSet,matchSet.size*30);
       });
@@ -480,6 +669,30 @@ export default function CandyCrush() {
         const isSel=!!selected&&board[selected.r]?.[selected.c]?.id===a.id;
         drawGem(ctx,a.type,a.special,a.x,a.y,CELL,a.alpha,a.scale,isSel,frame);
       });
+
+      // ── Flash highlights (cell-level bright overlay) ────────────────────
+      for(let i=flashes.length-1;i>=0;i--){
+        const f=flashes[i]; f.life-=dt*3.5;
+        if(f.life<=0){flashes.splice(i,1);continue;}
+        ctx.save(); ctx.globalAlpha=f.life*0.65; ctx.fillStyle=f.color;
+        const cr=CELL*.12; rrect(ctx,f.x,f.y,f.w,f.h,cr); ctx.fill();
+        ctx.restore();
+      }
+
+      // ── Particles ───────────────────────────────────────────────────────
+      for(let i=particles.length-1;i>=0;i--){
+        const p=particles[i];
+        p.x+=p.vx*dt; p.y+=p.vy*dt;
+        p.vy+=380*dt; p.vx*=Math.max(0,1-1.8*dt);
+        p.life-=dt*1.8;
+        if(p.life<=0){particles.splice(i,1);continue;}
+        ctx.save();
+        ctx.globalAlpha=p.life*0.92;
+        ctx.shadowColor=p.color; ctx.shadowBlur=7;
+        ctx.fillStyle=p.color;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r*Math.max(0.3,p.life)+.4,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
     };
     animate();
 
@@ -516,7 +729,7 @@ export default function CandyCrush() {
           </div>
           <div className="p-6 space-y-4">
             <div className="grid grid-cols-3 gap-3 text-center">
-              {[["10","Levels"],["6","Gems"],["2D","Flat"]].map(([v,l])=>(
+              {[["10","Levels"],["6","Gems"],["5","Specials"]].map(([v,l])=>(
                 <div key={l} className="rounded-xl p-3" style={{background:"rgba(255,255,255,0.1)"}}>
                   <div className="text-2xl font-black text-white">{v}</div>
                   <div className="text-xs text-white/50 mt-0.5">{l}</div>
@@ -524,10 +737,12 @@ export default function CandyCrush() {
               ))}
             </div>
             <div className="space-y-2 text-sm">
-              {[["✦","Click a gem, then click adjacent to swap","text-yellow-300"],
-                ["✦","Match 4 → Striped gem (clears row or column)","text-pink-300"],
-                ["✦","Match 5 → Color Bomb (clears all of one color)","text-purple-300"],
-                ["✦","Cascades multiply score by ×1.5 per chain","text-green-300"]].map(([ic,txt,clr])=>(
+              {[["✦","Click to select, click adjacent to swap","text-yellow-300"],
+                ["✦","4 in a row → Striped (clears row or column)","text-pink-300"],
+                ["✦","L / T / + shape → Wrapped (3×3 blast!)","text-orange-300"],
+                ["✦","True + with long arms → Cross (row + column!)","text-cyan-300"],
+                ["✦","5 in a row → Color Bomb (clears all of one color)","text-purple-300"],
+                ["✦","Swap two specials together for mega combos!","text-green-300"]].map(([ic,txt,clr])=>(
                 <div key={txt} className="flex items-start gap-2 text-white/60">
                   <span className={clr}>{ic}</span><span>{txt}</span>
                 </div>

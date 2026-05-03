@@ -1,9 +1,14 @@
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type GemType = "ruby"|"sapphire"|"emerald"|"topaz"|"amethyst"|"diamond";
-export type SpecialType = "striped_h"|"striped_v"|"colorbomb";
+export type SpecialType = "striped_h"|"striped_v"|"wrapped"|"cross"|"colorbomb";
 export interface Cell { type: GemType; special: SpecialType|null; id: number; }
 export type Board = (Cell|null)[][];
-export interface MatchGroup { cells:[number,number][]; dir:"h"|"v"; type:GemType; }
+export interface MatchGroup {
+  cells: [number,number][];
+  dir:   "h"|"v";
+  type:  GemType;
+  special: SpecialType|null; // special to create at the anchor cell (null = plain 3-match)
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 export const COLS=8, ROWS=8;
@@ -21,7 +26,7 @@ export const LEVELS=[
   {id:10,name:"Cosmos",        target:14000, moves:13},
 ];
 
-// ─── ID counter (reset on board init) ─────────────────────────────────────────
+// ─── ID counter ───────────────────────────────────────────────────────────────
 let _id=0;
 export const resetIds=()=>{ _id=0; };
 export const nextId=()=>++_id;
@@ -43,26 +48,103 @@ export function initBoard():Board{
 }
 
 // ─── Match detection ──────────────────────────────────────────────────────────
+// Returns groups with shape-aware special assignment:
+//   3-straight            → special: null
+//   4-straight            → special: striped_h / striped_v
+//   5+-straight           → special: colorbomb
+//   H+V overlap same type → special: wrapped  (L/T corner) or cross (interior +)
 export function getMatchGroups(b:Board):MatchGroup[]{
-  const gs:MatchGroup[]=[];
+  type Run = { cells:[number,number][]; type:GemType; dir:"h"|"v"; used:boolean };
+
+  // Collect all horizontal runs of length ≥ 3
+  const hRuns:Run[]=[];
   for(let r=0;r<ROWS;r++){
-    let c=0; while(c<COLS){
+    let c=0;
+    while(c<COLS){
       const t=b[r][c]?.type; if(!t){c++;continue;}
       let e=c; while(e+1<COLS&&b[r][e+1]?.type===t)e++;
-      if(e-c>=2){const cells:[number,number][]=[];for(let i=c;i<=e;i++)cells.push([r,i]);gs.push({cells,dir:"h",type:t});}
+      if(e-c>=2){
+        const cells:[number,number][]=[];
+        for(let i=c;i<=e;i++) cells.push([r,i]);
+        hRuns.push({cells,type:t,dir:"h",used:false});
+      }
       c=e+1;
     }
   }
+
+  // Collect all vertical runs of length ≥ 3
+  const vRuns:Run[]=[];
   for(let c=0;c<COLS;c++){
-    let r=0; while(r<ROWS){
+    let r=0;
+    while(r<ROWS){
       const t=b[r][c]?.type; if(!t){r++;continue;}
       let e=r; while(e+1<ROWS&&b[e+1]?.[c]?.type===t)e++;
-      if(e-r>=2){const cells:[number,number][]=[];for(let i=r;i<=e;i++)cells.push([i,c]);gs.push({cells,dir:"v",type:t});}
+      if(e-r>=2){
+        const cells:[number,number][]=[];
+        for(let i=r;i<=e;i++) cells.push([i,c]);
+        vRuns.push({cells,type:t,dir:"v",used:false});
+      }
       r=e+1;
     }
   }
-  return gs;
+
+  // Index: cell key → hRun index
+  const cellH=new Map<string,number>();
+  hRuns.forEach((run,i)=>run.cells.forEach(([r,c])=>cellH.set(`${r},${c}`,i)));
+
+  const groups:MatchGroup[]=[];
+
+  // Detect L/T/cross shapes by finding H×V intersections of same type
+  for(let vi=0;vi<vRuns.length;vi++){
+    const vr=vRuns[vi];
+    for(const [r,c] of vr.cells){
+      const hi=cellH.get(`${r},${c}`);
+      if(hi===undefined) continue;
+      const hr=hRuns[hi];
+      if(hr.type!==vr.type||hr.used||vr.used) continue;
+
+      // Mark both runs consumed
+      hr.used=true; vr.used=true;
+
+      // Merge cells (no duplicates)
+      const vUniq=vr.cells.filter(([vR,vC])=>!hr.cells.some(([hR,hC])=>hR===vR&&hC===vC));
+      const allCells=[...hr.cells,...vUniq];
+
+      // Classify shape:
+      // cross = shared cell is NOT at the end of either run (true + shape)
+      //       OR combined >= 7 cells (big shape)
+      const hFirst=hr.cells[0],hLast=hr.cells[hr.cells.length-1];
+      const vFirst=vr.cells[0],vLast=vr.cells[vr.cells.length-1];
+      const atHEnd=(hFirst[0]===r&&hFirst[1]===c)||(hLast[0]===r&&hLast[1]===c);
+      const atVEnd=(vFirst[0]===r&&vFirst[1]===c)||(vLast[0]===r&&vLast[1]===c);
+
+      const sp:SpecialType=(!atHEnd&&!atVEnd)||(allCells.length>=7) ? "cross" : "wrapped";
+      groups.push({cells:allCells,dir:"h",type:hr.type,special:sp});
+      break; // each V-run merges with at most one H-run
+    }
+  }
+
+  // Remaining straight H-runs
+  hRuns.forEach(run=>{
+    if(run.used) return;
+    let sp:SpecialType|null=null;
+    if(run.cells.length>=5)      sp="colorbomb";
+    else if(run.cells.length===4) sp="striped_h";
+    groups.push({cells:run.cells,dir:"h",type:run.type,special:sp});
+  });
+
+  // Remaining straight V-runs
+  vRuns.forEach(run=>{
+    if(run.used) return;
+    let sp:SpecialType|null=null;
+    if(run.cells.length>=5)      sp="colorbomb";
+    else if(run.cells.length===4) sp="striped_v";
+    groups.push({cells:run.cells,dir:"v",type:run.type,special:sp});
+  });
+
+  return groups;
 }
+
 export function findMatches(b:Board):Set<string>{
   const s=new Set<string>();
   getMatchGroups(b).forEach(g=>g.cells.forEach(([r,c])=>s.add(`${r},${c}`)));
