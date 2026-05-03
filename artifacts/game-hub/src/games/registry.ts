@@ -13,6 +13,7 @@ import Minecraft from "./minecraft";
 import Racing from "./racing";
 import CandyCrush from "./candy-crush";
 import MagicSort from "./magic-sort";
+import Tetris from "./tetris";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -189,6 +190,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-purple-950/80 via-violet-900/30 to-transparent",
     borderColor: "#c084fc30",
     component: MagicSort,
+  },
+  {
+    id: "tetris",
+    name: "Tetris",
+    icon: "🟦",
+    tier: "🟢",
+    desc: "Classic block puzzle. Stack, clear lines, chase the high score.",
+    color: "#818cf8",
+    gradient: "from-indigo-950/80 via-indigo-900/30 to-transparent",
+    borderColor: "#818cf830",
+    component: Tetris,
   },
 ];
 
