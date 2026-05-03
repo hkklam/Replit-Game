@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, HelpCircle, X } from "lucide-react";
-import { useOnlineMultiplayer } from "../lib/multiplayer";
-import { OnlineLobby } from "../components/OnlineLobby";
+import { useUnoOnline } from "../lib/uno-online";
+import type { PlayerView, Variant as OnlineVariant } from "../lib/uno-online";
+import { UnoOnlineLobby } from "../components/UnoOnlineLobby";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type LColor = "red" | "green" | "blue" | "yellow";
@@ -30,7 +31,6 @@ function buildDeck(variant: Variant): Card[] {
   const dc: DColor[] = ["pink","orange","teal","purple"];
   const cards: Card[] = [];
 
-  // Light side
   lc.forEach(c => {
     cards.push(mk(c, "number", 0));
     for (let v = 1; v <= 9; v++) { cards.push(mk(c,"number",v)); cards.push(mk(c,"number",v)); }
@@ -41,7 +41,6 @@ function buildDeck(variant: Variant): Card[] {
 
   if (variant !== "flip") return shuffle(cards);
 
-  // Dark side (for Flip variant)
   const dark: Card[] = [];
   dc.forEach(c => {
     dark.push(mk(c,"number",1,true));
@@ -78,7 +77,6 @@ function initGame(pc: number, isAI: boolean[], names: string[], variant: Variant
 function canPlay(card: Card, top: Card, cc: Color | null, variant: Variant, stacked: number): boolean {
   if (card.color === "wild") return true;
   const tc = cc ?? top.color;
-  // Progressive: if stacked, can only play same draw type or take the hit
   if (variant === "progressive" && stacked > 0) {
     if (top.type === "draw2") return card.type === "draw2";
     if (top.type === "wild4") return card.type === "wild4";
@@ -122,17 +120,10 @@ function applyPlay(s: UnoState, card: Card, newColor: Color | null, swapTarget?:
   } else if (card.type === "skip") {
     nextTurn = next2;
   } else if (card.type === "skipAll") {
-    nextTurn = cur; // not literally, but skip everyone else → same player again would need special logic
-    // Skip all: move past all other players once, so next player in order after a full rotation
-    nextTurn = (cur + dir*pc + pc) % pc; // effectively goes back to same player (they go again? No — skip everyone means next1 acts as normal but actually skips all)
-    // Implementation: give turn back to cur after one full skip
-    nextTurn = cur; // effectively: everyone else is skipped, cur plays again
-    // Wait, actual rule: Skip Everyone = everyone else skips, you play again
     nextTurn = cur;
   } else if (card.type === "draw2") {
     if (s.variant === "progressive") {
       stackedDraw += 2; nextTurn = next1;
-      // Don't draw yet — just advance. Draw is forced when player can't stack.
     } else {
       drawN(next1, 2); nextTurn = next2;
     }
@@ -145,7 +136,6 @@ function applyPlay(s: UnoState, card: Card, newColor: Color | null, swapTarget?:
       drawN(next1, 4); nextTurn = next2;
     }
   } else if (card.type === "wildColor") {
-    // Draw cards from deck until you draw the chosen color
     const targetColor = newColor!;
     let drawn: Card[] = [];
     ensureDeck(10);
@@ -174,17 +164,14 @@ function applyPlay(s: UnoState, card: Card, newColor: Color | null, swapTarget?:
     isFlipped = !isFlipped;
   }
 
-  // Handle progressive draw resolution (if stacked and not adding to stack)
   if (s.variant === "progressive" && stackedDraw > 0 && card.type !== "draw2" && card.type !== "wild4") {
-    stackedDraw = 0; // shouldn't happen — forced play resolution is handled in forceDraw
+    stackedDraw = 0;
   }
 
-  // Seven-O variant
   if (s.variant === "seveno") {
     if (card.type === "number" && card.value === 7) {
-      sevenSwap = true; nextTurn = cur; // wait for swap target selection
+      sevenSwap = true; nextTurn = cur;
     } else if (card.type === "number" && card.value === 0) {
-      // Rotate all hands in direction of play
       if (dir === 1) {
         const first = newHands[0];
         for (let i = 0; i < pc - 1; i++) newHands[i] = newHands[i+1];
@@ -197,7 +184,6 @@ function applyPlay(s: UnoState, card: Card, newColor: Color | null, swapTarget?:
     }
   }
 
-  // Execute seven swap
   if (swapTarget !== undefined && swapTarget !== cur) {
     const tmp = newHands[cur];
     newHands[cur] = newHands[swapTarget];
@@ -210,7 +196,6 @@ function applyPlay(s: UnoState, card: Card, newColor: Color | null, swapTarget?:
 }
 
 function applyForcedDraw(s: UnoState): UnoState {
-  // Called when player can't/won't stack in progressive mode
   let newDeck = [...s.deck];
   const ensureDeck = (n: number) => {
     if (newDeck.length < n && s.discard.length > 1)
@@ -573,7 +558,6 @@ function UnoCallButton({ onCall, deadline, maxTime, called }: {
   const [localCalled, setLocalCalled] = useState(false);
   const [, tick] = useState(0);
 
-  // Re-render every 80ms so the countdown arc stays live
   useEffect(() => {
     const id = setInterval(() => tick(n => n + 1), 80);
     return () => clearInterval(id);
@@ -595,7 +579,6 @@ function UnoCallButton({ onCall, deadline, maxTime, called }: {
     <div className="fixed inset-0 pointer-events-none z-40 flex items-end justify-center pb-36">
       <div className="pointer-events-auto flex flex-col items-center gap-3">
         {isDone ? (
-          /* ── Confirmed state ── */
           <div className="flex flex-col items-center gap-2">
             <div className="px-10 py-4 rounded-3xl font-black text-2xl text-black shadow-2xl shadow-green-400/60"
               style={{ background: "linear-gradient(135deg,#4ade80,#22c55e)", boxShadow: "0 0 40px rgba(74,222,128,0.7)" }}>
@@ -604,7 +587,6 @@ function UnoCallButton({ onCall, deadline, maxTime, called }: {
             <span className="text-green-400 text-sm font-bold animate-bounce">Nice! 🎉</span>
           </div>
         ) : (
-          /* ── Active state ── */
           <>
             <div className={`text-sm font-black uppercase tracking-widest px-4 py-1 rounded-full border ${
               urgent
@@ -614,7 +596,6 @@ function UnoCallButton({ onCall, deadline, maxTime, called }: {
               {urgent ? "⚠ Say UNO fast!" : "🔔 1 card left — say UNO!"}
             </div>
             <div className="relative" style={{ width: 136, height: 136 }}>
-              {/* Timer arc */}
               <svg className="absolute inset-0 -rotate-90" width={136} height={136}>
                 <circle cx={68} cy={68} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={10}/>
                 <circle cx={68} cy={68} r={r} fill="none"
@@ -622,13 +603,10 @@ function UnoCallButton({ onCall, deadline, maxTime, called }: {
                   strokeWidth={10} strokeDasharray={circ} strokeDashoffset={circ * (1 - pct)}
                   strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.08s linear, stroke 0.3s" }}/>
               </svg>
-              {/* Button */}
               <button
                 onClick={handleClick}
                 className={`absolute inset-2.5 rounded-full font-black text-3xl flex items-center justify-center transition-all select-none ${
-                  urgent
-                    ? "text-white animate-pulse"
-                    : "text-black animate-bounce"
+                  urgent ? "text-white animate-pulse" : "text-black animate-bounce"
                 }`}
                 style={{
                   background: urgent
@@ -681,45 +659,62 @@ export default function Uno() {
   const [aiThinking, setAiThinking] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [handRevealed, setHandRevealed] = useState(true);
+  const [onlineView, setOnlineView] = useState<PlayerView | null>(null);
   // UNO call tracking
   const [unoCall, setUnoCall] = useState<{ playerIdx: number; deadline: number; called: boolean } | null>(null);
   const unoTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
   const gsRef = useRef<UnoState | null>(null);
   gsRef.current = gs;
 
-  const mp = useOnlineMultiplayer({
-    onGuestJoined: useCallback(() => {
-      const newGs = initGame(2, [false, false], ["Host", "Guest"], "classic");
-      setGs(newGs); setMode("online"); setScreen("game");
+  // ── 8-player online hook ──────────────────────────────────────────────────
+  const unoOnline = useUnoOnline({
+    onGameStarted: useCallback((_variant: OnlineVariant) => {
+      setScreen("game");
+      setMsg(null); setPicking(false); setPendingWild(null); setUnoCall(null);
     }, []),
-    onGameState: useCallback((data: unknown) => { setGs(data as UnoState); setScreen("game"); }, []),
-    onInput: useCallback((data: unknown) => {
-      const inp = data as { action: string; cardId?: number; color?: Color };
-      const s = gsRef.current;
-      if (!s || s.turn !== 1 || s.winner !== null) return;
-      if (inp.action === "play" && inp.cardId != null) {
-        const card = s.hands[1].find(c => c.id === inp.cardId);
-        if (!card || !canPlay(card, s.discard[s.discard.length-1], s.chosenColor, s.variant, s.stackedDraw)) return;
-        setGs(applyPlay(s, card, inp.color ?? null));
-      } else if (inp.action === "draw") {
-        setGs(applyForcedDraw(s));
-      }
+    onStateUpdate: useCallback((view: PlayerView) => {
+      setOnlineView(view);
     }, []),
-    onOpponentLeft: useCallback(() => setMsg("Opponent disconnected"), []),
+    onPlayerLeft: useCallback((_, name: string) => {
+      setMsg(`${name} left the game`);
+    }, []),
   });
 
-  const mpRef = useRef(mp); mpRef.current = mp;
-
+  // Sync online view → fake UnoState for rendering
   useEffect(() => {
-    if (!gs || mode !== "online" || mpRef.current.role !== "host" || mpRef.current.status !== "connected") return;
-    mpRef.current.sendGameState(gs);
-  }, [gs, mode]);
+    if (mode !== "online" || !onlineView) return;
+    const fakeGs: UnoState = {
+      deck: Array.from({ length: onlineView.deckSize }, (_, i) => ({
+        id: -(i + 500), color: "red" as Color, type: "number" as CardType, value: 0,
+      })),
+      hands: onlineView.handSizes.map((size, i) =>
+        i === onlineView.myIdx
+          ? (onlineView.myHand as Card[])
+          : Array.from({ length: size }, (_, j) => ({
+              id: -(i * 1000 + j + 5000), color: "red" as Color, type: "number" as CardType, value: 0,
+            }))
+      ),
+      discard: [onlineView.topCard as Card],
+      turn: onlineView.turn,
+      direction: onlineView.direction,
+      chosenColor: onlineView.chosenColor as Color | null,
+      winner: onlineView.winner,
+      playerCount: onlineView.names.length,
+      isAI: onlineView.names.map(() => false),
+      names: onlineView.names,
+      variant: onlineView.variant as Variant,
+      isFlipped: onlineView.isFlipped,
+      stackedDraw: onlineView.stackedDraw,
+      sevenSwap: onlineView.sevenSwap,
+    };
+    setGs(fakeGs);
+  }, [onlineView, mode]);
 
   const showMsg = useCallback((m: string, dur = 2000) => {
     setMsg(m); setTimeout(() => setMsg(null), dur);
   }, []);
 
-  // UNO timer: when player drops to 1 card, start timer
+  // UNO timer
   const startUnoTimer = useCallback((pidx: number) => {
     if (unoTimerRef.current) clearTimeout(unoTimerRef.current);
     const deadline = Date.now() + UNO_TIMER;
@@ -727,7 +722,6 @@ export default function Uno() {
     unoTimerRef.current = setTimeout(() => {
       setUnoCall(prev => {
         if (!prev || prev.called) return null;
-        // Penalty: draw 2
         setGs(s => {
           if (!s) return s;
           let nd = [...s.deck];
@@ -744,7 +738,6 @@ export default function Uno() {
   // AI turn
   useEffect(() => {
     if (!gs || gs.winner !== null || mode !== "ai" || !gs.isAI[gs.turn]) return;
-    // If seven swap pending for AI
     if (gs.sevenSwap && gs.isAI[gs.turn]) {
       const target = gs.hands.reduce((best, h, i) =>
         i !== gs.turn && h.length > gs.hands[best].length ? i : best, (gs.turn + 1) % gs.playerCount);
@@ -760,7 +753,6 @@ export default function Uno() {
       if (card) {
         const color = card.color === "wild" ? pickAIColor(s.hands[s.turn], s.isFlipped) : null;
         const ns = applyPlay(s, card, color);
-        // AI says UNO
         if (ns.hands[s.turn].length === 1 && !ns.winner) {
           setTimeout(() => {
             setUnoCall(prev => prev?.playerIdx === s.turn ? { ...prev, called: true } : prev);
@@ -777,21 +769,20 @@ export default function Uno() {
     return () => { clearTimeout(id); setAiThinking(false); };
   }, [gs?.turn, gs?.winner, gs?.sevenSwap, mode, showMsg, startUnoTimer]);
 
-  // When turn changes, check if next human player needs pass screen
+  // Pass screen for local multi-human
   useEffect(() => {
     if (!gs || gs.winner !== null) return;
     if (mode === "online") { setHandRevealed(true); return; }
     const isHuman = !gs.isAI[gs.turn];
     if (isHuman) {
-      // Count human players: if >1 human, show pass screen
       const humanCount = gs.isAI.filter(a => !a).length;
       if (humanCount > 1) setHandRevealed(false);
       else setHandRevealed(true);
     }
   }, [gs?.turn, gs?.winner, mode]);
 
-  const myIdx = mode === "online" && mp.role === "guest" ? 1 : gs?.turn ?? 0;
-  // For AI mode, always show the current human player's perspective
+  // Online: myIdx is always fixed to onlineView.myIdx
+  const myIdx = mode === "online" ? (onlineView?.myIdx ?? -1) : (gs?.turn ?? 0);
   const viewIdx = mode === "ai" ? (gs?.turn ?? 0) : myIdx;
 
   const playCard = useCallback((card: Card) => {
@@ -802,44 +793,46 @@ export default function Uno() {
     const top = s.discard[s.discard.length-1];
     if (!canPlay(card, top, s.chosenColor, s.variant, s.stackedDraw)) { showMsg("Can't play that card!"); return; }
     if (card.color === "wild") { setPendingWild(card); setPicking(true); return; }
-    if (mode === "online" && mp.role === "guest") { mp.sendInput({ action:"play", cardId:card.id }); return; }
+    if (mode === "online") { unoOnline.playCard(card.id); return; }
     const ns = applyPlay(s, card, null);
     if (ns.hands[s.turn].length === 1 && !ns.winner && !ns.sevenSwap) startUnoTimer(s.turn);
     setGs(ns);
-  }, [picking, myIdx, mode, mp, showMsg, startUnoTimer]);
+  }, [picking, myIdx, mode, unoOnline, showMsg, startUnoTimer]);
 
   const pickColor = useCallback((color: Color) => {
     const s = gsRef.current;
     if (!pendingWild || !s) return;
-    if (mode === "online" && mp.role === "guest") { mp.sendInput({ action:"play", cardId:pendingWild.id, color }); }
-    else {
+    if (mode === "online") {
+      unoOnline.playCard(pendingWild.id, color as string);
+    } else {
       const ns = applyPlay(s, pendingWild, color);
       if (ns.hands[s.turn].length === 1 && !ns.winner) startUnoTimer(s.turn);
       setGs(ns);
     }
     setPendingWild(null); setPicking(false);
-  }, [pendingWild, mode, mp, startUnoTimer]);
+  }, [pendingWild, mode, unoOnline, startUnoTimer]);
 
   const drawCard = useCallback(() => {
     const s = gsRef.current;
     if (!s || s.winner !== null) return;
     if (mode === "ai" && s.isAI[s.turn]) return;
     if (mode === "online" && s.turn !== myIdx) return;
-    if (mode === "online" && mp.role === "guest") { mp.sendInput({ action:"draw" }); return; }
+    if (mode === "online") { unoOnline.drawCard(); return; }
     setGs(applyForcedDraw(s));
-  }, [myIdx, mode, mp]);
+  }, [myIdx, mode, unoOnline]);
 
   const handleSevenSwap = useCallback((targetIdx: number) => {
     const s = gsRef.current;
     if (!s) return;
+    if (mode === "online") { unoOnline.swapPick(targetIdx); return; }
     const ns = { ...s, sevenSwap: false };
-    const tmp = ns.hands[s.turn];
     const newHands = [...ns.hands];
+    const tmp = newHands[s.turn];
     newHands[s.turn] = newHands[targetIdx];
     newHands[targetIdx] = tmp;
     const nextTurn = (s.turn + s.direction + s.playerCount) % s.playerCount;
     setGs({ ...ns, hands: newHands, turn: nextTurn });
-  }, []);
+  }, [mode, unoOnline]);
 
   const callUno = useCallback(() => {
     setUnoCall(prev => {
@@ -856,7 +849,6 @@ export default function Uno() {
     setGs(newGs); setMode("ai"); setScreen("game");
     setMsg(null); setPicking(false); setPendingWild(null);
     setUnoCall(null); setHandRevealed(true);
-    // Show rules at start
     setShowHelp(true);
   }, []);
 
@@ -885,8 +877,8 @@ export default function Uno() {
             <div className="text-xs font-normal text-gray-400 mt-1">1–8 players · Classic or variation</div>
           </button>
           <button onClick={() => { setMode("online"); setScreen("online-lobby"); }} className="w-full py-4 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/50 text-sky-400 font-black rounded-2xl transition-colors">
-            🌐 Online
-            <div className="text-xs font-normal text-gray-400 mt-1">Play vs a friend over the internet</div>
+            🌐 Online Multiplayer
+            <div className="text-xs font-normal text-gray-400 mt-1">2–8 real players · Real-time · All variants</div>
           </button>
         </div>
       </div>
@@ -903,11 +895,19 @@ export default function Uno() {
         <h1 className="text-lg font-black text-red-400">UNO — Online</h1>
       </header>
       <div className="flex-1 flex items-center justify-center p-4">
-        <OnlineLobby status={mp.status} roomCode={mp.roomCode} role={mp.role} error={mp.error}
-          onCreate={() => mp.createRoom("uno")}
-          onJoin={(code) => { setMode("online"); mp.joinRoom(code); setScreen("game"); }}
-          onDisconnect={() => mp.disconnect()}
-          onBack={() => { mp.disconnect(); setScreen("menu"); }}/>
+        <UnoOnlineLobby
+          status={unoOnline.status}
+          roomCode={unoOnline.roomCode}
+          myIdx={unoOnline.myIdx}
+          isHost={unoOnline.isHost}
+          players={unoOnline.players}
+          error={unoOnline.error}
+          onCreate={(name) => { setMode("online"); unoOnline.createRoom(name); }}
+          onJoin={(code, name) => { setMode("online"); unoOnline.joinRoom(code, name); }}
+          onStart={(variant) => unoOnline.startGame(variant as OnlineVariant)}
+          onDisconnect={() => { unoOnline.disconnect(); setScreen("menu"); }}
+          onBack={() => { unoOnline.disconnect(); setScreen("menu"); }}
+        />
       </div>
     </div>
   );
@@ -916,8 +916,8 @@ export default function Uno() {
     <div className="min-h-screen bg-[#0d0d1f] flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div className="animate-spin text-4xl">🃏</div>
-        <p className="text-gray-400">{mode === "online" ? "Waiting for host…" : "Loading…"}</p>
-        <button onClick={() => { mp.disconnect(); setScreen("menu"); }} className="text-sm text-gray-400 hover:text-white">← Back</button>
+        <p className="text-gray-400">{mode === "online" ? "Waiting for game to start…" : "Loading…"}</p>
+        <button onClick={() => { unoOnline.disconnect(); setScreen("menu"); }} className="text-sm text-gray-400 hover:text-white">← Back</button>
       </div>
     </div>
   );
@@ -925,24 +925,31 @@ export default function Uno() {
   // ── Game screen ──────────────────────────────────────────────────────────────
   const top = gs.discard[gs.discard.length-1];
   const activeColor = gs.chosenColor ?? top?.color;
-  const curPlayerIsHuman = !gs.isAI[gs.turn];
-  const activeHand = gs.hands[gs.turn];
-  const isMyTurn = mode === "online" ? gs.turn === myIdx : curPlayerIsHuman;
+  // In online mode, show my hand always; in AI mode, show active player's hand
+  const isMyTurn = mode === "online" ? gs.turn === myIdx : !gs.isAI[gs.turn];
+  const curPlayerIsHuman = mode === "online" ? (gs.turn === myIdx) : !gs.isAI[gs.turn];
+  // My hand: in online show my fixed hand, in AI show active player's hand
+  const myHand = mode === "online"
+    ? (onlineView?.myHand as Card[] ?? gs.hands[myIdx] ?? [])
+    : gs.hands[gs.turn];
   const unoNeeded = unoCall?.playerIdx === gs.turn && curPlayerIsHuman;
 
-  // Everyone except the current human player (opponents from their view)
+  // Opponents: everyone except viewIdx
   const opponents = gs.names
     .map((name, i) => ({ name, hand: gs.hands[i], idx: i, isAI: gs.isAI[i] }))
-    .filter(p => mode === "online" ? p.idx !== viewIdx : p.idx !== gs.turn);
+    .filter(p => p.idx !== viewIdx);
+
+  // For seven-O swap: show picker when it's my turn and sevenSwap is active
+  const showSwapPicker = gs.sevenSwap && (mode === "online" ? gs.turn === myIdx : !gs.isAI[gs.turn]);
 
   return (
     <div className="min-h-screen bg-[#0a0a18] flex flex-col select-none">
       {picking && <ColorPicker onPick={pickColor} isFlipped={gs.isFlipped}/>}
-      {gs.sevenSwap && curPlayerIsHuman && (
-        <SwapPicker names={gs.names} currentIdx={gs.turn} onPick={handleSevenSwap}/>
+      {showSwapPicker && (
+        <SwapPicker names={gs.names} currentIdx={viewIdx} onPick={handleSevenSwap}/>
       )}
       {showHelp && <RulesPanel variant={gs.variant} onClose={() => setShowHelp(false)}/>}
-      {!handRevealed && curPlayerIsHuman && (
+      {!handRevealed && curPlayerIsHuman && mode === "ai" && (
         <PassScreen name={gs.names[gs.turn]} onReveal={() => setHandRevealed(true)}/>
       )}
       {unoNeeded && <UnoCallButton onCall={callUno} deadline={unoCall!.deadline} maxTime={UNO_TIMER} called={unoCall!.called}/>}
@@ -954,6 +961,11 @@ export default function Uno() {
         </Link>
         <span className="text-xl">🃏</span>
         <span className="text-sm font-black text-red-400 flex-1">UNO · {VARIANT_INFO[gs.variant].name}</span>
+        {mode === "online" && (
+          <span className="text-xs px-2 py-0.5 bg-sky-500/20 border border-sky-500/50 text-sky-300 rounded-full font-bold">
+            🌐 Online · {gs.playerCount}P
+          </span>
+        )}
         {gs.isFlipped && <span className="text-xs px-2 py-0.5 bg-purple-500/20 border border-purple-500/50 text-purple-300 rounded-full font-bold">🌑 Dark Side</span>}
         <button onClick={() => setShowHelp(true)} className="text-gray-400 hover:text-white transition-colors">
           <HelpCircle className="w-5 h-5"/>
@@ -964,41 +976,44 @@ export default function Uno() {
         <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center p-6">
           <div className="text-6xl">🎉</div>
           <p className="text-4xl font-black text-yellow-300">{gs.names[gs.winner]} Wins!</p>
+          {mode === "online" && gs.winner === myIdx && (
+            <p className="text-lg text-green-400 font-bold">🏆 That's you!</p>
+          )}
           <div className="flex gap-3 flex-wrap justify-center">
-            <button onClick={() => { const c = gs.names.map((n,i) => ({ name:n, isAI:gs.isAI[i] })); startGame(c, gs.variant); }}
-              className="px-8 py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl transition-colors">
-              Play Again
+            <button onClick={() => {
+              if (mode === "online") { unoOnline.disconnect(); setScreen("menu"); setGs(null); setOnlineView(null); }
+              else { setScreen("setup"); setGs(null); }
+            }} className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl transition-colors">
+              {mode === "online" ? "← Menu" : "Play Again"}
             </button>
-            <button onClick={() => { mp.disconnect(); setGs(null); setScreen("menu"); }}
-              className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-black rounded-xl transition-colors">
-              Menu
+            <button onClick={() => { unoOnline.disconnect(); setScreen("menu"); setGs(null); setOnlineView(null); }}
+              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-black rounded-xl transition-colors">
+              Main Menu
             </button>
           </div>
         </div>
       ) : (
         <div className="flex-1 flex flex-col min-h-0">
-          {/* Opponents */}
-          <div className="flex flex-wrap justify-center gap-2 p-2 bg-gray-950/50">
-            {opponents.map(op => {
-              const unoAlert = op.hand.length === 1;
-              const isActive = gs.turn === op.idx;
-              return (
-                <div key={op.idx}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl border transition-all ${isActive ? "bg-yellow-500/10 border-yellow-500/60 shadow-lg shadow-yellow-500/10" : "bg-gray-900 border-gray-700"}`}>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-white">
-                    <span>{op.isAI ? "🤖" : "👤"}</span>
-                    <span className={unoAlert ? "text-yellow-300 animate-pulse" : ""}>{op.name}</span>
-                    {isActive && (aiThinking ? <span className="text-xs animate-pulse">💭</span> : <span className="text-yellow-400 text-xs">▶</span>)}
-                    {unoAlert && <span className="text-yellow-400 font-black ml-1">UNO!</span>}
-                  </div>
-                  <div className="flex gap-0.5 flex-wrap justify-center" style={{ maxWidth: 180 }}>
-                    {op.hand.slice(0, 20).map((_, j) => <CardBack key={j} small/>)}
-                    {op.hand.length > 20 && <span className="text-xs text-gray-400 self-center">+{op.hand.length-20}</span>}
-                  </div>
-                  <span className="text-xs text-gray-400">{op.hand.length} card{op.hand.length!==1?"s":""}</span>
+          {/* Opponents row */}
+          <div className="flex gap-2 px-3 pt-2 pb-1 overflow-x-auto flex-wrap">
+            {opponents.map(p => (
+              <div key={p.idx} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold min-w-fit ${
+                gs.turn === p.idx
+                  ? "bg-yellow-500/15 border-yellow-500/50 text-yellow-300"
+                  : "bg-gray-800/60 border-gray-700/50 text-gray-400"
+              }`}>
+                <span>{gs.turn === p.idx ? "▶" : (p.isAI ? "🤖" : "👤")}</span>
+                <span className="max-w-[80px] truncate">{p.name}</span>
+                <span className="text-gray-500">({p.hand.length})</span>
+                <div className="flex gap-0.5 ml-1">
+                  {p.hand.slice(0, Math.min(p.hand.length, 6)).map((_, ci) => (
+                    <CardBack key={ci} small/>
+                  ))}
+                  {p.hand.length > 6 && <span className="text-gray-500 text-[10px] self-end">+{p.hand.length-6}</span>}
                 </div>
-              );
-            })}
+              </div>
+            ))}
+            {aiThinking && <span className="text-xs text-gray-500 italic self-center">thinking…</span>}
           </div>
 
           {/* Center: deck & discard */}
@@ -1046,11 +1061,14 @@ export default function Uno() {
           <div className="flex-1 flex flex-col min-h-0 border-t border-gray-800 bg-gray-950">
             <div className="flex items-center gap-2 px-4 pt-2 pb-1">
               <span className="text-xs text-gray-400 font-semibold uppercase tracking-wide">
-                {curPlayerIsHuman
-                  ? (mode === "ai" ? `${gs.names[gs.turn]}'s Hand` : "YOUR HAND")
-                  : `${gs.names[gs.turn]}'s Hand (hidden)`} ({activeHand.length})
+                {mode === "online"
+                  ? `YOUR HAND (${gs.names[myIdx] ?? "You"})`
+                  : curPlayerIsHuman
+                    ? (mode === "ai" ? `${gs.names[gs.turn]}'s Hand` : "YOUR HAND")
+                    : `${gs.names[gs.turn]}'s Hand (hidden)`}
+                {" "}({myHand.length})
               </span>
-              {activeHand.length === 1 && isMyTurn && (
+              {myHand.length === 1 && isMyTurn && (
                 <span className="text-yellow-400 text-xs font-black animate-pulse">⚡ UNO!</span>
               )}
               {gs.stackedDraw > 0 && isMyTurn && (
@@ -1059,17 +1077,17 @@ export default function Uno() {
             </div>
             <div className="flex-1 overflow-x-auto overflow-y-hidden">
               <div className="flex gap-1 px-3 pb-3 items-end min-w-max" style={{ minHeight: 120 }}>
-                {activeHand.map(card => {
-                  const playable = isMyTurn && curPlayerIsHuman && canPlay(card, top, gs.chosenColor, gs.variant, gs.stackedDraw);
+                {myHand.map(card => {
+                  const playable = isMyTurn && canPlay(card, top, gs.chosenColor, gs.variant, gs.stackedDraw);
                   return (
                     <UnoCard key={card.id} card={card}
-                      faceDown={!curPlayerIsHuman}
+                      faceDown={!curPlayerIsHuman && mode === "ai"}
                       onClick={playable ? () => playCard(card) : undefined}
                       disabled={!playable}
-                      small={activeHand.length > 12}/>
+                      small={myHand.length > 12}/>
                   );
                 })}
-                {activeHand.length === 0 && <p className="text-gray-500 italic text-sm self-center">No cards!</p>}
+                {myHand.length === 0 && <p className="text-gray-500 italic text-sm self-center">No cards!</p>}
               </div>
             </div>
           </div>
