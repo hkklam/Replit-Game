@@ -401,6 +401,63 @@ const QUESTIONS: Q[] = [
   { g:8, s:'Math', t:'Pythagorean Theorem',       d:'Medium', q:"A right triangle has legs of 3 and 4. Its hypotenuse is:",                                opts:["5","6","7","8"],                                                                          ans:0 },
   { g:8, s:'Math', t:'Quadratic Equations',       d:'Medium', q:"The equation x² = 16 has solutions:",                                                      opts:["4","-4","±4","No solution"],                                                                ans:2 },
   { g:8, s:'Math', t:'Slope',                     d:'Medium', q:"The slope of the line passing through (0, 0) and (2, 4) is:",                              opts:["1","2","4","8"],                                                                           ans:1 },
+
+  // ── ADDITIONAL GRADE 5 HISTORY & GEOGRAPHY ──
+  { g:5, s:'History', t:'Native Americans',       d:'Easy',   q:"Native Americans were the first inhabitants of:",                                             opts:["Europe","Africa","North America","Australia"],                                              ans:2 },
+  { g:5, s:'History', t:'Civilizations',          d:'Medium', q:"The Inca civilization was located in which modern-day continent?",                            opts:["North America","South America","Africa","Asia"],                                            ans:1 },
+  { g:5, s:'Geography', t:'Landforms',            d:'Easy',   q:"A large area of elevated land is called a:",                                                  opts:["Valley","Canyon","Plateau","Basin"],                                                        ans:2 },
+  { g:5, s:'Geography', t:'Weather',              d:'Medium', q:"A sudden violent windstorm with rotating columns of air is a:",                               opts:["Tsunami","Tornado","Cyclone","Blizzard"],                                                    ans:1 },
+
+  // ── ADDITIONAL GRADE 6 HISTORY & GEOGRAPHY ──
+  { g:6, s:'History', t:'Renaissance',            d:'Medium', q:"The Renaissance period saw a revival of interest in:",                                       opts:["Medieval warfare","Ancient Greek and Roman culture","Medieval knights","Feudalism"],         ans:1 },
+  { g:6, s:'History', t:'Vikings',                d:'Easy',   q:"The Vikings originated from which region?",                                                  opts:["Eastern Europe","Northern Europe (Scandinavia)","Southern Europe","Western Asia"],           ans:1 },
+  { g:6, s:'Geography', t:'Development',          d:'Medium', q:"Which factor is most important for a nation's economic development?",                        opts:["Geographic location only","Natural resources and education","Climate only","Population size"], ans:1 },
+  { g:6, s:'Geography', t:'Trade',                d:'Easy',   q:"The Silk Road was an ancient trade route connecting:",                                       opts:["Europe and Africa","Asia and Europe","America and Asia","Africa and Australia"],             ans:1 },
+
+  // ── ADDITIONAL GRADE 7 HISTORY & GEOGRAPHY ──
+  { g:7, s:'History', t:'Renaissance & Reformation', d:'Medium', q:"Martin Luther's 95 Theses sparked the:",                                                  opts:["Scientific Revolution","Reformation","Counter-Reformation","Enlightenment"],                ans:1 },
+  { g:7, s:'History', t:'Absolutism',             d:'Medium', q:"Which European monarch is famous for the saying 'L'État, c'est moi' (I am the state)?",      opts:["Frederick the Great","Peter the Great","Louis XIV","Catherine the Great"],                   ans:2 },
+  { g:7, s:'Geography', t:'Development Levels',   d:'Easy',   q:"Countries with low GDP per capita and limited infrastructure are called:",                    opts:["Developed nations","Developing nations","Developed nations","Superpowers"],                ans:1 },
+  { g:7, s:'Geography', t:'Imports & Exports',    d:'Medium', q:"A country that sends goods to another country is:",                                          opts:["Importing","Exporting","Distributing","Selling"],                                           ans:1 },
+
+  // ── ADDITIONAL GRADE 8 HISTORY & GEOGRAPHY ──
+  { g:8, s:'History', t:'American Revolution',    d:'Medium', q:"Which document declared America's independence from British rule?",                         opts:["Constitution","Declaration of Independence","Bill of Rights","Mayflower Compact"],           ans:1 },
+  { g:8, s:'History', t:'Imperialism',            d:'Medium', q:"European imperialism in the 19th century led to:",                                          opts:["Independence of colonies","Control of African and Asian territories","Decline of trade","Peace in Europe"], ans:1 },
+  { g:8, s:'Geography', t:'Globalization',        d:'Medium', q:"Globalization has primarily increased:",                                                     opts:["Isolation of countries","International trade and communication","National borders","Local economies"], ans:1 },
+  { g:8, s:'Geography', t:'Sustainability',       d:'Easy',   q:"Using renewable resources to meet present needs without harming the future is called:",     opts:["Extraction","Sustainability","Consumption","Exploitation"],                                 ans:1 },
+
+  // ── ADDITIONAL GRADE 5-8 SCIENCE (GENERAL) ──
+  { g:5, s:'Science', t:'Scientific Method',      d:'Easy',   q:"The first step of the scientific method is to:",                                             opts:["Analyze data","Ask a question","Draw conclusions","Conduct an experiment"],                ans:1 },
+  { g:6, s:'Science', t:'Biotic & Abiotic',       d:'Easy',   q:"A biotic factor in an ecosystem is:",                                                        opts:["Temperature","Soil","Living organisms","Sunlight"],                                          ans:2 },
+  { g:7, s:'Science', t:'Homeostasis',            d:'Medium', q:"An organism maintaining a stable internal environment is called:",                           opts:["Evolution","Adaptation","Homeostasis","Metabolism"],                                        ans:2 },
+  { g:8, s:'Science', t:'Biodiversity',           d:'Medium', q:"An ecosystem with high biodiversity is generally more:",                                     opts:["Fragile","Stable and resilient","Crowded","Simple"],                                        ans:1 },
+
+  // ── ADDITIONAL GRADE 5-8 MATH (GENERAL) ──
+  { g:5, s:'Math', t:'Fractions',                 d:'Easy',   q:"1/4 + 1/4 equals:",                                                                         opts:["1/8","1/2","1/16","3/4"],                                                                   ans:1 },
+  { g:6, s:'Math', t:'Division',                  d:'Easy',   q:"18 ÷ 3 equals:",                                                                            opts:["5","6","7","8"],                                                                           ans:1 },
+  { g:7, s:'Math', t:'Equations',                 d:'Easy',   q:"If 2x = 10, then x equals:",                                                                opts:["2","5","10","20"],                                                                        ans:1 },
+  { g:8, s:'Math', t:'Graphs',                    d:'Medium', q:"A point on a coordinate plane is located at (3, -2). It is in which quadrant?",             opts:["I","II","III","IV"],                                                                        ans:3 },
+
+  // ── SPECIAL TOPICS GRADE 5-8 ──
+  { g:5, s:'Science', t:'Seasons',                d:'Easy',   q:"The Earth's tilt is responsible for:",                                                      opts:["Day and night","Tides","Seasons","Lunar phases"],                                           ans:2 },
+  { g:6, s:'Science', t:'Biodiversity',           d:'Easy',   q:"Species that live in the same area and share resources are in the same:",                    opts:["Habitat","Community","Population","Ecosystem"],                                             ans:1 },
+  { g:7, s:'Science', t:'Evolution',              d:'Medium', q:"Darwin's theory of natural selection explains how species:",                                opts:["Remain unchanged","Adapt and change over time","Develop new organs","Become more complex only"], ans:1 },
+  { g:8, s:'Science', t:'Ecology',                d:'Medium', q:"The maximum population size an environment can support is called the:",                      opts:["Biotic potential","Carrying capacity","Population density","Growth rate"],                  ans:1 },
+
+  { g:5, s:'History', t:'Timelines',              d:'Easy',   q:"Which event happened most recently?",                                                       opts:["Ancient Rome","Middle Ages","Industrial Revolution","Ancient Egypt"],                       ans:2 },
+  { g:6, s:'History', t:'Government',             d:'Easy',   q:"A form of government where power rests with the people is called:",                          opts:["Monarchy","Dictatorship","Democracy","Oligarchy"],                                          ans:2 },
+  { g:7, s:'History', t:'Revolution',             d:'Medium', q:"A sudden, violent, and radical change in a society is a:",                                  opts:["Evolution","Revolution","Evolution","Reformation"],                                         ans:1 },
+  { g:8, s:'History', t:'Modern Era',             d:'Easy',   q:"The 20th and 21st centuries are referred to as the:",                                      opts:["Medieval period","Industrial age","Modern era","Ancient times"],                             ans:2 },
+
+  { g:5, s:'Geography', t:'Compass',              d:'Easy',   q:"Which direction is opposite to north on a compass?",                                        opts:["East","West","South","Up"],                                                                ans:2 },
+  { g:6, s:'Geography', t:'Coordinates',          d:'Easy',   q:"Longitude divides the Earth into how many hemispheres?",                                     opts:["2","4","6","8"],                                                                           ans:0 },
+  { g:7, s:'Geography', t:'Resources',            d:'Easy',   q:"Renewable resources can be replenished by nature within a:",                                 opts:["Year","Decade","Century","Few years"],                                                      ans:3 },
+  { g:8, s:'Geography', t:'Time Zones',           d:'Easy',   q:"How many time zones are there around the world?",                                           opts:["12","24","30","36"],                                                                        ans:1 },
+
+  { g:5, s:'Math', t:'Multiplication',            d:'Easy',   q:"6 × 7 equals:",                                                                             opts:["36","40","42","49"],                                                                        ans:2 },
+  { g:6, s:'Math', t:'Negative Numbers',          d:'Easy',   q:"-5 + 5 equals:",                                                                            opts:["-10","0","5","10"],                                                                        ans:1 },
+  { g:7, s:'Math', t:'Exponents',                 d:'Easy',   q:"2³ equals:",                                                                                 opts:["6","8","16","32"],                                                                         ans:1 },
+  { g:8, s:'Math', t:'Inequality',                d:'Easy',   q:"Which inequality is true: 5 > 3 or 3 > 5?",                                                opts:["5 > 3","3 > 5","They are equal","Neither"],                                                ans:0 },
 ];
 
 
