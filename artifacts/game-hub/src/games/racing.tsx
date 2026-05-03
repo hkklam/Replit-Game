@@ -5,9 +5,10 @@ import { ArrowLeft } from "lucide-react";
 // ─── Canvas / world constants ─────────────────────────────────────────────────
 const CW      = 700;
 const CH      = 480;
-const SEG     = 26;     // world units per track segment
-const ROAD_W  = 52;     // road half-width
-const RUMBLE  = 13;     // extra width for rumble strip
+const SEG     = 26;       // world units per track segment
+const ROAD_W  = 52;       // road half-width
+const RUMBLE  = 13;       // rumble strip width
+const BARRIER = ROAD_W + RUMBLE; // hard wall — car cannot pass this
 const LAP_COUNT = 3;
 
 // ─── Physics ──────────────────────────────────────────────────────────────────
@@ -15,30 +16,30 @@ const MAX_SPD   = 4.6;
 const ACCEL     = 0.10;
 const BRAKE_F   = 0.17;
 const FRICTION  = 0.973;
-const STEER_LAT = 1.9;    // lateral units added per frame at full speed
-const CENTRI    = 0.38;   // curvature-induced lateral drift scale
-const OFF_MULT  = 0.935;  // speed multiplier when off-road
+const STEER_LAT = 1.9;
+const CENTRI    = 0.38;
+const OFF_MULT  = 0.935;  // speed multiplier on rumble/grass
 
 export type Difficulty = "easy" | "medium" | "hard";
 const AI_SPD: Record<Difficulty, number> = { easy: 2.1, medium: 3.0, hard: 3.85 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface TrackCmd { turn: number; count: number; }
+interface TrackCmd  { turn: number; count: number; }
 interface TrackInfo {
   id: string; name: string; flag: string; stars: number;
   desc: string; aiDiff: Difficulty; cmds: TrackCmd[];
 }
-interface TrackPt { x: number; y: number; h: number; col: number; }
-interface CarState {
+interface TrackPt   { x: number; y: number; h: number; col: number; }
+interface CarState  {
   prog: number; lat: number; spd: number;
   lap: number; bestLap: number; lapStart: number;
   color: string; label: string;
-  camH: number;  // smoothed camera heading (lerped toward car heading each frame)
 }
 interface MapBounds { x0: number; y0: number; x1: number; y1: number; }
-interface BuiltTrack { pts: TrackPt[]; total: number; mb: MapBounds; }
+interface BuiltTrack { pts: TrackPt[]; total: number; mb: MapBounds; levels: Uint8Array; }
 interface GameState {
   pts: TrackPt[]; total: number; mb: MapBounds; info: TrackInfo;
+  levels: Uint8Array;
   player: CarState; player2: CarState | null; ais: CarState[];
   keys: Set<string>; s1: number; s2: number;
   phase: "countdown" | "playing" | "done";
@@ -46,7 +47,6 @@ interface GameState {
 }
 
 // ─── Track definitions ────────────────────────────────────────────────────────
-// turn = total degrees turned over that stretch (+ = right, - = left)
 const TRACKS: TrackInfo[] = [
   {
     id: "monza", name: "Monza", flag: "🇮🇹", stars: 1,
@@ -95,7 +95,7 @@ const TRACKS: TrackInfo[] = [
   },
   {
     id: "suzuka", name: "Suzuka", flag: "🇯🇵", stars: 4,
-    desc: "S-curves · 130R · Spoon · Casio Triangle · technical",
+    desc: "S-curves · 130R · Spoon · Casio Triangle · overpass bridge",
     aiDiff: "hard",
     cmds: [
       { turn: 0,    count: 18 }, { turn: 115,  count: 7  },
@@ -127,6 +127,43 @@ const TRACKS: TrackInfo[] = [
   },
 ];
 
+// ─── Segment-level intersection detection (for bridges / overpasses) ──────────
+function segsIntersect(
+  p1: TrackPt, p2: TrackPt,
+  p3: TrackPt, p4: TrackPt,
+): boolean {
+  const dx1 = p2.x - p1.x, dy1 = p2.y - p1.y;
+  const dx2 = p4.x - p3.x, dy2 = p4.y - p3.y;
+  const cross = dx1 * dy2 - dy1 * dx2;
+  if (Math.abs(cross) < 1e-8) return false;
+  const dx = p3.x - p1.x, dy = p3.y - p1.y;
+  const t = (dx * dy2 - dy * dx2) / cross;
+  const u = (dx * dy1 - dy * dx1) / cross;
+  return t > 0.02 && t < 0.98 && u > 0.02 && u < 0.98;
+}
+
+// Returns a Uint8Array where 0 = ground level, 1 = bridge (above).
+// When two segments cross, the one with the lower index is the overpass (bridge).
+function computeSegmentLevels(pts: TrackPt[]): Uint8Array {
+  const n = pts.length - 1;
+  const levels = new Uint8Array(n);
+  const SKIP = 6; // minimum gap — ignore nearly-adjacent segments
+
+  for (let i = 0; i < n; i++) {
+    for (let j = i + SKIP; j < n; j++) {
+      // Skip segments that are close when going backward around the loop
+      if (n - j + i < SKIP) continue;
+      if (segsIntersect(pts[i], pts[i + 1], pts[j], pts[j + 1])) {
+        // Lower-index segment is the overpass; mark a window around it as bridge
+        const from = Math.max(0, i - 2);
+        const to   = Math.min(n - 1, i + 22);
+        for (let k = from; k <= to; k++) levels[k] = 1;
+      }
+    }
+  }
+  return levels;
+}
+
 // ─── Track builder ────────────────────────────────────────────────────────────
 function buildTrack(info: TrackInfo): BuiltTrack {
   const pts: TrackPt[] = [];
@@ -142,12 +179,14 @@ function buildTrack(info: TrackInfo): BuiltTrack {
     }
   }
   pts.push({ x, y, h, col: pts[pts.length - 1]?.col ?? 0 });
+
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const p of pts) {
     if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x;
     if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y;
   }
-  return { pts, total: (pts.length - 1) * SEG, mb: { x0, y0, x1, y1 } };
+  const levels = computeSegmentLevels(pts);
+  return { pts, total: (pts.length - 1) * SEG, mb: { x0, y0, x1, y1 }, levels };
 }
 
 // ─── Track helpers ────────────────────────────────────────────────────────────
@@ -171,35 +210,39 @@ function segCurvature(pts: TrackPt[], total: number, prog: number): number {
   return pts[Math.min(idx + 1, pts.length - 1)].h - pts[idx].h;
 }
 
-// Lerp between two angles (handles wrap-around)
-function lerpAngle(from: number, to: number, t: number): number {
-  let d = to - from;
-  while (d > Math.PI)  d -= Math.PI * 2;
-  while (d < -Math.PI) d += Math.PI * 2;
-  return from + d * t;
+// Returns the segment index for a given prog value
+function segIdx(total: number, prog: number, n: number): number {
+  const p = ((prog % total) + total) % total;
+  return Math.min(Math.floor(p / SEG), n - 2);
 }
 
 function makeCar(prog: number, lat: number, color: string, label: string): CarState {
-  // All tracks start with heading -π/2 (pointing up in world space)
-  return { prog, lat, spd: 0, lap: 0, bestLap: Infinity, lapStart: 0, color, label, camH: -Math.PI / 2 };
+  return { prog, lat, spd: 0, lap: 0, bestLap: Infinity, lapStart: 0, color, label };
 }
 
 function stepCar(
   car: CarState, pts: TrackPt[], total: number,
   accel: boolean, brake: boolean, left: boolean, right: boolean,
 ): number | null {
-  if (accel)      car.spd = Math.min(car.spd + ACCEL, MAX_SPD);
-  else if (brake) car.spd = Math.max(car.spd - BRAKE_F, 0);
-  else            car.spd *= FRICTION;
+  if (accel)       car.spd = Math.min(car.spd + ACCEL, MAX_SPD);
+  else if (brake)  car.spd = Math.max(car.spd - BRAKE_F, 0);
+  else             car.spd *= FRICTION;
 
   const steer = (left ? -1 : 0) + (right ? 1 : 0);
   car.lat += steer * STEER_LAT * Math.max(0.25, car.spd / MAX_SPD);
 
+  // Centrifugal drift on curves
   const dh = segCurvature(pts, total, car.prog);
   car.lat += dh * car.spd * CENTRI;
 
+  // Speed penalty on rumble / off-road
   if (Math.abs(car.lat) > ROAD_W) car.spd *= OFF_MULT;
-  car.lat = Math.max(-(ROAD_W + RUMBLE) * 2.2, Math.min((ROAD_W + RUMBLE) * 2.2, car.lat));
+
+  // Hard barrier — car cannot cross outer edge of rumble strip
+  if (Math.abs(car.lat) > BARRIER) {
+    car.lat  = Math.sign(car.lat) * BARRIER;
+    car.spd *= 0.45; // bounce off wall, big speed reduction
+  }
 
   car.prog += car.spd;
   if (car.prog >= total) {
@@ -222,6 +265,8 @@ function shadeHex(color: string, amt: number): string {
   return `rgb(${r},${g},${b})`;
 }
 
+// Draws a top-down car. h = world heading in radians (0 = east, π/2 = south).
+// The sprite's "nose" points in the direction of h.
 function drawTopCar(
   ctx: CanvasRenderingContext2D,
   wx: number, wy: number, h: number,
@@ -230,14 +275,17 @@ function drawTopCar(
 ) {
   ctx.save();
   ctx.translate(wx, wy);
-  // h is already relative to camera (world heading - camH), steerLean adds a subtle body roll
+  // Rotate sprite so the car's nose points along h.
+  // Sprite's "nose" is local -y (top of rectangle), so rotation = h + π/2.
   ctx.rotate(h + Math.PI / 2 + steerLean * 0.09);
 
+  // Shadow
   ctx.globalAlpha = 0.28;
   ctx.fillStyle = "#000";
   ctx.beginPath(); ctx.ellipse(2, 2, 9, 15, 0, 0, Math.PI * 2); ctx.fill();
   ctx.globalAlpha = 1;
 
+  // Body
   const grad = ctx.createLinearGradient(-9, -15, 9, 15);
   grad.addColorStop(0, color); grad.addColorStop(1, shadeHex(color, -60));
   ctx.fillStyle = grad;
@@ -245,13 +293,16 @@ function drawTopCar(
   ctx.moveTo(-9, -15); ctx.lineTo(9, -15); ctx.lineTo(9, 15); ctx.lineTo(-9, 15); ctx.closePath();
   ctx.fill();
 
+  // Windshield
   ctx.fillStyle = "rgba(150,210,255,0.52)";
   ctx.fillRect(-7, -13, 14, 9);
 
+  // Wheels
   ctx.fillStyle = "#111";
   ctx.fillRect(-12, -11, 4, 6); ctx.fillRect(8, -11, 4, 6);
-  ctx.fillRect(-12, 6,  4, 6); ctx.fillRect(8, 6,  4, 6);
+  ctx.fillRect(-12, 6,   4, 6); ctx.fillRect(8, 6,   4, 6);
 
+  // Label
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center";
   ctx.fillText(label, 0, 4);
@@ -259,81 +310,142 @@ function drawTopCar(
   ctx.restore();
 }
 
+// Draw a single track segment quad (rumble + road surface) with optional bridge styling
+function drawSegment(
+  ctx: CanvasRenderingContext2D,
+  a: TrackPt, b: TrackPt,
+  isBridge: boolean,
+) {
+  const ha = a.h + Math.PI / 2, hb = b.h + Math.PI / 2;
+  const rw = ROAD_W + RUMBLE;
+  const cha = Math.cos(ha), sha = Math.sin(ha);
+  const chb = Math.cos(hb), shb = Math.sin(hb);
+
+  // Rumble strip colour: bridge uses concrete/grey, ground uses red/white
+  ctx.fillStyle = isBridge
+    ? (a.col === 0 ? "#c8c8c8" : "#aaaaaa")
+    : (a.col === 0 ? "#e8e8e8" : "#cc1111");
+  ctx.beginPath();
+  ctx.moveTo(a.x + cha * rw,  a.y + sha * rw);
+  ctx.lineTo(a.x - cha * rw,  a.y - sha * rw);
+  ctx.lineTo(b.x - chb * rw,  b.y - shb * rw);
+  ctx.lineTo(b.x + chb * rw,  b.y + shb * rw);
+  ctx.closePath(); ctx.fill();
+
+  // Road surface — bridge is slightly lighter
+  ctx.fillStyle = isBridge
+    ? (a.col === 0 ? "#3c3c3c" : "#353535")
+    : (a.col === 0 ? "#323232" : "#2b2b2b");
+  ctx.beginPath();
+  ctx.moveTo(a.x + cha * ROAD_W,  a.y + sha * ROAD_W);
+  ctx.lineTo(a.x - cha * ROAD_W,  a.y - sha * ROAD_W);
+  ctx.lineTo(b.x - chb * ROAD_W,  b.y - shb * ROAD_W);
+  ctx.lineTo(b.x + chb * ROAD_W,  b.y + shb * ROAD_W);
+  ctx.closePath(); ctx.fill();
+
+  // Edge lines (every other segment)
+  const ew = 2.2;
+  ctx.fillStyle = "rgba(255,255,255,0.78)";
+  ctx.beginPath();
+  ctx.moveTo(a.x + cha * ROAD_W,         a.y + sha * ROAD_W);
+  ctx.lineTo(a.x + cha * (ROAD_W - ew),  a.y + sha * (ROAD_W - ew));
+  ctx.lineTo(b.x + chb * (ROAD_W - ew),  b.y + shb * (ROAD_W - ew));
+  ctx.lineTo(b.x + chb * ROAD_W,         b.y + shb * ROAD_W);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(a.x - cha * ROAD_W,         a.y - sha * ROAD_W);
+  ctx.lineTo(a.x - cha * (ROAD_W - ew),  a.y - sha * (ROAD_W - ew));
+  ctx.lineTo(b.x - chb * (ROAD_W - ew),  b.y - shb * (ROAD_W - ew));
+  ctx.lineTo(b.x - chb * ROAD_W,         b.y - shb * ROAD_W);
+  ctx.closePath(); ctx.fill();
+
+  // Bridge guardrails — white barriers on outer edge
+  if (isBridge) {
+    const gw = 3.5;
+    ctx.fillStyle = "#eeeeee";
+    ctx.beginPath();
+    ctx.moveTo(a.x + cha * (rw - gw),  a.y + sha * (rw - gw));
+    ctx.lineTo(a.x + cha * rw,          a.y + sha * rw);
+    ctx.lineTo(b.x + chb * rw,          b.y + shb * rw);
+    ctx.lineTo(b.x + chb * (rw - gw),  b.y + shb * (rw - gw));
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(a.x - cha * (rw - gw),  a.y - sha * (rw - gw));
+    ctx.lineTo(a.x - cha * rw,          a.y - sha * rw);
+    ctx.lineTo(b.x - chb * rw,          b.y - shb * rw);
+    ctx.lineTo(b.x - chb * (rw - gw),  b.y - shb * (rw - gw));
+    ctx.closePath(); ctx.fill();
+  }
+}
+
 // ─── Render one player's viewport ─────────────────────────────────────────────
+// Camera is FIXED to north-up; it only TRANSLATES to keep the player centered.
+// The car SPRITE rotates to show its heading. Track never rotates.
 function renderScene(
   ctx: CanvasRenderingContext2D, gs: GameState,
   player: CarState, otherCars: CarState[],
   yOff: number, vH: number, position: number,
   steerLean = 0,
 ) {
-  const { pts, total, mb } = gs;
+  const { pts, total, mb, levels } = gs;
   const wp = carWP(pts, total, player.prog, player.lat);
-  // Use the smoothed camH so the world rotates gradually — the car visually tilts on curves
-  const camAngle = -(player.camH + Math.PI / 2);
+  const n  = pts.length - 1;
 
   ctx.save();
   ctx.beginPath(); ctx.rect(0, yOff, CW, vH); ctx.clip();
 
-  // Camera transform: center on car, rotate so car heading = screen-up
+  // Camera: center on player car, no rotation — track is always north-up
   ctx.translate(CW / 2, yOff + vH / 2);
-  ctx.rotate(camAngle);
   ctx.translate(-wp.wx, -wp.wy);
 
-  // Grass background
+  // ── Grass background ──────────────────────────────────────────────────────
   const mg = 2400;
   ctx.fillStyle = "#2d5a1b";
   ctx.fillRect(mb.x0 - mg, mb.y0 - mg, (mb.x1 - mb.x0) + mg * 2, (mb.y1 - mb.y0) + mg * 2);
   ctx.fillStyle = "#275318";
-  for (let gx = Math.floor((mb.x0 - mg) / 110) * 110; gx < mb.x1 + mg; gx += 110) {
+  for (let gx = Math.floor((mb.x0 - mg) / 110) * 110; gx < mb.x1 + mg; gx += 110)
     ctx.fillRect(gx, mb.y0 - mg, 55, (mb.y1 - mb.y0) + mg * 2);
+
+  // ── Pass 1: Ground-level road segments (level 0) ──────────────────────────
+  for (let i = 0; i < n; i++) {
+    if (levels[i] === 1) continue;
+    drawSegment(ctx, pts[i], pts[i + 1], false);
   }
 
-  // Track segments — draw each as a quad (rumble + road surface)
-  for (let i = 0; i < pts.length - 1; i++) {
-    const a = pts[i], b = pts[i + 1];
-    const ha = a.h + Math.PI / 2, hb = b.h + Math.PI / 2;
-    const rw = ROAD_W + RUMBLE;
-    const cos_ha = Math.cos(ha), sin_ha = Math.sin(ha);
-    const cos_hb = Math.cos(hb), sin_hb = Math.sin(hb);
+  // ── Cars under the bridge (ground level) — drawn before bridge overdraw ───
+  const playerSeg   = segIdx(total, player.prog, n);
+  const playerLevel = levels[playerSeg] ?? 0;
 
-    // Rumble strip (alternating white / red)
-    ctx.fillStyle = a.col === 0 ? "#e8e8e8" : "#cc1111";
-    ctx.beginPath();
-    ctx.moveTo(a.x + cos_ha * rw,  a.y + sin_ha * rw);
-    ctx.lineTo(a.x - cos_ha * rw,  a.y - sin_ha * rw);
-    ctx.lineTo(b.x - cos_hb * rw,  b.y - sin_hb * rw);
-    ctx.lineTo(b.x + cos_hb * rw,  b.y + sin_hb * rw);
-    ctx.closePath(); ctx.fill();
-
-    // Road surface
-    ctx.fillStyle = a.col === 0 ? "#323232" : "#2b2b2b";
-    ctx.beginPath();
-    ctx.moveTo(a.x + cos_ha * ROAD_W,  a.y + sin_ha * ROAD_W);
-    ctx.lineTo(a.x - cos_ha * ROAD_W,  a.y - sin_ha * ROAD_W);
-    ctx.lineTo(b.x - cos_hb * ROAD_W,  b.y - sin_hb * ROAD_W);
-    ctx.lineTo(b.x + cos_hb * ROAD_W,  b.y + sin_hb * ROAD_W);
-    ctx.closePath(); ctx.fill();
-
-    // Edge lines
-    if (i % 2 === 0) {
-      const ew = 2.2;
-      ctx.fillStyle = "rgba(255,255,255,0.78)";
-      ctx.beginPath();
-      ctx.moveTo(a.x + cos_ha * ROAD_W,       a.y + sin_ha * ROAD_W);
-      ctx.lineTo(a.x + cos_ha * (ROAD_W - ew), a.y + sin_ha * (ROAD_W - ew));
-      ctx.lineTo(b.x + cos_hb * (ROAD_W - ew), b.y + sin_hb * (ROAD_W - ew));
-      ctx.lineTo(b.x + cos_hb * ROAD_W,        b.y + sin_hb * ROAD_W);
-      ctx.closePath(); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(a.x - cos_ha * ROAD_W,       a.y - sin_ha * ROAD_W);
-      ctx.lineTo(a.x - cos_ha * (ROAD_W - ew), a.y - sin_ha * (ROAD_W - ew));
-      ctx.lineTo(b.x - cos_hb * (ROAD_W - ew), b.y - sin_hb * (ROAD_W - ew));
-      ctx.lineTo(b.x - cos_hb * ROAD_W,        b.y - sin_hb * ROAD_W);
-      ctx.closePath(); ctx.fill();
+  for (const car of otherCars) {
+    const si = segIdx(total, car.prog, n);
+    if ((levels[si] ?? 0) === 0) {
+      const cwp = carWP(pts, total, car.prog, car.lat);
+      drawTopCar(ctx, cwp.wx, cwp.wy, cwp.h, car.color, car.label);
     }
   }
+  if (playerLevel === 0) {
+    drawTopCar(ctx, wp.wx, wp.wy, wp.h, player.color, player.label, steerLean);
+  }
 
-  // Center dashes
+  // ── Pass 2: Bridge road (level 1) — overdraws cars on the ground under it ─
+  for (let i = 0; i < n; i++) {
+    if (levels[i] === 0) continue;
+    drawSegment(ctx, pts[i], pts[i + 1], true);
+  }
+
+  // ── Cars on the bridge — drawn on top of bridge road ─────────────────────
+  for (const car of otherCars) {
+    const si = segIdx(total, car.prog, n);
+    if ((levels[si] ?? 0) === 1) {
+      const cwp = carWP(pts, total, car.prog, car.lat);
+      drawTopCar(ctx, cwp.wx, cwp.wy, cwp.h, car.color, car.label);
+    }
+  }
+  if (playerLevel === 1) {
+    drawTopCar(ctx, wp.wx, wp.wy, wp.h, player.color, player.label, steerLean);
+  }
+
+  // ── Centre dashes (on top of everything) ─────────────────────────────────
   ctx.strokeStyle = "rgba(255,255,140,0.52)";
   ctx.lineWidth = 2.6;
   ctx.setLineDash([14, 14]);
@@ -345,10 +457,10 @@ function renderScene(
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Start / finish line (checkerboard)
+  // ── Start / finish line ───────────────────────────────────────────────────
   const sf0 = pts[0];
   const sfh = sf0.h + Math.PI / 2;
-  const cs = 9;
+  const cs  = 9;
   for (let s = -3; s <= 3; s++) {
     for (let d = 0; d < 2; d++) {
       const bx = sf0.x + Math.cos(sfh) * (s * cs) + Math.cos(sf0.h) * (d * cs);
@@ -358,18 +470,9 @@ function renderScene(
     }
   }
 
-  // Cars (others behind, player on top)
-  // Each car's heading is in world space; canvas is already rotated by -camH, so
-  // the on-screen angle is naturally (car.h - player.camH), giving genuine tilt on curves.
-  for (const car of [...otherCars, player]) {
-    const cwp = carWP(pts, total, car.prog, car.lat);
-    const lean = car === player ? steerLean : 0;
-    drawTopCar(ctx, cwp.wx, cwp.wy, cwp.h, car.color, car.label, lean);
-  }
-
   ctx.restore(); // back to screen space
 
-  // ─── Minimap ─────────────────────────────────────────────────────────────
+  // ── Minimap ──────────────────────────────────────────────────────────────
   const msz = 88;
   const mpx = CW - msz - 8, mpy = yOff + 8;
   const mpad = 14;
@@ -412,7 +515,7 @@ function renderScene(
   }
   ctx.restore();
 
-  // ─── HUD bar ─────────────────────────────────────────────────────────────
+  // ── HUD bar ──────────────────────────────────────────────────────────────
   ctx.fillStyle = "rgba(0,0,0,0.72)";
   ctx.fillRect(0, yOff, CW, 36);
   ctx.fillStyle = player.color;
@@ -429,7 +532,7 @@ function renderScene(
   );
 }
 
-// ─── Shell & touch button ─────────────────────────────────────────────────────
+// ─── UI Components ────────────────────────────────────────────────────────────
 function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -461,9 +564,9 @@ function TBtn({ label, onDown, onUp, className }: { label: string; onDown: () =>
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Racing() {
-  const cv  = useRef<HTMLCanvasElement>(null);
-  const g   = useRef<GameState | null>(null);
-  const raf = useRef(0);
+  const cv    = useRef<HTMLCanvasElement>(null);
+  const g     = useRef<GameState | null>(null);
+  const raf   = useRef(0);
   const cache = useRef<Map<string, BuiltTrack>>(new Map());
 
   const [screen,   setScreen]   = useState<"menu" | "track-select" | "race">("menu");
@@ -481,9 +584,9 @@ export default function Racing() {
   const draw = useCallback(() => {
     const c = cv.current; if (!c) return;
     const ctx = c.getContext("2d")!;
-    const gs = g.current; if (!gs) return;
+    const gs  = g.current; if (!gs) return;
     const is2p = gs.mode === "2p";
-    const vH = is2p ? CH / 2 : CH;
+    const vH   = is2p ? CH / 2 : CH;
 
     ctx.clearRect(0, 0, CW, CH);
 
@@ -546,15 +649,8 @@ export default function Racing() {
     );
     if (lt1 !== null) setLapLog1(prev => [...prev, lt1]);
 
-    // Smoothly lerp camera heading toward car's actual heading each frame.
-    // The lag means the track rotates gradually on curves — the car tilts naturally.
-    const wp1 = carWP(gs.pts, gs.total, gs.player.prog, gs.player.lat);
-    gs.player.camH = lerpAngle(gs.player.camH, wp1.h, 0.10);
-
     if (gs.mode === "2p" && gs.player2) {
       stepCar(gs.player2, gs.pts, gs.total, k.has("w"), k.has("s"), k.has("a"), k.has("d"));
-      const wp2 = carWP(gs.pts, gs.total, gs.player2.prog, gs.player2.lat);
-      gs.player2.camH = lerpAngle(gs.player2.camH, wp2.h, 0.10);
     }
 
     for (const ai of gs.ais) {
@@ -584,9 +680,9 @@ export default function Racing() {
 
   const startRace = useCallback((mode: "1p" | "2p", info: TrackInfo) => {
     cancelAnimationFrame(raf.current);
-    const { pts, total, mb } = getTrack(info);
+    const { pts, total, mb, levels } = getTrack(info);
     const gs: GameState = {
-      pts, total, mb, info, mode,
+      pts, total, mb, info, levels, mode,
       player:  makeCar(0, -ROAD_W * 0.25, "#ef4444", "You"),
       player2: mode === "2p" ? makeCar(0, ROAD_W * 0.25, "#22d3ee", "P2") : null,
       ais: [
@@ -634,7 +730,7 @@ export default function Racing() {
           <button onClick={() => { setGameMode("1p"); setScreen("track-select"); }}
             className="w-full py-4 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 text-purple-300 font-black rounded-2xl transition-colors touch-manipulation">
             🤖 vs Computer AI
-            <div className="text-xs font-normal text-muted-foreground mt-1">Top-down · world rotates with the car · AI scales with track</div>
+            <div className="text-xs font-normal text-muted-foreground mt-1">Top-down · car rotates with heading · stay inside the barriers</div>
           </button>
           <button onClick={() => { setGameMode("2p"); setScreen("track-select"); }}
             className="w-full py-4 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-400 font-black rounded-2xl transition-colors touch-manipulation">
@@ -652,8 +748,7 @@ export default function Racing() {
         <div className="flex flex-col gap-2 w-full">
           {TRACKS.map(t => (
             <button key={t.id} onClick={() => { startRace(gameMode, t); setScreen("race"); }}
-              className={`w-full py-3 px-5 rounded-2xl border transition-colors font-semibold text-left flex items-center gap-4 ${SC[t.stars]} hover:brightness-125 touch-manipulation`}
-            >
+              className={`w-full py-3 px-5 rounded-2xl border transition-colors font-semibold text-left flex items-center gap-4 ${SC[t.stars]} hover:brightness-125 touch-manipulation`}>
               <span className="text-2xl w-8 text-center">{t.flag}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -712,7 +807,7 @@ export default function Racing() {
         </div>
       )}
       {gameMode === "1p" && phase === "playing" && (
-        <p className="text-xs text-muted-foreground hidden sm:block">Arrow keys · {LAP_COUNT} laps to win · Stay on the road!</p>
+        <p className="text-xs text-muted-foreground hidden sm:block">Arrow keys · {LAP_COUNT} laps to win · Stay inside the barriers!</p>
       )}
       {phase === "done" && lapLog1.length > 0 && (
         <p className="text-xs text-muted-foreground hidden sm:block">{winner === "You" ? "🏆 Excellent race!" : "Better luck next time!"}</p>
