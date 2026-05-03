@@ -1339,36 +1339,55 @@ export default function FlowFree() {
         onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
       />
 
-      {won && (
-        <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
-          background:"rgba(0,0,0,0.45)", zIndex:100, backdropFilter:"blur(4px)" }}>
-          <div style={{ background:"#fff", borderRadius:24, padding:"36px 48px",
-            textAlign:"center", boxShadow:"0 20px 60px rgba(0,0,0,0.2)",
-            animation:"ff-pop 0.3s ease" }}>
-            <style>{`@keyframes ff-pop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}`}</style>
-            <div style={{ fontSize:52, marginBottom:10 }}>🎉</div>
-            <h2 style={{ fontSize:28, fontWeight:900, color:"#27AE60", margin:"0 0 6px" }}>Solved!</h2>
-            <p style={{ color:"#aaa", fontSize:15, margin:"0 0 4px" }}>{moves} move{moves!==1?"s":""}</p>
-            {cov===100 && (
-              <p style={{ color:"#2176AE", fontWeight:700, fontSize:14, margin:"0 0 24px" }}>✨ Perfect — board fully covered!</p>
-            )}
-            {cov < 100 && <div style={{ marginBottom:24 }} />}
-            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-              {lvlIdx+1 < currentLevels.length && (
-                <button onClick={() => startLevel(lvlIdx+1, lvlCat)} style={{
-                  padding:"12px 28px", background:"linear-gradient(135deg,#27AE60,#1e8749)",
-                  border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:15,
-                  cursor:"pointer", boxShadow:"0 4px 16px rgba(39,174,96,0.4)",
-                }}>Next Level →</button>
+      {won && (() => {
+        const ffStars = moves <= colorCount ? 3 : moves <= colorCount * 2 ? 2 : 1;
+        const ffLabel = ffStars === 3 ? "Perfect!" : ffStars === 2 ? "Great job!" : "Solved!";
+        const ffLabelColor = ffStars === 3 ? "#f59e0b" : ffStars === 2 ? "#2176AE" : "#27AE60";
+        return (
+          <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
+            background:"rgba(0,0,0,0.45)", zIndex:100, backdropFilter:"blur(4px)" }}>
+            <div style={{ background:"#fff", borderRadius:24, padding:"32px 44px",
+              textAlign:"center", boxShadow:"0 20px 60px rgba(0,0,0,0.2)",
+              animation:"ff-pop 0.3s ease", maxWidth:340, width:"90vw" }}>
+              <style>{`@keyframes ff-pop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}`}</style>
+              <h2 style={{ fontSize:26, fontWeight:900, color:"#27AE60", margin:"0 0 14px" }}>Level Complete!</h2>
+              {/* Star rating */}
+              <div style={{ display:"flex", gap:6, justifyContent:"center", marginBottom:8 }}>
+                {[1,2,3].map(i => (
+                  <span key={i} style={{
+                    fontSize:38,
+                    filter: i <= ffStars
+                      ? "drop-shadow(0 0 8px gold) drop-shadow(0 0 3px #fbbf24)"
+                      : "grayscale(1) opacity(0.2)",
+                  }}>⭐</span>
+                ))}
+              </div>
+              <p style={{ color:ffLabelColor, fontWeight:800, fontSize:15, margin:"0 0 6px" }}>{ffLabel}</p>
+              <p style={{ color:"#aaa", fontSize:13, margin:"0 0 4px" }}>
+                <strong style={{ color:"#555" }}>{moves}</strong> move{moves!==1?"s":""}
+                {" · "}
+                <span style={{ color:"#ccc" }}>min {colorCount}</span>
+              </p>
+              {cov===100 && (
+                <p style={{ color:"#2176AE", fontWeight:700, fontSize:13, margin:"6px 0 0" }}>✨ Board fully covered!</p>
               )}
-              <button onClick={() => setScreen("menu")} style={{
-                padding:"12px 20px", background:"#f2f2ed", border:"1.5px solid #e0e0da",
-                borderRadius:14, color:"#666", fontWeight:600, fontSize:14, cursor:"pointer",
-              }}>Menu</button>
+              <div style={{ display:"flex", gap:10, justifyContent:"center", marginTop:22 }}>
+                {lvlIdx+1 < currentLevels.length && (
+                  <button onClick={() => startLevel(lvlIdx+1, lvlCat)} style={{
+                    padding:"12px 24px", background:"linear-gradient(135deg,#27AE60,#1e8749)",
+                    border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:15,
+                    cursor:"pointer", boxShadow:"0 4px 16px rgba(39,174,96,0.4)",
+                  }}>Next Level →</button>
+                )}
+                <button onClick={() => setScreen("menu")} style={{
+                  padding:"12px 18px", background:"#f2f2ed", border:"1.5px solid #e0e0da",
+                  borderRadius:14, color:"#666", fontWeight:600, fontSize:14, cursor:"pointer",
+                }}>Menu</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <div style={{ display:"flex", gap:10, marginTop:14 }}>
         <button onClick={reset} style={{ padding:"9px 20px", background:"#fff", border:"1.5px solid #e0e0da",

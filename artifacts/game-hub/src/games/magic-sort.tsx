@@ -135,6 +135,27 @@ function isSolvable(initial: string[][], limit = 60000): boolean {
   }
   return visited.size >= limit;
 }
+// Lower-bound on minimum pours: for each color, count how many separate
+// contiguous groups it appears in across all bottles. Consolidating N groups
+// of the same color into one bottle requires at least N-1 pours.
+function computeMinPours(bottles: string[][]): number {
+  const groups: Record<string, number> = {};
+  for (const bottle of bottles) {
+    if (bottle.length === 0) continue;
+    let prev = bottle[0];
+    groups[prev] = (groups[prev] || 0) + 1;
+    for (let i = 1; i < bottle.length; i++) {
+      if (bottle[i] !== prev) { prev = bottle[i]; groups[prev] = (groups[prev] || 0) + 1; }
+    }
+  }
+  return Math.max(1, Object.values(groups).reduce((s, g) => s + Math.max(0, g - 1), 0));
+}
+function getStars(moves: number, minPours: number): 1 | 2 | 3 {
+  if (moves <= Math.ceil(minPours * 1.5)) return 3;
+  if (moves <= Math.ceil(minPours * 2.5)) return 2;
+  return 1;
+}
+
 function generateLevel(levelIdx: number): string[][] {
   const { numColors, numEmpty } = LEVEL_CONFIGS[levelIdx];
   const bigLevel = numColors >= 5;
@@ -325,26 +346,44 @@ function LevelSelect({ completed, onSelect }: { completed: Set<number>; onSelect
 }
 
 // ─── WIN OVERLAY ─────────────────────────────────────────────────────────────
-function WinOverlay({ levelIdx, moves, onNext, onMenu, onReplay }: {
-  levelIdx: number; moves: number; onNext: () => void; onMenu: () => void; onReplay: () => void;
+function WinOverlay({ levelIdx, moves, minPours, onNext, onMenu, onReplay }: {
+  levelIdx: number; moves: number; minPours: number;
+  onNext: () => void; onMenu: () => void; onReplay: () => void;
 }) {
+  const stars = getStars(moves, minPours);
+  const label = stars === 3 ? "Perfect!" : stars === 2 ? "Great job!" : "Solved!";
+  const labelColor = stars === 3 ? "#fbbf24" : stars === 2 ? "#c084fc" : "#818cf8";
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.72)",
       display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200,
       backdropFilter: "blur(8px)" }}>
       <div style={{ background: "linear-gradient(145deg, #1a0838, #0d0522)",
-        border: "1.5px solid rgba(192,132,252,0.4)", borderRadius: 28, padding: "44px 52px",
+        border: "1.5px solid rgba(192,132,252,0.4)", borderRadius: 28, padding: "36px 48px",
         textAlign: "center", animation: "ms-celebrate 0.35s ease",
         boxShadow: "0 0 80px rgba(168,85,247,0.3), 0 30px 60px rgba(0,0,0,0.5)",
         maxWidth: 360, width: "90vw" }}>
-        <div style={{ fontSize: 60, marginBottom: 14 }}>🎉</div>
-        <h2 style={{ fontSize: 30, fontWeight: 900, margin: "0 0 8px",
+        <h2 style={{ fontSize: 28, fontWeight: 900, margin: "0 0 4px",
           background: "linear-gradient(135deg, #c084fc, #818cf8)",
           WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Level Complete!</h2>
-        <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 15, margin: "0 0 30px" }}>
-          Solved in <strong style={{ color: "#c084fc" }}>{moves}</strong> move{moves !== 1 ? "s" : ""}
+        {/* Star rating */}
+        <div style={{ display: "flex", gap: 6, justifyContent: "center", margin: "14px 0 6px" }}>
+          {[1, 2, 3].map(i => (
+            <span key={i} style={{
+              fontSize: 40,
+              filter: i <= stars
+                ? "drop-shadow(0 0 10px gold) drop-shadow(0 0 4px #fbbf24)"
+                : "grayscale(1) opacity(0.22)",
+              transition: "filter 0.3s",
+            }}>⭐</span>
+          ))}
+        </div>
+        <p style={{ color: labelColor, fontWeight: 800, fontSize: 15, margin: "0 0 6px", letterSpacing: 0.3 }}>{label}</p>
+        <p style={{ color: "rgba(255,255,255,0.38)", fontSize: 13, margin: "0 0 6px" }}>
+          <strong style={{ color: "rgba(255,255,255,0.7)" }}>{moves}</strong> move{moves !== 1 ? "s" : ""}
+          {" · "}
+          <span style={{ color: "rgba(255,255,255,0.3)" }}>est. min {Math.ceil(minPours * 1.5)}</span>
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 22 }}>
           {levelIdx + 1 < TOTAL_LEVELS && (
             <button onClick={onNext} style={{ padding: "13px 0",
               background: "linear-gradient(135deg, #7c3aed, #4f46e5)", border: "none",
@@ -440,6 +479,7 @@ export default function MagicSort() {
   const [undos, setUndos]       = useState(INIT_UNDOS);
   const [history, setHistory]   = useState<string[][][]>([]);
   const [moves, setMoves]       = useState(0);
+  const [minPours, setMinPours] = useState(1);
   const [shaking, setShaking]   = useState<number | null>(null);
   const [won, setWon]           = useState(false);
   const [pourAnim, setPourAnim] = useState<PourAnim | null>(null);
@@ -460,6 +500,7 @@ export default function MagicSort() {
     const lvl = generateLevel(idx);
     setLevelIdx(idx); setBottles(lvl); setInitBottles(lvl.map(b => [...b]));
     setSelected(null); setUndos(INIT_UNDOS); setHistory([]); setMoves(0);
+    setMinPours(computeMinPours(lvl));
     setWon(false); setShaking(null); setPourAnim(null); setScreen("game");
   }, []);
 
@@ -598,7 +639,7 @@ export default function MagicSort() {
       {pourAnim && <PourOverlay anim={pourAnim} />}
 
       {won && (
-        <WinOverlay levelIdx={levelIdx} moves={moves}
+        <WinOverlay levelIdx={levelIdx} moves={moves} minPours={minPours}
           onNext={() => startLevel(levelIdx + 1)}
           onMenu={() => setScreen("menu")}
           onReplay={handleRestart}
