@@ -31,6 +31,18 @@ const DIFF_PTS: Record<Diff, number> = { easy: 1, medium: 3, hard: 5 };
 const DIFF_COLORS: Record<Diff, string> = { easy: "#34c759", medium: "#ff9500", hard: "#ff3b30" };
 const DIFF_LABELS: Record<Diff, string> = { easy: "Easy (1 pt)", medium: "Medium (3 pts)", hard: "Hard (5 pts)" };
 
+// ─── TEST MODE WORD BANK ──────────────────────────────────────────────────────
+const TEST_WORDS: Record<Diff, string[]> = {
+  easy:   ["cat","dog","sun","tree","house","car","fish","bird","star","moon","apple","hat","ball","book","chair","boat","hand","eye","key","cup"],
+  medium: ["elephant","bicycle","rainbow","volcano","tornado","pizza","penguin","castle","dragon","rocket","umbrella","guitar","mirror","hammer","island","compass","bridge","lantern","trophy","cactus"],
+  hard:   ["democracy","telescope","photosynthesis","renaissance","architecture","symphony","metamorphosis","constellation","philosophy","archaeology","camouflage","equilibrium","catastrophe","kaleidoscope","hieroglyphics"],
+};
+function pickTestWords(): WordOpts {
+  const pick = (d: Diff) => { const a = TEST_WORDS[d]; return a[Math.floor(Math.random() * a.length)]; };
+  return { easy: pick("easy"), medium: pick("medium"), hard: pick("hard") };
+}
+const TEST_BOTS: PicPlayer[] = [{ idx: 1, name: "Bot Alice", score: 0 }, { idx: 2, name: "Bot Bob", score: 0 }];
+
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -137,6 +149,11 @@ export default function Pictionary() {
   const [scoringDiff, setScoringDiff] = useState<Diff>("easy");
   const [finalPlayers, setFinalPlayers] = useState<PicPlayer[]>([]);
 
+  // ── Test mode ──────────────────────────────────────────────────────────────
+  const [testMode, setTestMode] = useState(false);
+  const testModeRef = useRef(false);
+  const [testTimerSeconds, setTestTimerSeconds] = useState(60);
+
   // ── Canvas ────────────────────────────────────────────────────────────────
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const offRef     = useRef<HTMLCanvasElement | null>(null);
@@ -161,6 +178,21 @@ export default function Pictionary() {
   useEffect(() => { toolRef.current  = tool;  }, [tool]);
   useEffect(() => { colorRef.current = color; }, [color]);
   useEffect(() => { sizeRef.current  = size;  }, [size]);
+
+  // ─── Test mode helpers ────────────────────────────────────────────────────
+  const startTestMode = useCallback(() => {
+    testModeRef.current = true; setTestMode(true);
+    setMyIdx(0); myIdxRef.current = 0;
+    setDrawerIdx(0); drawerIdxRef.current = 0;
+    setPlayers([{ idx: 0, name: myName.trim() || "YOU", score: 0 }, ...TEST_BOTS.map(b => ({ ...b }))]);
+    setRound(1); setTotalRounds(3);
+    setPhase("word_select"); phaseRef.current = "word_select";
+    setWordOpts(pickTestWords());
+    setMyDrawWord(""); setMyDrawDiff("easy"); setWordHint(""); setGuessCount(0); setChat([]);
+    setTurnEndInfo(null); setScoringInfo(null); setTimerEnd(0);
+    stableRef.current = []; inFlight.current.clear(); liveRef.current = null; dirtyRef.current = true;
+    setScreen("game");
+  }, [myName]);
 
   const isDrawer = myIdx >= 0 && myIdx === drawerIdx;
   const isDrawerRef = useRef(false);
@@ -385,10 +417,26 @@ export default function Pictionary() {
     applyOp(op); send({ type: "pic_draw", op });
   };
 
+  // ─── Test mode: auto-transition on timer expiry ────────────────────────────
+  useEffect(() => {
+    if (!testMode || phase !== "drawing" || timerLeft > 0) return;
+    const guessers = players.filter(p => p.idx !== myIdx);
+    setPhase("scoring"); phaseRef.current = "scoring";
+    setScoringInfo({ players: guessers, diff: myDrawDiff, chatLog: [] });
+    setScoringDiff(myDrawDiff); setSelWinners(new Set());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testMode, phase, timerLeft]);
+
   // ─── Game actions ─────────────────────────────────────────────────────────
   const selectWord = (diff: Diff) => {
     setMyDrawWord(wordOpts![diff]); setMyDrawDiff(diff); setWordOpts(null);
-    send({ type: "pic_select_word", diff });
+    if (testModeRef.current) {
+      const secs = testTimerSeconds;
+      setTimerEnd(Date.now() + secs * 1000);
+      setPhase("drawing"); phaseRef.current = "drawing";
+    } else {
+      send({ type: "pic_select_word", diff });
+    }
   };
   const sendChat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -397,9 +445,54 @@ export default function Pictionary() {
     send({ type: "pic_chat", text });
     setChatInput("");
   };
-  const endTurn = () => { if (window.confirm("End turn early?")) send({ type: "pic_end_turn" }); };
+  const endTurn = () => {
+    if (testModeRef.current) {
+      const guessers = players.filter(p => p.idx !== myIdx);
+      setPhase("scoring"); phaseRef.current = "scoring";
+      setScoringInfo({ players: guessers, diff: myDrawDiff, chatLog: [] });
+      setScoringDiff(myDrawDiff); setSelWinners(new Set());
+    } else {
+      if (window.confirm("End turn early?")) send({ type: "pic_end_turn" });
+    }
+  };
   const submitScore = () => {
-    send({ type: "pic_score", winners: [...selWinners], diff: scoringDiff });
+    if (testModeRef.current) {
+      const pts = DIFF_PTS[scoringDiff];
+      const anyCorrect = selWinners.size > 0;
+      // Drawer also earns points when at least one person guessed correctly
+      const updatedPlayers = players.map(p => {
+        if (selWinners.has(p.idx)) return { ...p, score: p.score + pts };
+        if (p.idx === myIdx && anyCorrect) return { ...p, score: p.score + pts };
+        return p;
+      });
+      setPlayers(updatedPlayers);
+      const scoresDelta = [
+        ...[...selWinners].map(idx => ({ idx, delta: pts })),
+        ...(anyCorrect ? [{ idx: myIdx, delta: pts }] : []),
+      ];
+      setTurnEndInfo({ word: myDrawWord, diff: scoringDiff, scoresDelta, scores: updatedPlayers });
+      setPhase("between"); phaseRef.current = "between";
+      setScoringInfo(null);
+      // Auto-advance after 3 s
+      setTimeout(() => {
+        if (!testModeRef.current) return;
+        const nextRound = round + 1;
+        if (nextRound > totalRounds) {
+          setFinalPlayers(updatedPlayers);
+          setPhase("ended"); phaseRef.current = "ended";
+          setScreen("results");
+        } else {
+          setRound(nextRound);
+          setPhase("word_select"); phaseRef.current = "word_select";
+          setWordOpts(pickTestWords());
+          setMyDrawWord(""); setWordHint(""); setChat([]); setGuessCount(0);
+          setTurnEndInfo(null); setScoringInfo(null); setTimerEnd(0);
+          stableRef.current = []; inFlight.current.clear(); liveRef.current = null; dirtyRef.current = true;
+        }
+      }, 3000);
+    } else {
+      send({ type: "pic_score", winners: [...selWinners], diff: scoringDiff });
+    }
     setScoringInfo(null);
   };
 
@@ -443,6 +536,22 @@ export default function Pictionary() {
             onKeyDown={e => { if (e.key === "Enter" && myName.trim()) { openWS(); } }}
             style={{ padding: "11px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.07)", color: "#fff", fontSize: 16, fontWeight: 700, outline: "none" }} />
         </label>
+        {/* ── TEST MODE ───────────────────────────────────────────── */}
+        <div style={{ marginBottom: 20, padding: "16px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.25)", borderRadius: 14 }}>
+          <div style={{ fontSize: 12, color: "#38bdf8", fontWeight: 800, letterSpacing: 1, marginBottom: 10 }}>🧪 SOLO TEST MODE</div>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: "0 0 12px" }}>Test drawing tools &amp; scoring solo — no other players needed.</p>
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>TIMER PER ROUND</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {[30, 60, 90].map(n => (
+                <button key={n} onClick={() => setTestTimerSeconds(n)}
+                  style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1px solid ${testTimerSeconds === n ? "#38bdf8" : "rgba(255,255,255,0.1)"}`, background: testTimerSeconds === n ? "rgba(56,189,248,0.18)" : "transparent", color: testTimerSeconds === n ? "#38bdf8" : "rgba(255,255,255,0.45)", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>{n}s</button>
+              ))}
+            </div>
+          </div>
+          <PBtn color="#0c4a6e" onClick={startTestMode}>🧪 Start Test Mode</PBtn>
+        </div>
+
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <PBtn color="#6d28d9" disabled={!myName.trim() || wsStatus === "connecting"} onClick={() => {
             if (!myName.trim()) return;
@@ -540,8 +649,12 @@ export default function Pictionary() {
               <span style={{ fontWeight: 900, fontSize: 20, color: "#ffd700" }}>{p.score} pts</span>
             </div>
           ))}
-          <PBtn color="#6d28d9" onClick={() => { wsRef.current?.close(); setScreen("landing"); setPlayers([]); setFinalPlayers([]); }}>
-            Play Again
+          <PBtn color={testMode ? "#0c4a6e" : "#6d28d9"} onClick={() => {
+            wsRef.current?.close();
+            testModeRef.current = false; setTestMode(false);
+            setScreen("landing"); setPlayers([]); setFinalPlayers([]);
+          }}>
+            {testMode ? "↩ Back to Menu" : "Play Again"}
           </PBtn>
         </Card>
       </div>
@@ -577,7 +690,10 @@ export default function Pictionary() {
             {isDrawer && <PBtn small color="#555" onClick={endTurn}>End Turn</PBtn>}
           </div>
         )}
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>{roomCode}</span>
+        {testMode
+          ? <span style={{ fontSize: 11, color: "#38bdf8", fontWeight: 800, background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.3)", borderRadius: 6, padding: "2px 8px" }}>🧪 TEST MODE</span>
+          : <span style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>{roomCode}</span>
+        }
       </div>
 
       {/* Timer bar */}
