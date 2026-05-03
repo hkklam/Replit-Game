@@ -917,7 +917,7 @@ const QUESTIONS: Q[] = [
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const SUBJECTS: Subject[] = ['Science', 'History', 'Geography', 'Math'];
 const GRADES: Grade[] = [5, 6, 7, 8, 9, 10];
-const DIFF_TIMER: Record<Diff, number> = { Easy: 15, Medium: 20, Hard: 25 };
+const DIFF_TIMER: Record<Diff, number> = { Easy: 30, Medium: 30, Hard: 30 };
 const DIFF_PTS: Record<Diff, number> = { Easy: 100, Medium: 200, Hard: 300 };
 const SUBJECT_COLOR: Record<Subject, string> = {
   Science: '#3b82f6', History: '#f59e0b', Geography: '#22c55e', Math: '#a855f7',
