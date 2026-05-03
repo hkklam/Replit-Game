@@ -21,6 +21,7 @@ import Mahjong from "./mahjong";
 import SneezingKittens from "./sneezing-kittens";
 import TrainYard from "./trainyard";
 import SpinSolve from "./spin-solve";
+import BrainRace from "./brain-race";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -285,6 +286,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-yellow-950/80 via-amber-900/30 to-transparent",
     borderColor: "#f0c04030",
     component: SpinSolve,
+  },
+  {
+    id: "brain-race",
+    name: "BrainRace",
+    icon: "🧠",
+    tier: "🟢",
+    desc: "Academic trivia for Grades 5–8. Solo practice or local multiplayer (2–4 players). Science, History, Geography & Math.",
+    color: "#3b82f6",
+    gradient: "from-blue-950/80 via-blue-900/30 to-transparent",
+    borderColor: "#3b82f630",
+    component: BrainRace,
   },
 ];
 
