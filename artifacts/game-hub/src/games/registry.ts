@@ -15,6 +15,7 @@ import CandyCrush from "./candy-crush";
 import MagicSort from "./magic-sort";
 import Tetris from "./tetris";
 import FlowFree from "./flow-free";
+import TetrisRoyale from "./tetris-royale";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -213,6 +214,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-blue-950/80 via-blue-900/30 to-transparent",
     borderColor: "#2176AE30",
     component: FlowFree,
+  },
+  {
+    id: "tetris-royale",
+    name: "Tetris Royale",
+    icon: "👑",
+    tier: "🔴",
+    desc: "1–4 players online or vs AI. Clear lines, send junk. Last board standing wins.",
+    color: "#c084fc",
+    gradient: "from-purple-950/80 via-fuchsia-900/30 to-transparent",
+    borderColor: "#c084fc30",
+    component: TetrisRoyale,
   },
 ];
 
