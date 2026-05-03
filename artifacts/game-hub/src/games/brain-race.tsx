@@ -287,7 +287,122 @@ const QUESTIONS: Q[] = [
   { g:8, s:'Math', t:'Linear Equations',          d:'Easy',   q:"The slope of a horizontal line is:",                                                    opts:["Undefined","1","-1","0"],                                                                   ans:3 },
   { g:8, s:'Math', t:'Factoring',                 d:'Hard',   q:"Factor: x² - 16 using the difference of squares:",                                      opts:["(x - 4)(x - 4)","(x + 4)(x - 4)","(x + 8)(x - 2)","(x - 16)(x + 1)"],                    ans:1 },
   { g:8, s:'Math', t:'Number Sense',              d:'Medium', q:"The cube root of 125 is:",                                                              opts:["3","4","5","6"],                                                                           ans:2 },
+
+  // ── ADDITIONAL GRADE 5 SCIENCE ──
+  { g:5, s:'Science', t:'Plants',                 d:'Easy',   q:"The main purpose of roots in a plant is to:",                                                opts:["Make seeds","Absorb water and nutrients","Produce flowers","Store sunlight"],                ans:1 },
+  { g:5, s:'Science', t:'Plants',                 d:'Medium', q:"Photosynthesis uses which two inputs to make glucose?",                                       opts:["Water and oxygen","Water and carbon dioxide","Nitrogen and oxygen","Sunlight and nitrogen"],   ans:1 },
+  { g:5, s:'Science', t:'Animals',                d:'Easy',   q:"Which of these animals is a mammal?",                                                        opts:["Snake","Penguin","Dolphin","Frog"],                                                         ans:2 },
+  { g:5, s:'Science', t:'Animals',                d:'Medium', q:"A bat is the only mammal that can truly:",                                                     opts:["Swim","Climb","Fly","Jump high"],                                                           ans:2 },
+  { g:5, s:'Science', t:'Human Body',             d:'Easy',   q:"Which organ pumps blood throughout the body?",                                               opts:["Lungs","Brain","Heart","Stomach"],                                                          ans:2 },
+  { g:5, s:'Science', t:'Human Body',             d:'Medium', q:"The process of breathing in and out is controlled by the:",                                  opts:["Brain","Heart","Diaphragm","Ribs only"],                                                   ans:2 },
+  { g:5, s:'Science', t:'Rocks & Minerals',       d:'Easy',   q:"Rocks made from cooling magma are called:",                                                   opts:["Sedimentary","Metamorphic","Igneous","Mineral rocks"],                                      ans:2 },
+  { g:5, s:'Science', t:'Rocks & Minerals',       d:'Medium', q:"Which type of rock is formed from compressed layers of sediment?",                            opts:["Igneous","Metamorphic","Sedimentary","Crystalline"],                                        ans:2 },
+
+  // ── ADDITIONAL GRADE 6 SCIENCE ──
+  { g:6, s:'Science', t:'Genetics',               d:'Easy',   q:"Traits passed from parents to offspring are called:",                                         opts:["Mutations","Genetics","Heredity","Adaptations"],                                            ans:2 },
+  { g:6, s:'Science', t:'Genetics',               d:'Medium', q:"The molecule that carries genetic information is:",                                           opts:["Protein","Lipid","DNA","Glucose"],                                                          ans:2 },
+  { g:6, s:'Science', t:'Photosynthesis',         d:'Medium', q:"The part of the plant where photosynthesis primarily occurs is the:",                         opts:["Root","Stem","Leaf","Flower"],                                                             ans:2 },
+  { g:6, s:'Science', t:'Respiration',            d:'Medium', q:"Cellular respiration produces energy in the form of:",                                         opts:["Heat","Light","ATP","Glucose"],                                                            ans:2 },
+  { g:6, s:'Science', t:'Minerals & Nutrition',   d:'Easy',   q:"Which mineral helps build strong bones and teeth?",                                           opts:["Iron","Calcium","Sodium","Potassium"],                                                       ans:1 },
+  { g:6, s:'Science', t:'Reproduction',           d:'Medium', q:"Which type of reproduction produces genetically identical offspring?",                        opts:["Sexual reproduction","Asexual reproduction","Binary fission","Fragmentation"],               ans:1 },
+
+  // ── ADDITIONAL GRADE 7 SCIENCE ──
+  { g:7, s:'Science', t:'Atoms & Elements',       d:'Easy',   q:"The smallest particle of an element that retains its properties is a(n):",                   opts:["Molecule","Neutron","Atom","Electron"],                                                     ans:2 },
+  { g:7, s:'Science', t:'Atoms & Elements',       d:'Medium', q:"An element with atomic number 6 is:",                                                        opts:["Oxygen","Carbon","Nitrogen","Helium"],                                                       ans:1 },
+  { g:7, s:'Science', t:'Chemical Reactions',     d:'Medium', q:"In the equation 2H₂ + O₂ → 2H₂O, what is the coefficient of hydrogen?",                       opts:["1","2","3","4"],                                                                            ans:1 },
+  { g:7, s:'Science', t:'Acids & Bases',          d:'Easy',   q:"A substance with a pH less than 7 is:",                                                      opts:["Neutral","Basic","Acidic","Alkaline"],                                                       ans:2 },
+  { g:7, s:'Science', t:'Acids & Bases',          d:'Medium', q:"Which of these is an example of a strong base?",                                             opts:["Vinegar","Lemon juice","Sodium hydroxide (NaOH)","Orange juice"],                             ans:2 },
+  { g:7, s:'Science', t:'Motion & Forces',        d:'Medium', q:"Newton's Second Law states that F = m × a. What is 'a'?",                                    opts:["Area","Acceleration","Angle","Average speed"],                                              ans:1 },
+
+  // ── ADDITIONAL GRADE 8 SCIENCE ──
+  { g:8, s:'Science', t:'Waves',                  d:'Medium', q:"The distance between consecutive waves is called the:",                                     opts:["Frequency","Amplitude","Wavelength","Period"],                                              ans:2 },
+  { g:8, s:'Science', t:'Light & Sound',          d:'Easy',   q:"Sound travels fastest through:",                                                              opts:["Air","Water","Vacuum","Solid"],                                                             ans:3 },
+  { g:8, s:'Science', t:'Circuits',               d:'Medium', q:"In a series circuit, if one bulb burns out, what happens?",                                  opts:["All bulbs remain lit","All bulbs go out","Only some bulbs go out","Brightness increases"],     ans:1 },
+  { g:8, s:'Science', t:'Magnetism',              d:'Easy',   q:"Opposite magnetic poles:",                                                                   opts:["Repel each other","Attract each other","Stay neutral","Cancel each other"],                  ans:1 },
+  { g:8, s:'Science', t:'Periodic Table',         d:'Medium', q:"Elements in the same column of the periodic table are called:",                              opts:["Periods","Groups","Families","Both B and C"],                                               ans:3 },
+
+  // ── GRADE 5 HISTORY ──
+  { g:5, s:'History', t:'Ancient Egypt',          d:'Easy',   q:"The Great Pyramid of Giza was built as a tomb for which pharaoh?",                          opts:["Tutankhamun","Khufu","Ramesses II","Hatshepsut"],                                            ans:1 },
+  { g:5, s:'History', t:'Ancient Egypt',          d:'Medium', q:"The Nile River's annual flooding was important to ancient Egypt because it:",                 opts:["Provided fish for trade","Deposited fertile soil for crops","Powered irrigation systems","All of the above"], ans:3 },
+  { g:5, s:'History', t:'Ancient Rome',           d:'Easy',   q:"The leader of ancient Rome was called the:",                                                 opts:["King","Emperor","Consul","Pharaoh"],                                                        ans:1 },
+  { g:5, s:'History', t:'Ancient Rome',           d:'Medium', q:"The Roman Republic's government was based on three branches. One of them was:",              opts:["The Monarchy","The Senate","The Dynasty","The Aristocracy"],                               ans:1 },
+  { g:5, s:'History', t:'Medieval Times',         d:'Easy',   q:"A medieval king's advisors and noblemen were called his:",                                  opts:["Servants","Army","Court","Peasants"],                                                       ans:2 },
+  { g:5, s:'History', t:'Medieval Times',         d:'Medium', q:"During the Middle Ages, the feudal system created a hierarchy. Who were at the bottom?",     opts:["Knights","Nobles","Peasants and serfs","Clergy"],                                           ans:2 },
+
+  // ── GRADE 6 HISTORY ──
+  { g:6, s:'History', t:'Colonial America',       d:'Easy',   q:"Which European country colonized the most of North America initially?",                     opts:["Spain","France","Great Britain","Netherlands"],                                            ans:2 },
+  { g:6, s:'History', t:'Colonial America',       d:'Medium', q:"The main crop that dominated the Southern colonies' economy was:",                           opts:["Tobacco","Sugar cane","Indigo","Cotton"],                                                   ans:0 },
+  { g:6, s:'History', t:'Age of Exploration',     d:'Easy',   q:"Christopher Columbus sailed under the flag of which nation in 1492?",                       opts:["Portugal","Italy","Spain","France"],                                                        ans:2 },
+  { g:6, s:'History', t:'Age of Exploration',     d:'Medium', q:"The main reason for the Age of Exploration was to find routes to:",                         opts:["America","Africa","India and Asia for spices and trade","Australia"],                       ans:2 },
+  { g:6, s:'History', t:'Islamic Civilization',   d:'Medium', q:"The Islamic Golden Age saw advances in mathematics, astronomy, and:",                        opts:["Warfare","Medicine and philosophy","Architecture only","Art only"],                         ans:1 },
+
+  // ── GRADE 7 HISTORY ──
+  { g:7, s:'History', t:'Industrial Revolution',  d:'Easy',   q:"The Industrial Revolution began in which country around the late 1700s?",                  opts:["France","United States","Germany","Great Britain"],                                        ans:3 },
+  { g:7, s:'History', t:'Industrial Revolution',  d:'Medium', q:"Which invention transformed textile manufacturing during the Industrial Revolution?",       opts:["The steam engine","The telegraph","The printing press","The steam loom"],                  ans:3 },
+  { g:7, s:'History', t:'French Revolution',      d:'Medium', q:"Which year marked the start of the French Revolution?",                                     opts:["1776","1789","1799","1801"],                                                                ans:1 },
+  { g:7, s:'History', t:'Enlightenment',          d:'Medium', q:"John Locke's ideas about natural rights influenced which important document?",              opts:["The Constitution","The Declaration of Independence","The Bill of Rights","All of the above"],  ans:3 },
+
+  // ── GRADE 8 HISTORY ──
+  { g:8, s:'History', t:'American Civil War',     d:'Easy',   q:"Which president issued the Emancipation Proclamation?",                                    opts:["George Washington","Thomas Jefferson","Abraham Lincoln","Andrew Johnson"],                  ans:2 },
+  { g:8, s:'History', t:'American Civil War',     d:'Medium', q:"The Civil War began in 1861 when which state seceded from the Union?",                      opts:["Virginia","South Carolina","Georgia","North Carolina"],                                      ans:1 },
+  { g:8, s:'History', t:'World War II',           d:'Medium', q:"Which nation was NOT part of the Axis powers in World War II?",                              opts:["Japan","Germany","Italy","United Kingdom"],                                                 ans:3 },
+  { g:8, s:'History', t:'Ancient Greece',         d:'Medium', q:"The ancient Greeks invented democracy in which city-state?",                               opts:["Sparta","Troy","Athens","Corinth"],                                                        ans:2 },
+
+  // ── GRADE 5 GEOGRAPHY ──
+  { g:5, s:'Geography', t:'Continents',           d:'Easy',   q:"Which continent is also a country?",                                                        opts:["Europe","Australia","Africa","Antarctica"],                                                 ans:1 },
+  { g:5, s:'Geography', t:'Continents',           d:'Easy',   q:"The largest continent by area is:",                                                         opts:["Africa","North America","Europe","Asia"],                                                   ans:3 },
+  { g:5, s:'Geography', t:'Oceans',               d:'Easy',   q:"The deepest ocean on Earth is the:",                                                        opts:["Atlantic Ocean","Indian Ocean","Arctic Ocean","Pacific Ocean"],                              ans:3 },
+  { g:5, s:'Geography', t:'Mountains',            d:'Medium', q:"The longest mountain range in the world is the:",                                            opts:["Himalayas","Rocky Mountains","Mid-Ocean Ridge","Appalachian Mountains"],                    ans:2 },
+  { g:5, s:'Geography', t:'Rivers',               d:'Easy',   q:"The longest river in Africa is the:",                                                       opts:["Congo River","Niger River","Nile River","Zambezi River"],                                    ans:2 },
+  { g:5, s:'Geography', t:'Deserts',              d:'Medium', q:"Which desert is the hottest on Earth?",                                                     opts:["Kalahari","Gobi","Arabian","Death Valley"],                                                 ans:2 },
+
+  // ── GRADE 6 GEOGRAPHY ──
+  { g:6, s:'Geography', t:'Climate Zones',        d:'Easy',   q:"A tropical climate is characterized by:",                                                    opts:["Hot and dry","Cold and snowy","Hot and humid","Mild year-round"],                           ans:2 },
+  { g:6, s:'Geography', t:'Climate Zones',        d:'Medium', q:"Which climate zone has four distinct seasons with moderate temperatures?",                 opts:["Tropical","Temperate","Polar","Desert"],                                                    ans:1 },
+  { g:6, s:'Geography', t:'Map Skills',           d:'Easy',   q:"Latitude measures distance from the:",                                                       opts:["Equator","Prime Meridian","Tropic of Cancer","Tropic of Capricorn"],                       ans:0 },
+  { g:6, s:'Geography', t:'Capitals',             d:'Easy',   q:"What is the capital of France?",                                                            opts:["Lyon","Paris","Marseille","Nice"],                                                         ans:1 },
+  { g:6, s:'Geography', t:'Natural Resources',    d:'Medium', q:"Oil is primarily used for producing:",                                                      opts:["Electricity","Fuel and plastics","Building materials","Fertilizer"],                        ans:1 },
+
+  // ── GRADE 7 GEOGRAPHY ──
+  { g:7, s:'Geography', t:'Population',           d:'Easy',   q:"Which country has the largest population in the world?",                                    opts:["India","United States","Indonesia","Brazil"],                                              ans:0 },
+  { g:7, s:'Geography', t:'Urbanization',         d:'Medium', q:"The process where people move from rural areas to cities is called:",                        opts:["Migration","Urbanization","Colonization","Industrialization"],                               ans:1 },
+  { g:7, s:'Geography', t:'Economies',            d:'Medium', q:"A developed nation typically has a strong:",                                                 opts:["Agricultural sector","Manufacturing and service sector","Mining industry","Tourism industry"], ans:1 },
+  { g:7, s:'Geography', t:'Borders',              d:'Easy',   q:"How many countries share a border with the United States?",                                 opts:["1","2","3","4"],                                                                            ans:1 },
+
+  // ── GRADE 8 GEOGRAPHY ──
+  { g:8, s:'Geography', t:'Plate Tectonics',      d:'Medium', q:"Earthquakes commonly occur at the boundaries of Earth's:",                                  opts:["Atmosphere","Crust layers","Tectonic plates","Continental shelves"],                        ans:2 },
+  { g:8, s:'Geography', t:'Volcanoes',            d:'Medium', q:"A volcano that is not expected to erupt again is classified as:",                           opts:["Active","Dormant","Extinct","Potential"],                                                   ans:2 },
+  { g:8, s:'Geography', t:'Erosion',              d:'Easy',   q:"Water erosion is primarily caused by:",                                                      opts:["Wind","Gravity and flowing water","Ice","Human activity"],                                  ans:1 },
+  { g:8, s:'Geography', t:'Biomes',               d:'Medium', q:"The taiga biome is characterized by:",                                                      opts:["Dense rainforest","Coniferous forests and cold winters","Grasslands","Desert vegetation"],    ans:1 },
+
+  // ── ADDITIONAL GRADE 5 MATH ──
+  { g:5, s:'Math', t:'Decimals',                  d:'Easy',   q:"0.5 is equal to the fraction:",                                                             opts:["1/5","1/4","1/3","1/2"],                                                                    ans:3 },
+  { g:5, s:'Math', t:'Decimals',                  d:'Medium', q:"What is 2.5 + 3.75?",                                                                      opts:["5.25","6.15","6.25","5.75"],                                                                ans:2 },
+  { g:5, s:'Math', t:'Percentages',               d:'Easy',   q:"25% of 100 equals:",                                                                        opts:["10","25","50","75"],                                                                        ans:1 },
+  { g:5, s:'Math', t:'Percentages',               d:'Medium', q:"What is 20% of 60?",                                                                       opts:["6","12","20","30"],                                                                        ans:1 },
+  { g:5, s:'Math', t:'Order of Operations',       d:'Medium', q:"What is the value of 2 + 3 × 4?",                                                          opts:["20","14","11","18"],                                                                        ans:1 },
+  { g:5, s:'Math', t:'Geometry',                  d:'Easy',   q:"A rectangle has length 8 and width 5. Its perimeter is:",                                  opts:["13","26","40","80"],                                                                        ans:1 },
+
+  // ── ADDITIONAL GRADE 6 MATH ──
+  { g:6, s:'Math', t:'Ratios & Proportions',      d:'Easy',   q:"The ratio 3:6 is equivalent to:",                                                          opts:["1:2","1:3","2:3","3:3"],                                                                    ans:0 },
+  { g:6, s:'Math', t:'Ratios & Proportions',      d:'Medium', q:"If 4 apples cost $3, how much do 12 apples cost?",                                         opts:["$6","$8","$9","$12"],                                                                       ans:2 },
+  { g:6, s:'Math', t:'Probability',               d:'Easy',   q:"When flipping a fair coin, the probability of getting heads is:",                          opts:["0","1/4","1/2","1"],                                                                        ans:2 },
+  { g:6, s:'Math', t:'Statistics',                d:'Easy',   q:"The average (mean) of 2, 4, and 6 is:",                                                     opts:["4","5","6","7"],                                                                           ans:0 },
+  { g:6, s:'Math', t:'Area',                      d:'Medium', q:"The area of a triangle with base 8 and height 5 is:",                                      opts:["13","20","40","80"],                                                                        ans:1 },
+
+  // ── ADDITIONAL GRADE 7 MATH ──
+  { g:7, s:'Math', t:'Integers',                  d:'Easy',   q:"The sum of -5 and 3 is:",                                                                   opts:["-8","-2","2","8"],                                                                         ans:1 },
+  { g:7, s:'Math', t:'Integers',                  d:'Medium', q:"What is -12 ÷ (-3)?",                                                                      opts:["-4","4","-36","36"],                                                                        ans:1 },
+  { g:7, s:'Math', t:'Polynomials',               d:'Medium', q:"Simplify: 3x + 2x = ?",                                                                   opts:["x","5x","6x","5"],                                                                         ans:1 },
+  { g:7, s:'Math', t:'Systems of Equations',      d:'Medium', q:"If x + y = 10 and x - y = 2, what is x?",                                                  opts:["4","6","8","12"],                                                                          ans:1 },
+  { g:7, s:'Math', t:'Radicals',                  d:'Easy',   q:"The square root of 36 is:",                                                                 opts:["4","5","6","7"],                                                                           ans:2 },
+
+  // ── ADDITIONAL GRADE 8 MATH ──
+  { g:8, s:'Math', t:'Pythagorean Theorem',       d:'Medium', q:"A right triangle has legs of 3 and 4. Its hypotenuse is:",                                opts:["5","6","7","8"],                                                                          ans:0 },
+  { g:8, s:'Math', t:'Quadratic Equations',       d:'Medium', q:"The equation x² = 16 has solutions:",                                                      opts:["4","-4","±4","No solution"],                                                                ans:2 },
+  { g:8, s:'Math', t:'Slope',                     d:'Medium', q:"The slope of the line passing through (0, 0) and (2, 4) is:",                              opts:["1","2","4","8"],                                                                           ans:1 },
 ];
+
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const SUBJECTS: Subject[] = ['Science', 'History', 'Geography', 'Math'];
@@ -530,18 +645,26 @@ function QuestionScreen({ gs, onAnswer }: {
 
       {/* Answer options */}
       <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6, flex: 1, overflowY: 'auto' }}>
-        {q.opts.map((opt, oi) => (
-          <div key={oi} style={{
-            padding: '10px 14px', borderRadius: 10,
-            background: 'rgba(255,255,255,0.05)', border: '1.5px solid rgba(255,255,255,0.08)',
-            display: 'flex', alignItems: 'flex-start', gap: 10,
-          }}>
-            <span style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#888', flexShrink: 0 }}>
-              {optLabels[oi]}
-            </span>
-            <span style={{ fontSize: 14, color: '#ddd', lineHeight: 1.4 }}>{opt}</span>
-          </div>
-        ))}
+        {q.opts.map((opt, oi) => {
+          const answered = gs.answers[0] !== null;
+          return (
+            <button key={oi} onClick={() => onAnswer(0, oi)} disabled={answered}
+              style={{
+                padding: '10px 14px', borderRadius: 10, border: '1.5px solid rgba(255,255,255,0.08)',
+                background: answered ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.05)',
+                display: 'flex', alignItems: 'flex-start', gap: 10, cursor: answered ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s', opacity: answered ? 0.6 : 1,
+              }}
+              onMouseEnter={e => { if (!answered) e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+              onMouseLeave={e => { if (!answered) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+            >
+              <span style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#888', flexShrink: 0 }}>
+                {optLabels[oi]}
+              </span>
+              <span style={{ fontSize: 14, color: '#ddd', lineHeight: 1.4, textAlign: 'left' }}>{opt}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Player answer panels */}
