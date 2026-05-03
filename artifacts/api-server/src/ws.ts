@@ -18,6 +18,11 @@ import {
   broadcastMjState, startMjGame, applyMjDiscard, applyMjClaim, lobbySnapshotMj, MAX_MJ_HUMANS,
 } from "./mahjong-rooms";
 import type { ClaimOpt } from "./mahjong-logic";
+import {
+  createSkRoom, joinSkRoom, getSkRoom, removeSkPlayer,
+  broadcastSkState, startSkGame, applySkDraw, applySkPlay, applySkNope,
+  applySkStealTarget, applySkPeekClose, lobbySnapshotSk, MAX_SK_HUMANS,
+} from "./sk-rooms";
 import { logger } from "./lib/logger";
 
 type Msg = Record<string, unknown> & { type: string };
@@ -56,6 +61,10 @@ export function attachWebSocket(server: Server): void {
     // ── Mahjong state ─────────────────────────────────────────────────────────
     let mjCode: string | null = null;
     let mjSeat: number = -1;
+
+    // ── Sneezing Kittens state ─────────────────────────────────────────────────
+    let skCode: string | null = null;
+    let skSeat: number = -1;
 
     ws.on("message", (raw) => {
       let msg: Msg;
@@ -332,6 +341,84 @@ export function attachWebSocket(server: Server): void {
           break;
         }
 
+        // ── Sneezing Kittens ──────────────────────────────────────────────────
+        case "sk_create": {
+          const name = String(msg.name ?? "Host").slice(0, 16).trim() || "Host";
+          skCode = createSkRoom(ws, name);
+          skSeat = 0;
+          const room = getSkRoom(skCode)!;
+          send(ws, { type: "sk_room_created", roomCode: skCode, seat: 0, players: lobbySnapshotSk(room) });
+          logger.info({ skCode }, "SK room created");
+          break;
+        }
+        case "sk_join": {
+          const code = String(msg.roomCode ?? "").toUpperCase().trim();
+          const name = String(msg.name ?? "Player").slice(0, 16).trim() || "Player";
+          const result = joinSkRoom(code, ws, name);
+          if (!result) {
+            send(ws, { type: "error", message: `Room not found, started, or full (max ${MAX_SK_HUMANS} humans).` });
+            break;
+          }
+          skCode = code; skSeat = result.seat;
+          const snap = lobbySnapshotSk(result.room);
+          send(ws, { type: "sk_joined", roomCode: code, seat: skSeat, players: snap });
+          for (const p of result.room.players) {
+            if (p.ws !== ws) send(p.ws, { type: "sk_lobby_update", players: snap });
+          }
+          logger.info({ skCode: code, skSeat }, "SK player joined");
+          break;
+        }
+        case "sk_start": {
+          if (!skCode || skSeat !== 0) break;
+          const room = getSkRoom(skCode);
+          if (!room || room.started) break;
+          if (room.players.length < 2) { send(ws, { type: "error", message: "Need at least 2 players to start." }); break; }
+          const maxPlayers = Math.min(5, Math.max(room.players.length, Number(msg.maxPlayers ?? room.players.length)));
+          room.maxPlayers = maxPlayers;
+          for (const p of room.players) send(p.ws, { type: "sk_started" });
+          startSkGame(room);
+          logger.info({ skCode, maxPlayers, players: room.players.map(p => p.name) }, "SK game started");
+          break;
+        }
+        case "sk_draw": {
+          if (!skCode || skSeat < 0) break;
+          const room = getSkRoom(skCode);
+          if (!room?.state) break;
+          applySkDraw(room, skSeat);
+          break;
+        }
+        case "sk_play": {
+          if (!skCode || skSeat < 0) break;
+          const room = getSkRoom(skCode);
+          if (!room?.state) break;
+          const cardId = Number(msg.cardId);
+          const pair2Id = msg.pair2Id !== undefined ? Number(msg.pair2Id) : undefined;
+          applySkPlay(room, skSeat, cardId, pair2Id);
+          break;
+        }
+        case "sk_nope": {
+          if (!skCode || skSeat < 0) break;
+          const room = getSkRoom(skCode);
+          if (!room?.state) break;
+          applySkNope(room, skSeat);
+          break;
+        }
+        case "sk_steal_target": {
+          if (!skCode || skSeat < 0) break;
+          const room = getSkRoom(skCode);
+          if (!room?.state) break;
+          const targetSeat = Number(msg.targetSeat);
+          applySkStealTarget(room, skSeat, targetSeat);
+          break;
+        }
+        case "sk_peek_close": {
+          if (!skCode || skSeat < 0) break;
+          const room = getSkRoom(skCode);
+          if (!room?.state) break;
+          applySkPeekClose(room, skSeat);
+          break;
+        }
+
         case "ping":
           send(ws, { type: "pong" });
           break;
@@ -370,6 +457,16 @@ export function attachWebSocket(server: Server): void {
           if (result.room.state) broadcastMjState(result.room);
         }
         logger.info({ mjCode, mjSeat }, "Mahjong player left");
+      }
+      // Sneezing Kittens cleanup
+      if (skCode) {
+        const result = removeSkPlayer(skCode, ws);
+        if (result && result.room.players.length > 0) {
+          const snap = lobbySnapshotSk(result.room);
+          for (const p of result.room.players) send(p.ws, { type: "sk_lobby_update", players: snap });
+          if (result.room.state) broadcastSkState(result.room);
+        }
+        logger.info({ skCode, skSeat }, "SK player left");
       }
     });
 

@@ -46,6 +46,7 @@ All games are in `artifacts/game-hub/src/games/`. Routing via `wouter`.
 - All remaining games (Chess, Candy Crush, Uno, Mahjong, etc.): click/button-based — works natively on mobile
 
 **Online multiplayer** (via WebSocket relay in `artifacts/api-server`):
+- **Sneezing Kittens** — up to 4 human players + AI bots, server-authoritative (`sk-rooms.ts`); lobby with room code; hidden hands; 4s Nope window; steal/favor target picking; AI fills empty seats
 - **Mahjong** — up to 3 human players + 1 AI bot, server-authoritative (`mahjong-rooms.ts`, `mahjong-logic.ts`); lobby with room code; per-player hidden hand view; server-run AI turns; claim window with 7s auto-skip
 - **UNO** — up to 8 players, full server-authoritative game logic (`uno-rooms.ts`, `uno-logic.ts`)
 - **Chess** — 2-player relay; host=White, guest=Black; board flips for Black; move sync over relay
