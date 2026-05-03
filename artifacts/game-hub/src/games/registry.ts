@@ -12,6 +12,7 @@ import PacMan from "./pac-man";
 import Minecraft from "./minecraft";
 import Racing from "./racing";
 import CandyCrush from "./candy-crush";
+import MagicSort from "./magic-sort";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -177,6 +178,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-purple-950/80 via-purple-900/30 to-transparent",
     borderColor: "#a855f730",
     component: CandyCrush,
+  },
+  {
+    id: "magic-sort",
+    name: "Magic Sort",
+    icon: "🧪",
+    tier: "🟡",
+    desc: "Pour potions between flasks until each holds one color. 30 levels.",
+    color: "#c084fc",
+    gradient: "from-purple-950/80 via-violet-900/30 to-transparent",
+    borderColor: "#c084fc30",
+    component: MagicSort,
   },
 ];
 
