@@ -1,0 +1,1439 @@
+Below is a copy-ready PRD text for the Jeopardy-style game. This version focuses on the game/product requirements, with clear instructions for the AI developer to build the MVP first, then Version 2, and to check for bugs.
+
+⸻
+
+PRD: Jeopardy-Style Multiplayer Quiz Game
+
+1. Product Name
+
+Quiz Board Showdown
+
+A browser-based Jeopardy-style quiz game where players choose categories and point values, answer trivia questions, wager points, and compete to finish with the highest score.
+
+This game should be inspired by the format of category-based trivia games, but it must use original questions and original branding. Do not use the Jeopardy name, logo, music, graphics, or copyrighted clues.
+
+⸻
+
+2. Product Goal
+
+Create a fun, fast, multiplayer trivia game that can be played online by families, students, friends, and casual players.
+
+The first version should be simple and reliable:
+
+* Up to 4 online players
+* A game board with categories and point values
+* Players choose clues
+* Players buzz in or answer in turn
+* Scores update automatically
+* Final wager round
+* Built-in question bank
+* Clean game-show style interface
+
+⸻
+
+3. Target Users
+
+Primary Users
+
+* Families
+* Kids and students
+* Teachers
+* Trivia fans
+* Friends playing online
+* Casual game night players
+
+Age Range
+
+Recommended age: 8+
+
+The game should support both kid-friendly and general trivia questions.
+
+⸻
+
+4. Core Game Concept
+
+Players compete on a trivia board with multiple categories. Each category has point-value clues. Higher-value clues are harder.
+
+Players select a clue, read the question, and try to answer correctly. Correct answers earn points. Incorrect answers lose points or allow other players to answer.
+
+The game ends after all questions are completed or after a selected number of rounds. The player with the highest score wins.
+
+⸻
+
+5. Game Modes
+
+MVP Game Modes
+
+Mode	Description
+Local Practice	One player plays alone
+Online Room	Players join with a room code
+2 Player Game	Two players compete
+3 Player Game	Three players compete
+4 Player Game	Four players compete
+
+Version 2 Game Modes
+
+Mode	Description
+AI Players	Computer players fill empty seats
+Classroom Mode	Teacher hosts a room for students
+Team Mode	2 vs 2 team game
+Custom Game	Host creates custom categories and questions
+Daily Challenge	One fixed board per day
+Ranked Mode	Competitive matchmaking and leaderboard
+
+⸻
+
+6. MVP Scope
+
+Build the MVP First
+
+The AI developer must build the game in phases. Do not build Version 2 features until the MVP is stable and playable.
+
+The MVP should include:
+
+1. Home screen
+2. Create room
+3. Join room
+4. Lobby
+5. Game board
+6. Category columns
+7. Point-value tiles
+8. Question display modal
+9. Player answering system
+10. Score tracking
+11. Turn management
+12. Final wager round
+13. Game-over screen
+14. Built-in question bank
+15. Basic mobile responsiveness
+16. Bug-checking and validation tools
+
+⸻
+
+7. Version 2 Scope
+
+Version 2 should be built only after the MVP is complete and tested.
+
+Version 2 may include:
+
+* AI players
+* Custom question editor
+* Question import/export
+* Daily challenge board
+* Leaderboards
+* User accounts
+* Avatars
+* Game themes
+* Sound effects
+* Host controls
+* Classroom mode
+* Team mode
+* More question packs
+* Question difficulty filters
+* Mobile app wrapper
+
+⸻
+
+8. Recommended Tech Stack
+
+Simple Web MVP
+
+Layer	Recommendation
+Frontend	React
+Styling	Tailwind CSS or plain CSS
+Backend	Node.js + Express
+Real-time Multiplayer	Socket.io
+Data Storage for MVP	JSON files or in-memory data
+Future Database	Supabase or Firebase
+Hosting	Replit, Render, Railway, Vercel, or Netlify
+
+Simple Replit-Friendly Stack
+
+Use:
+
+* React frontend
+* Node.js backend
+* Express server
+* Socket.io for room syncing
+* JSON file for question bank
+* In-memory game rooms for MVP
+
+Do not require user accounts in the MVP.
+
+⸻
+
+9. Game Board Structure
+
+MVP Board
+
+The default board should have:
+
+* 6 categories
+* 5 point values per category
+* 30 total clues per round
+
+Example point values:
+
+Difficulty	Points
+Easy	100
+Easy-Medium	200
+Medium	300
+Medium-Hard	400
+Hard	500
+
+Optional Advanced Board
+
+For longer games, allow:
+
+* 6 categories × 10 clues
+* 8 categories × 5 clues
+* Custom number of categories
+* Custom point values
+
+⸻
+
+10. Required Categories
+
+The MVP should support at least 6 categories.
+
+Recommended starter categories:
+
+1. World Geography
+2. Science & Nature
+3. History
+4. Animals
+5. Sports & Games
+6. Movies, Books & Pop Culture
+
+Each category should eventually contain 200 questions, for a total built-in question bank of:
+
+6 categories × 200 questions = 1,200 questions
+
+The MVP does not need to display all 1,200 questions in one game. It should randomly select questions from the bank.
+
+⸻
+
+11. Question Bank Requirements
+
+Each question should have the following fields:
+
+{
+  "id": "geo_001",
+  "category": "World Geography",
+  "difficulty": "easy",
+  "points": 100,
+  "question": "What is the capital city of Canada?",
+  "answer": "Ottawa",
+  "acceptableAnswers": ["Ottawa"],
+  "sourceNote": "General geography reference",
+  "used": false
+}
+
+Required Fields
+
+Field	Description
+id	Unique question ID
+category	Category name
+difficulty	easy, medium, hard, expert
+points	100, 200, 300, 400, 500
+question	The clue/question shown to players
+answer	Main correct answer
+acceptableAnswers	Alternate accepted spellings or names
+sourceNote	Short reference note
+used	Whether question has already appeared
+
+⸻
+
+12. Question Difficulty Rules
+
+100-Point Questions
+
+Should be easy and widely known.
+
+Example:
+
+Question: What planet is known as the Red Planet?
+Answer: Mars
+
+200-Point Questions
+
+Should require basic school-level knowledge.
+
+Example:
+
+Question: What gas do plants absorb from the air during photosynthesis?
+Answer: Carbon dioxide
+
+300-Point Questions
+
+Should require stronger general knowledge.
+
+Example:
+
+Question: What ancient civilization built the pyramids at Giza?
+Answer: Ancient Egypt
+
+400-Point Questions
+
+Should be harder, with less obvious answers.
+
+Example:
+
+Question: What is the longest river in South America?
+Answer: The Amazon River
+
+500-Point Questions
+
+Should be challenging.
+
+Example:
+
+Question: What physicist developed the general theory of relativity?
+Answer: Albert Einstein
+
+⸻
+
+13. Question Writing Rules
+
+The game must use original questions.
+
+Do not copy questions from:
+
+* Jeopardy
+* Trivia Pursuit
+* Kahoot public games
+* Quizlet sets
+* TV game shows
+* Copyrighted trivia books
+* Paid question databases
+
+Questions should be researched from general reference sources and rewritten in original language.
+
+Acceptable general reference sources include:
+
+* Britannica
+* NASA
+* National Geographic
+* CIA World Factbook
+* Official sports league websites
+* NobelPrize.org
+* Government education websites
+* Museum websites
+* Encyclopedia-style public references
+
+⸻
+
+14. Game Flow
+
+Full Game Flow
+
+1. Player opens game
+2. Player chooses Create Room or Join Room
+3. Host creates room
+4. Other players join with room code
+5. Host starts game
+6. Game board appears
+7. First player chooses category and point value
+8. Question appears
+9. Players answer
+10. Score updates
+11. Question tile becomes unavailable
+12. Next player chooses
+13. Continue until board is complete
+14. Final wager round begins
+15. Players submit wagers
+16. Final question appears
+17. Players submit answers
+18. Final scores are calculated
+19. Winner screen appears
+
+⸻
+
+15. Player Count
+
+The game should support:
+
+* 1 player practice mode
+* 2 online players
+* 3 online players
+* 4 online players
+
+Maximum MVP player count: 4
+
+⸻
+
+16. Room System
+
+Room Creation
+
+When host creates a room, generate a short room code.
+
+Example:
+
+Room Code: K7Q2
+
+The room should store:
+
+{
+  "roomCode": "K7Q2",
+  "hostId": "player_1",
+  "status": "lobby",
+  "players": [],
+  "settings": {},
+  "currentBoard": {},
+  "currentTurnPlayerId": null,
+  "scores": {},
+  "answeredQuestions": []
+}
+
+Join Room
+
+Players enter:
+
+* Display name
+* Room code
+
+Validation:
+
+* Room must exist
+* Room must not be full
+* Game must not already be finished
+* Player name cannot be blank
+
+⸻
+
+17. Lobby Screen
+
+The lobby should show:
+
+* Room code
+* Copy invite link button
+* Player list
+* Host indicator
+* Ready status
+* Game settings
+* Start game button for host
+
+Host can configure:
+
+Setting	Options
+Number of players	1, 2, 3, 4
+Number of categories	6
+Clues per category	5
+Answer mode	Buzz-in or turn-based
+Timer	15 sec, 30 sec, 45 sec, off
+Final round	On / Off
+Difficulty	Easy, Mixed, Hard
+Negative scoring	On / Off
+
+⸻
+
+18. Main Game Screen
+
+The main game screen should include:
+
+1. Game board
+2. Category headers
+3. Point-value tiles
+4. Player score panels
+5. Current player indicator
+6. Question modal
+7. Answer input
+8. Timer
+9. Buzz-in button if buzz mode is enabled
+10. Host controls if needed
+
+⸻
+
+19. Game Board UI
+
+Example layout:
+
+---------------------------------------------------------
+| Geography | Science | History | Animals | Sports | Pop |
+---------------------------------------------------------
+|   100     |   100   |   100   |   100   |  100   | 100 |
+|   200     |   200   |   200   |   200   |  200   | 200 |
+|   300     |   300   |   300   |   300   |  300   | 300 |
+|   400     |   400   |   400   |   400   |  400   | 400 |
+|   500     |   500   |   500   |   500   |  500   | 500 |
+---------------------------------------------------------
+
+After a tile is selected, it should be disabled or hidden.
+
+⸻
+
+20. Answer Modes
+
+Mode A: Turn-Based Answering
+
+Simpler for MVP.
+
+Flow:
+
+1. Current player selects question
+2. Only current player answers
+3. Correct answer earns points
+4. Wrong answer loses points if negative scoring is enabled
+5. Turn passes to next player
+
+This is the recommended MVP mode because it is easier to build and less likely to have multiplayer timing bugs.
+
+Mode B: Buzz-In Answering
+
+Better for Version 2 or later MVP improvement.
+
+Flow:
+
+1. Question is shown to all players
+2. Buzz button becomes active
+3. First player to buzz gets answer attempt
+4. Correct answer earns points
+5. Wrong answer loses points and locks that player out
+6. Other players may buzz
+7. If nobody answers correctly, reveal answer
+
+⸻
+
+21. Recommended MVP Answer Mode
+
+Use turn-based answering for the first MVP.
+
+Reason:
+
+* Easier to build
+* Easier to test
+* Fewer real-time bugs
+* Works better with slow internet
+* More suitable for kids and casual players
+
+After MVP is stable, add buzz-in mode.
+
+⸻
+
+22. Scoring Rules
+
+Standard Scoring
+
+Result	Score Change
+Correct answer	Add tile points
+Wrong answer	Subtract tile points
+Pass / no answer	0
+Final correct answer	Add wager
+Final wrong answer	Subtract wager
+
+Optional Easy Mode
+
+For younger players:
+
+Result	Score Change
+Correct answer	Add tile points
+Wrong answer	0
+Pass	0
+
+The host should be able to turn negative scoring on or off.
+
+⸻
+
+23. Timer Rules
+
+Timer options:
+
+* Off
+* 15 seconds
+* 30 seconds
+* 45 seconds
+
+When timer expires:
+
+* Answer is marked as no answer
+* No points are awarded
+* Turn passes to next player
+
+If buzz-in mode is used:
+
+* Timer starts when question appears
+* Players must buzz before time expires
+* Answering player gets a shorter answer timer
+
+⸻
+
+24. Final Wager Round
+
+The final round should work like this:
+
+1. Show final category
+2. Each player secretly enters a wager
+3. Wager cannot exceed their current score
+4. If player has negative score, wager is 0
+5. Show final question
+6. Players submit answers secretly
+7. Reveal answers
+8. Correct answer adds wager
+9. Incorrect answer subtracts wager
+10. Highest score wins
+
+MVP Simplification
+
+For MVP, if secret answer submission is too complicated, use a simpler final round:
+
+* Each player enters wager
+* Each player answers one at a time
+* Reveal correct answer
+* Update scores
+
+⸻
+
+25. Daily Double-Style Bonus Tile
+
+To avoid copying directly, call it:
+
+Power Pick
+
+Power Pick rules:
+
+* Hidden under one random board tile
+* Only the player who selects it can answer
+* Player can wager some or all points
+* If correct, they gain wager
+* If wrong, they lose wager
+
+MVP Option
+
+Do not include Power Pick in the first MVP unless the base game is already stable.
+
+Add it in Version 2.
+
+⸻
+
+26. Game Settings
+
+Host should be able to configure:
+
+Setting	MVP?
+Number of players	Yes
+Room code	Yes
+Timer	Yes
+Negative scoring	Yes
+Final round	Yes
+Question difficulty	Yes
+Buzz-in mode	Version 2
+AI players	Version 2
+Custom categories	Version 2
+Custom questions	Version 2
+Team mode	Version 2
+
+⸻
+
+27. Data Models
+
+Player Object
+
+{
+  "id": "player_1",
+  "name": "Harry",
+  "score": 0,
+  "isHost": true,
+  "isConnected": true,
+  "hasAnsweredCurrentQuestion": false
+}
+
+Question Object
+
+{
+  "id": "science_001",
+  "category": "Science & Nature",
+  "points": 100,
+  "difficulty": "easy",
+  "question": "What planet is known as the Red Planet?",
+  "answer": "Mars",
+  "acceptableAnswers": ["Mars"],
+  "sourceNote": "General astronomy reference"
+}
+
+Board Object
+
+{
+  "categories": [
+    {
+      "name": "World Geography",
+      "questions": [
+        {
+          "id": "geo_001",
+          "points": 100,
+          "isAnswered": false
+        }
+      ]
+    }
+  ]
+}
+
+Game Room Object
+
+{
+  "roomCode": "K7Q2",
+  "status": "active",
+  "players": [],
+  "currentTurnPlayerId": "player_1",
+  "currentQuestionId": null,
+  "answeredQuestionIds": [],
+  "scores": {
+    "player_1": 500,
+    "player_2": 200
+  }
+}
+
+⸻
+
+28. Core User Stories
+
+Host User Stories
+
+As a host, I want to create a game room so that my friends can join.
+
+As a host, I want to choose game settings so that I can make the game easier or harder.
+
+As a host, I want to start the game when all players are ready.
+
+As a host, I want the game to automatically track scores so I do not need to calculate manually.
+
+Player User Stories
+
+As a player, I want to join a room with a code so I can play with friends.
+
+As a player, I want to choose a category and point value so I can control the game strategy.
+
+As a player, I want to type my answer so the system can check if I am correct.
+
+As a player, I want to see my score and other players’ scores.
+
+As a player, I want to know whose turn it is.
+
+As a player, I want to see the final winner.
+
+⸻
+
+29. MVP Build Instructions for AI Developer
+
+Build the MVP in this order:
+
+Phase 1: Static Game Board
+
+Create:
+
+* Home screen
+* Sample game board
+* 6 categories
+* 5 point-value tiles per category
+* Clickable tiles
+* Question modal
+* Answer input
+* Score display
+
+Do not build multiplayer yet.
+
+Phase 2: Single-Player Game Logic
+
+Add:
+
+* Question selection
+* Answer checking
+* Score changes
+* Used question tracking
+* End-game detection
+* Final score screen
+
+Phase 3: Local Multiplayer
+
+Add:
+
+* 2 to 4 players on same browser
+* Turn rotation
+* Player score panels
+* Current player indicator
+
+Phase 4: Online Multiplayer
+
+Add:
+
+* Create room
+* Join room
+* Room code
+* Socket.io sync
+* Lobby
+* Shared board state
+* Shared score updates
+* Player disconnect handling
+
+Phase 5: Final Round
+
+Add:
+
+* Final category
+* Wager input
+* Final question
+* Final score calculation
+* Winner screen
+
+Phase 6: Polish
+
+Add:
+
+* Mobile-friendly design
+* Animations
+* Sound toggle
+* Game-show visual styling
+* Error handling
+* Bug fixes
+
+⸻
+
+30. AI Developer Instruction
+
+Use this exact development instruction:
+
+You are building a browser-based Jeopardy-style trivia game called Quiz Board Showdown.
+Important:
+Build the MVP first. Do not build Version 2 features until the MVP is complete, playable, and tested.
+Use React for the frontend, Node.js and Express for the backend, and Socket.io for multiplayer. Store the question bank in JSON for the MVP.
+MVP requirements:
+- Home screen
+- Create room
+- Join room
+- Lobby
+- 2 to 4 online players
+- 6-category game board
+- 5 point-value clues per category
+- Turn-based answering first
+- Question modal
+- Answer input
+- Automatic answer checking
+- Score tracking
+- Turn rotation
+- Final wager round
+- Winner screen
+- Built-in question bank
+- Mobile-friendly layout
+- Basic bug-checking tools
+Do not use the Jeopardy name, logo, music, copyrighted clues, or official branding.
+Use original questions and answers.
+After the MVP is stable, create Version 2 with:
+- Buzz-in mode
+- AI players
+- Custom categories
+- Custom question editor
+- Daily challenge
+- Leaderboards
+- Team mode
+- More themes
+- Sound effects
+- User accounts
+After each feature is built, test it for bugs before moving on.
+
+⸻
+
+31. Bug-Checking Instructions for AI Developer
+
+The AI developer must check the game for bugs after each phase.
+
+General Bug Checklist
+
+Check that:
+
+* Game loads without console errors
+* Buttons work
+* Pages navigate correctly
+* Room creation works
+* Join room works
+* Invalid room codes are rejected
+* Empty player names are rejected
+* Full rooms cannot be joined
+* Game cannot start with too few players unless practice mode
+* Scores update correctly
+* Turns rotate correctly
+* Used questions cannot be selected again
+* Final winner is calculated correctly
+
+⸻
+
+32. Game Logic Bug Checklist
+
+Question Selection
+
+Check that:
+
+* A player can select only available tiles
+* Used tiles become disabled
+* Correct question appears
+* Category and point value match selected tile
+* Question cannot be opened twice
+
+Answer Checking
+
+Check that:
+
+* Correct answer is accepted
+* Wrong answer is rejected
+* Case differences do not matter
+* Extra spaces do not matter
+* Acceptable alternate answers work
+* Empty answer is not accepted
+* Timer expiration works
+
+Example answer normalization:
+
+function normalizeAnswer(answer) {
+  return answer
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+Scoring
+
+Check that:
+
+* Correct answer adds points
+* Wrong answer subtracts points if enabled
+* Wrong answer gives 0 if negative scoring is disabled
+* Scores can go negative if negative scoring is enabled
+* Final wager adds or subtracts correctly
+* Player cannot wager more than current score
+
+Turn Rotation
+
+Check that:
+
+* Turn moves to next player after each question
+* Disconnected players are skipped
+* Host leaving does not crash game
+* Current player is highlighted
+* Non-current players cannot select clues in turn-based mode
+
+⸻
+
+33. Multiplayer Bug Checklist
+
+Check that:
+
+* All players see the same board
+* All players see the same scores
+* All players see the same current turn
+* Tile selection updates for everyone
+* Answer result updates for everyone
+* Reconnecting player receives current game state
+* Two players cannot select tiles at the same time
+* Server controls score changes
+* Client cannot fake score updates
+* Client cannot answer when it is not their turn
+
+⸻
+
+34. Final Round Bug Checklist
+
+Check that:
+
+* Final round starts after board is complete
+* Players can enter valid wagers
+* Negative-score players cannot wager
+* Wagers are hidden from other players until reveal
+* Final answers are submitted correctly
+* Correct answers add wager
+* Wrong answers subtract wager
+* Final winner is calculated correctly
+* Ties are handled
+
+Tie handling:
+
+If two or more players tie for highest score, show "Tie Game" and list tied players.
+Version 2 may add a tie-breaker question.
+
+⸻
+
+35. UI Bug Checklist
+
+Check that:
+
+* Game works on desktop
+* Game works on tablet
+* Game works on phone
+* Text does not overflow tiles
+* Question modal fits small screens
+* Buttons are large enough to tap
+* Scoreboard is readable
+* Current player is obvious
+* Used tiles are clearly disabled
+* Final screen is readable
+
+⸻
+
+36. Accessibility Requirements
+
+The game should include:
+
+* Large readable text
+* Strong color contrast
+* Keyboard-accessible buttons
+* ARIA labels for major controls
+* No required flashing effects
+* Sound effects optional
+* Visual indicators, not sound-only indicators
+
+⸻
+
+37. Visual Style
+
+The game should feel like a bright TV game show without copying any existing show.
+
+Recommended style:
+
+* Dark blue or purple background
+* Bright category cards
+* Gold or yellow point values
+* Large readable board
+* Animated question reveal
+* Confetti on winner screen
+* Score panels with player colors
+
+Do not use:
+
+* Jeopardy logo
+* Jeopardy font
+* Jeopardy music
+* Exact Jeopardy board styling
+* Copied clues
+
+⸻
+
+38. Sound Effects
+
+MVP sound effects are optional.
+
+If included:
+
+Event	Sound
+Question selected	Soft whoosh
+Correct answer	Ding
+Wrong answer	Buzz
+Final round	Dramatic intro
+Winner	Celebration
+
+Always include sound on/off setting.
+
+⸻
+
+39. Edge Cases
+
+Situation	Expected Behavior
+Player disconnects	Mark disconnected and skip turn after timeout
+Host disconnects	Transfer host to next player
+Room is full	Show room full message
+Invalid room code	Show invalid room code message
+Player refreshes page	Attempt reconnect
+Two players click same tile	Server accepts first valid click only
+Question bank too small	Show error and prevent game start
+Duplicate question IDs	Log error and ignore duplicate
+Empty answer	Ask player to enter answer
+All questions answered	Start final round or end game
+Tie score	Show tie result
+
+⸻
+
+40. Question Bank Size Requirement
+
+The full game should include:
+
+Category	Number of Questions
+World Geography	200
+Science & Nature	200
+History	200
+Animals	200
+Sports & Games	200
+Movies, Books & Pop Culture	200
+Total	1,200
+
+For the MVP, the game only needs to use enough questions to fill one board, but the data structure should support the full 1,200-question bank.
+
+⸻
+
+41. Starter Question Bank Sample
+
+Use this sample to test the MVP before loading the full 1,200-question bank.
+
+World Geography
+
+[
+  {
+    "id": "geo_001",
+    "category": "World Geography",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "What is the capital city of Canada?",
+    "answer": "Ottawa",
+    "acceptableAnswers": ["Ottawa"],
+    "sourceNote": "General geography reference"
+  },
+  {
+    "id": "geo_002",
+    "category": "World Geography",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "What country is famous for the Eiffel Tower?",
+    "answer": "France",
+    "acceptableAnswers": ["France"],
+    "sourceNote": "General geography reference"
+  },
+  {
+    "id": "geo_003",
+    "category": "World Geography",
+    "difficulty": "medium",
+    "points": 300,
+    "question": "What is the largest country in the world by land area?",
+    "answer": "Russia",
+    "acceptableAnswers": ["Russia"],
+    "sourceNote": "General geography reference"
+  },
+  {
+    "id": "geo_004",
+    "category": "World Geography",
+    "difficulty": "hard",
+    "points": 500,
+    "question": "What is the capital city of Mongolia?",
+    "answer": "Ulaanbaatar",
+    "acceptableAnswers": ["Ulaanbaatar", "Ulan Bator"],
+    "sourceNote": "General geography reference"
+  }
+]
+
+Science & Nature
+
+[
+  {
+    "id": "sci_001",
+    "category": "Science & Nature",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "What planet is known as the Red Planet?",
+    "answer": "Mars",
+    "acceptableAnswers": ["Mars"],
+    "sourceNote": "General astronomy reference"
+  },
+  {
+    "id": "sci_002",
+    "category": "Science & Nature",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "What gas do humans need to breathe to survive?",
+    "answer": "Oxygen",
+    "acceptableAnswers": ["Oxygen", "O2"],
+    "sourceNote": "General science reference"
+  },
+  {
+    "id": "sci_003",
+    "category": "Science & Nature",
+    "difficulty": "medium",
+    "points": 300,
+    "question": "What force pulls objects toward Earth?",
+    "answer": "Gravity",
+    "acceptableAnswers": ["Gravity"],
+    "sourceNote": "General physics reference"
+  },
+  {
+    "id": "sci_004",
+    "category": "Science & Nature",
+    "difficulty": "hard",
+    "points": 500,
+    "question": "What part of the cell contains DNA in most human cells?",
+    "answer": "Nucleus",
+    "acceptableAnswers": ["Nucleus", "The nucleus"],
+    "sourceNote": "General biology reference"
+  }
+]
+
+History
+
+[
+  {
+    "id": "hist_001",
+    "category": "History",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "Who was the first president of the United States?",
+    "answer": "George Washington",
+    "acceptableAnswers": ["George Washington", "Washington"],
+    "sourceNote": "General history reference"
+  },
+  {
+    "id": "hist_002",
+    "category": "History",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "What ancient civilization built the pyramids at Giza?",
+    "answer": "Ancient Egypt",
+    "acceptableAnswers": ["Egypt", "Ancient Egypt", "The Egyptians"],
+    "sourceNote": "General history reference"
+  },
+  {
+    "id": "hist_003",
+    "category": "History",
+    "difficulty": "medium",
+    "points": 300,
+    "question": "What war ended in 1945?",
+    "answer": "World War II",
+    "acceptableAnswers": ["World War II", "WWII", "Second World War"],
+    "sourceNote": "General history reference"
+  },
+  {
+    "id": "hist_004",
+    "category": "History",
+    "difficulty": "hard",
+    "points": 500,
+    "question": "What document, signed in 1215, limited the power of the English king?",
+    "answer": "Magna Carta",
+    "acceptableAnswers": ["Magna Carta", "The Magna Carta"],
+    "sourceNote": "General history reference"
+  }
+]
+
+Animals
+
+[
+  {
+    "id": "ani_001",
+    "category": "Animals",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "What animal is known as man's best friend?",
+    "answer": "Dog",
+    "acceptableAnswers": ["Dog", "Dogs"],
+    "sourceNote": "General animal reference"
+  },
+  {
+    "id": "ani_002",
+    "category": "Animals",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "What black-and-white bear eats mostly bamboo?",
+    "answer": "Giant panda",
+    "acceptableAnswers": ["Panda", "Giant panda"],
+    "sourceNote": "General animal reference"
+  },
+  {
+    "id": "ani_003",
+    "category": "Animals",
+    "difficulty": "medium",
+    "points": 300,
+    "question": "What is the largest animal on Earth?",
+    "answer": "Blue whale",
+    "acceptableAnswers": ["Blue whale", "The blue whale"],
+    "sourceNote": "General animal reference"
+  },
+  {
+    "id": "ani_004",
+    "category": "Animals",
+    "difficulty": "hard",
+    "points": 500,
+    "question": "What type of animal is an axolotl?",
+    "answer": "Salamander",
+    "acceptableAnswers": ["Salamander", "A salamander", "Amphibian"],
+    "sourceNote": "General animal reference"
+  }
+]
+
+Sports & Games
+
+[
+  {
+    "id": "sports_001",
+    "category": "Sports & Games",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "In soccer, what part of the body is usually not allowed to touch the ball?",
+    "answer": "Hands",
+    "acceptableAnswers": ["Hands", "Arms", "Hands and arms"],
+    "sourceNote": "General sports reference"
+  },
+  {
+    "id": "sports_002",
+    "category": "Sports & Games",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "What board game uses kings, queens, bishops, knights, rooks, and pawns?",
+    "answer": "Chess",
+    "acceptableAnswers": ["Chess"],
+    "sourceNote": "General games reference"
+  },
+  {
+    "id": "sports_003",
+    "category": "Sports & Games",
+    "difficulty": "medium",
+    "points": 300,
+    "question": "How many players are on the court for one basketball team during normal play?",
+    "answer": "Five",
+    "acceptableAnswers": ["Five", "5"],
+    "sourceNote": "General sports reference"
+  },
+  {
+    "id": "sports_004",
+    "category": "Sports & Games",
+    "difficulty": "hard",
+    "points": 500,
+    "question": "In tennis, what score comes immediately after deuce when one player wins the next point?",
+    "answer": "Advantage",
+    "acceptableAnswers": ["Advantage", "Ad"],
+    "sourceNote": "General sports reference"
+  }
+]
+
+Movies, Books & Pop Culture
+
+[
+  {
+    "id": "pop_001",
+    "category": "Movies, Books & Pop Culture",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "What wizard has friends named Ron and Hermione?",
+    "answer": "Harry Potter",
+    "acceptableAnswers": ["Harry Potter"],
+    "sourceNote": "General pop culture reference"
+  },
+  {
+    "id": "pop_002",
+    "category": "Movies, Books & Pop Culture",
+    "difficulty": "easy",
+    "points": 100,
+    "question": "What superhero is also known as the Man of Steel?",
+    "answer": "Superman",
+    "acceptableAnswers": ["Superman"],
+    "sourceNote": "General pop culture reference"
+  },
+  {
+    "id": "pop_003",
+    "category": "Movies, Books & Pop Culture",
+    "difficulty": "medium",
+    "points": 300,
+    "question": "What movie features a young lion named Simba?",
+    "answer": "The Lion King",
+    "acceptableAnswers": ["The Lion King", "Lion King"],
+    "sourceNote": "General movie reference"
+  },
+  {
+    "id": "pop_004",
+    "category": "Movies, Books & Pop Culture",
+    "difficulty": "hard",
+    "points": 500,
+    "question": "What fantasy book series features the land of Narnia?",
+    "answer": "The Chronicles of Narnia",
+    "acceptableAnswers": ["The Chronicles of Narnia", "Chronicles of Narnia", "Narnia"],
+    "sourceNote": "General literature reference"
+  }
+]
+
+⸻
+
+42. Full 200-Question-Per-Category Expansion Instruction
+
+Use this prompt after the MVP game engine is working:
+
+Expand the question bank for Quiz Board Showdown to 200 original questions per category.
+Categories:
+1. World Geography
+2. Science & Nature
+3. History
+4. Animals
+5. Sports & Games
+6. Movies, Books & Pop Culture
+Total questions required:
+6 categories × 200 questions = 1,200 total questions.
+For each category, create:
+- 40 easy questions worth 100 points
+- 40 easy-medium questions worth 200 points
+- 40 medium questions worth 300 points
+- 40 medium-hard questions worth 400 points
+- 40 hard questions worth 500 points
+Every question must include:
+- id
+- category
+- difficulty
+- points
+- question
+- answer
+- acceptableAnswers
+- sourceNote
+Do not copy questions from Jeopardy, Kahoot, Quizlet, Trivial Pursuit, or any copyrighted trivia source.
+Use original wording based on general reference knowledge.
+Make questions kid-friendly where possible.
+Avoid overly controversial, explicit, political, or adult content.
+Check for duplicate questions.
+Check for duplicate IDs.
+Check that each answer is factually correct.
+Check that every category has exactly 200 questions.
+
+⸻
+
+43. Acceptance Criteria
+
+The MVP is complete when:
+
+* A player can create a room
+* Other players can join with room code
+* Host can start the game
+* A board with 6 categories appears
+* Players can select questions
+* Players can answer questions
+* Scores update correctly
+* Turns rotate correctly
+* Used tiles cannot be reused
+* Game ends when board is complete
+* Final round works
+* Winner is shown
+* Game works on desktop and mobile
+* No major console errors occur
+* No player can cheat by changing client-side score
+* Question bank loads correctly
+
+⸻
+
+44. Recommended Build Priority
+
+Build First
+
+1. Single-player board
+2. Question modal
+3. Answer checking
+4. Score tracking
+5. Local multiplayer
+6. Online room system
+7. Final round
+8. Winner screen
+
+Build Second
+
+1. Buzz-in mode
+2. AI players
+3. Custom question editor
+4. Daily challenge
+5. Leaderboards
+6. User accounts
+7. Themes
+8. Team mode
+
+⸻
+
+45. MVP Summary
+
+The MVP should be a simple but complete game:
+
+A player creates a room.
+Up to 4 players join.
+The host starts the game.
+Players take turns choosing category tiles.
+They answer trivia questions.
+Scores update automatically.
+After the board is complete, players enter a final wager.
+The final question is answered.
+The player with the highest score wins.
+
+The game should be fun, clear, stable, and easy to expand.

@@ -53,8 +53,28 @@ const LEVEL_CONFIGS = [
   { numColors: 8, numEmpty: 2 },  // 26
   { numColors: 8, numEmpty: 2 },  // 27
   { numColors: 8, numEmpty: 1 },  // 28  expert — 8 colors, tight
-  { numColors: 9, numEmpty: 2 },  // 29  master — 9 colors
-  { numColors: 10, numEmpty: 2 }, // 30  max — 10 colors, full palette
+  { numColors: 9,  numEmpty: 2 },  // 29  master — 9 colors
+  { numColors: 10, numEmpty: 2 },  // 30  max — 10 colors, full palette
+  { numColors: 9,  numEmpty: 1 },  // 31  master tight
+  { numColors: 10, numEmpty: 1 },  // 32  max tight
+  { numColors: 8,  numEmpty: 1 },  // 33  expert refresh
+  { numColors: 9,  numEmpty: 2 },  // 34
+  { numColors: 9,  numEmpty: 1 },  // 35
+  { numColors: 10, numEmpty: 2 },  // 36
+  { numColors: 10, numEmpty: 1 },  // 37
+  { numColors: 7,  numEmpty: 1 },  // 38  very hard loop
+  { numColors: 8,  numEmpty: 2 },  // 39
+  { numColors: 8,  numEmpty: 1 },  // 40
+  { numColors: 9,  numEmpty: 2 },  // 41
+  { numColors: 9,  numEmpty: 1 },  // 42
+  { numColors: 10, numEmpty: 2 },  // 43
+  { numColors: 10, numEmpty: 1 },  // 44
+  { numColors: 8,  numEmpty: 1 },  // 45
+  { numColors: 9,  numEmpty: 2 },  // 46
+  { numColors: 9,  numEmpty: 1 },  // 47
+  { numColors: 10, numEmpty: 2 },  // 48
+  { numColors: 10, numEmpty: 1 },  // 49  penultimate
+  { numColors: 10, numEmpty: 1 },  // 50  ultimate — all 10 colors, no mercy
 ];
 const TOTAL_LEVELS = LEVEL_CONFIGS.length;
 const INIT_UNDOS  = 3;

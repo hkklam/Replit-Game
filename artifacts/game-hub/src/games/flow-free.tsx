@@ -19,8 +19,9 @@ const PAL: Record<string, string> = {
 interface Dot { r: number; c: number; color: string; }
 interface Level { size: number; dots: Dot[]; }
 
-const LEVELS: Level[] = [
-  // ── 5×5 ──────────────────────────────────────────────────────────────────────
+// ── Small Boards (5×5 – 8×8) — 50 levels ─────────────────────────────────────
+const SMALL_LEVELS: Level[] = [
+  // ── 5×5 ── levels 1-10
   { size:5, dots:[{r:0,c:0,color:"red"},{r:4,c:2,color:"red"},
     {r:1,c:0,color:"blue"},{r:4,c:1,color:"blue"},
     {r:3,c:1,color:"green"},{r:3,c:3,color:"green"}] },
@@ -45,7 +46,36 @@ const LEVELS: Level[] = [
     {r:2,c:1,color:"green"},{r:2,c:4,color:"green"},
     {r:4,c:0,color:"blue"},{r:4,c:3,color:"blue"}] },
 
-  // ── 6×6 ──────────────────────────────────────────────────────────────────────
+  { size:5, dots:[{r:0,c:0,color:"red"},{r:4,c:4,color:"red"},
+    {r:0,c:4,color:"blue"},{r:4,c:0,color:"blue"},
+    {r:0,c:2,color:"green"},{r:4,c:2,color:"green"},
+    {r:2,c:0,color:"yellow"},{r:2,c:4,color:"yellow"}] },
+
+  { size:5, dots:[{r:0,c:1,color:"red"},{r:4,c:3,color:"red"},
+    {r:0,c:3,color:"blue"},{r:4,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:3,c:4,color:"green"},
+    {r:1,c:4,color:"yellow"},{r:3,c:0,color:"yellow"},
+    {r:2,c:2,color:"orange"},{r:4,c:4,color:"orange"}] },
+
+  { size:5, dots:[{r:0,c:0,color:"red"},{r:3,c:3,color:"red"},
+    {r:0,c:4,color:"blue"},{r:2,c:1,color:"blue"},
+    {r:1,c:2,color:"green"},{r:4,c:0,color:"green"},
+    {r:2,c:4,color:"yellow"},{r:4,c:2,color:"yellow"},
+    {r:0,c:2,color:"orange"},{r:4,c:4,color:"orange"}] },
+
+  { size:5, dots:[{r:0,c:0,color:"red"},{r:2,c:4,color:"red"},
+    {r:0,c:3,color:"blue"},{r:4,c:0,color:"blue"},
+    {r:1,c:1,color:"green"},{r:3,c:3,color:"green"},
+    {r:0,c:4,color:"yellow"},{r:4,c:3,color:"yellow"},
+    {r:2,c:0,color:"orange"},{r:4,c:2,color:"orange"}] },
+
+  { size:5, dots:[{r:0,c:2,color:"red"},{r:4,c:0,color:"red"},
+    {r:0,c:4,color:"blue"},{r:3,c:1,color:"blue"},
+    {r:2,c:0,color:"green"},{r:4,c:4,color:"green"},
+    {r:1,c:3,color:"yellow"},{r:3,c:3,color:"yellow"},
+    {r:0,c:1,color:"orange"},{r:4,c:2,color:"orange"}] },
+
+  // ── 6×6 ── levels 11-22
   { size:6, dots:[{r:0,c:0,color:"red"},{r:5,c:5,color:"red"},
     {r:1,c:0,color:"blue"},{r:5,c:4,color:"blue"},
     {r:1,c:1,color:"green"},{r:2,c:1,color:"green"},
@@ -70,7 +100,65 @@ const LEVELS: Level[] = [
     {r:2,c:2,color:"orange"},{r:3,c:3,color:"orange"},
     {r:0,c:0,color:"pink"},{r:5,c:5,color:"pink"}] },
 
-  // ── 7×7 ──────────────────────────────────────────────────────────────────────
+  { size:6, dots:[{r:0,c:0,color:"red"},{r:5,c:5,color:"red"},
+    {r:0,c:5,color:"blue"},{r:5,c:0,color:"blue"},
+    {r:0,c:2,color:"green"},{r:5,c:3,color:"green"},
+    {r:2,c:0,color:"yellow"},{r:3,c:5,color:"yellow"},
+    {r:1,c:3,color:"orange"},{r:4,c:2,color:"orange"}] },
+
+  { size:6, dots:[{r:0,c:0,color:"red"},{r:5,c:4,color:"red"},
+    {r:0,c:4,color:"blue"},{r:5,c:1,color:"blue"},
+    {r:1,c:1,color:"green"},{r:4,c:4,color:"green"},
+    {r:1,c:4,color:"yellow"},{r:4,c:1,color:"yellow"},
+    {r:0,c:2,color:"orange"},{r:2,c:5,color:"orange"},
+    {r:3,c:0,color:"pink"},{r:5,c:3,color:"pink"}] },
+
+  { size:6, dots:[{r:0,c:1,color:"red"},{r:5,c:4,color:"red"},
+    {r:0,c:4,color:"blue"},{r:5,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:4,c:5,color:"green"},
+    {r:1,c:5,color:"yellow"},{r:4,c:0,color:"yellow"},
+    {r:2,c:2,color:"orange"},{r:3,c:3,color:"orange"},
+    {r:2,c:4,color:"pink"},{r:3,c:1,color:"pink"}] },
+
+  { size:6, dots:[{r:0,c:0,color:"red"},{r:4,c:5,color:"red"},
+    {r:0,c:5,color:"blue"},{r:5,c:0,color:"blue"},
+    {r:1,c:2,color:"green"},{r:4,c:3,color:"green"},
+    {r:2,c:1,color:"yellow"},{r:4,c:4,color:"yellow"},
+    {r:0,c:3,color:"orange"},{r:5,c:4,color:"orange"},
+    {r:2,c:4,color:"pink"},{r:5,c:2,color:"pink"}] },
+
+  { size:6, dots:[{r:0,c:2,color:"red"},{r:5,c:3,color:"red"},
+    {r:1,c:0,color:"blue"},{r:4,c:5,color:"blue"},
+    {r:0,c:4,color:"green"},{r:3,c:0,color:"green"},
+    {r:2,c:1,color:"yellow"},{r:5,c:4,color:"yellow"},
+    {r:0,c:0,color:"orange"},{r:3,c:3,color:"orange"},
+    {r:2,c:5,color:"pink"},{r:5,c:1,color:"pink"},
+    {r:1,c:3,color:"maroon"},{r:4,c:2,color:"maroon"}] },
+
+  { size:6, dots:[{r:0,c:0,color:"red"},{r:5,c:5,color:"red"},
+    {r:0,c:3,color:"blue"},{r:3,c:0,color:"blue"},
+    {r:0,c:5,color:"green"},{r:5,c:2,color:"green"},
+    {r:1,c:2,color:"yellow"},{r:4,c:5,color:"yellow"},
+    {r:2,c:4,color:"orange"},{r:5,c:1,color:"orange"},
+    {r:3,c:3,color:"pink"},{r:5,c:4,color:"pink"},
+    {r:1,c:1,color:"maroon"},{r:4,c:2,color:"maroon"}] },
+
+  { size:6, dots:[{r:0,c:1,color:"red"},{r:4,c:4,color:"red"},
+    {r:0,c:4,color:"blue"},{r:5,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:3,c:5,color:"green"},
+    {r:2,c:2,color:"yellow"},{r:5,c:3,color:"yellow"},
+    {r:0,c:0,color:"orange"},{r:2,c:5,color:"orange"},
+    {r:3,c:0,color:"pink"},{r:5,c:5,color:"pink"}] },
+
+  { size:6, dots:[{r:0,c:0,color:"red"},{r:5,c:5,color:"red"},
+    {r:0,c:5,color:"blue"},{r:5,c:0,color:"blue"},
+    {r:0,c:2,color:"green"},{r:5,c:3,color:"green"},
+    {r:1,c:1,color:"yellow"},{r:4,c:4,color:"yellow"},
+    {r:1,c:4,color:"orange"},{r:4,c:1,color:"orange"},
+    {r:2,c:0,color:"pink"},{r:3,c:5,color:"pink"},
+    {r:2,c:3,color:"maroon"},{r:3,c:2,color:"maroon"}] },
+
+  // ── 7×7 ── levels 23-36
   { size:7, dots:[{r:0,c:0,color:"red"},{r:6,c:6,color:"red"},
     {r:0,c:6,color:"blue"},{r:6,c:0,color:"blue"},
     {r:0,c:3,color:"green"},{r:6,c:3,color:"green"},
@@ -91,7 +179,91 @@ const LEVELS: Level[] = [
     {r:2,c:3,color:"orange"},{r:4,c:3,color:"orange"},
     {r:3,c:2,color:"pink"},{r:3,c:4,color:"pink"}] },
 
-  // ── 8×8 ──────────────────────────────────────────────────────────────────────
+  { size:7, dots:[{r:0,c:0,color:"red"},{r:6,c:6,color:"red"},
+    {r:0,c:6,color:"blue"},{r:6,c:0,color:"blue"},
+    {r:0,c:3,color:"green"},{r:6,c:3,color:"green"},
+    {r:3,c:0,color:"yellow"},{r:3,c:6,color:"yellow"},
+    {r:1,c:2,color:"orange"},{r:5,c:4,color:"orange"},
+    {r:2,c:5,color:"pink"},{r:4,c:1,color:"pink"}] },
+
+  { size:7, dots:[{r:0,c:0,color:"red"},{r:5,c:6,color:"red"},
+    {r:0,c:6,color:"blue"},{r:6,c:1,color:"blue"},
+    {r:1,c:2,color:"green"},{r:5,c:4,color:"green"},
+    {r:0,c:3,color:"yellow"},{r:6,c:4,color:"yellow"},
+    {r:2,c:0,color:"orange"},{r:4,c:6,color:"orange"},
+    {r:1,c:5,color:"pink"},{r:4,c:2,color:"pink"},
+    {r:3,c:3,color:"maroon"},{r:6,c:6,color:"maroon"}] },
+
+  { size:7, dots:[{r:0,c:0,color:"red"},{r:6,c:6,color:"red"},
+    {r:0,c:6,color:"blue"},{r:6,c:0,color:"blue"},
+    {r:1,c:1,color:"green"},{r:5,c:5,color:"green"},
+    {r:1,c:5,color:"yellow"},{r:5,c:1,color:"yellow"},
+    {r:2,c:2,color:"orange"},{r:4,c:4,color:"orange"},
+    {r:2,c:4,color:"pink"},{r:4,c:2,color:"pink"},
+    {r:0,c:3,color:"maroon"},{r:6,c:3,color:"maroon"}] },
+
+  { size:7, dots:[{r:0,c:1,color:"red"},{r:6,c:5,color:"red"},
+    {r:0,c:5,color:"blue"},{r:6,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:5,c:6,color:"green"},
+    {r:1,c:6,color:"yellow"},{r:5,c:0,color:"yellow"},
+    {r:2,c:3,color:"orange"},{r:4,c:3,color:"orange"},
+    {r:0,c:3,color:"pink"},{r:3,c:0,color:"pink"},
+    {r:3,c:6,color:"maroon"},{r:6,c:3,color:"maroon"}] },
+
+  { size:7, dots:[{r:0,c:0,color:"red"},{r:4,c:6,color:"red"},
+    {r:0,c:6,color:"blue"},{r:6,c:0,color:"blue"},
+    {r:0,c:3,color:"green"},{r:3,c:6,color:"green"},
+    {r:2,c:0,color:"yellow"},{r:6,c:4,color:"yellow"},
+    {r:1,c:4,color:"orange"},{r:5,c:2,color:"orange"},
+    {r:3,c:2,color:"pink"},{r:6,c:5,color:"pink"},
+    {r:2,c:5,color:"maroon"},{r:5,c:1,color:"maroon"},
+    {r:4,c:1,color:"sky"},{r:6,c:3,color:"sky"}] },
+
+  { size:7, dots:[{r:0,c:0,color:"red"},{r:6,c:6,color:"red"},
+    {r:0,c:6,color:"blue"},{r:6,c:0,color:"blue"},
+    {r:0,c:3,color:"green"},{r:6,c:3,color:"green"},
+    {r:3,c:0,color:"yellow"},{r:3,c:6,color:"yellow"},
+    {r:1,c:1,color:"orange"},{r:5,c:5,color:"orange"},
+    {r:1,c:5,color:"pink"},{r:5,c:1,color:"pink"},
+    {r:2,c:2,color:"maroon"},{r:4,c:4,color:"maroon"},
+    {r:2,c:4,color:"sky"},{r:4,c:2,color:"sky"}] },
+
+  { size:7, dots:[{r:0,c:0,color:"red"},{r:6,c:5,color:"red"},
+    {r:0,c:5,color:"blue"},{r:5,c:0,color:"blue"},
+    {r:1,c:2,color:"green"},{r:5,c:4,color:"green"},
+    {r:0,c:3,color:"yellow"},{r:3,c:6,color:"yellow"},
+    {r:2,c:1,color:"orange"},{r:6,c:2,color:"orange"},
+    {r:2,c:5,color:"pink"},{r:6,c:6,color:"pink"},
+    {r:3,c:3,color:"maroon"},{r:6,c:0,color:"maroon"}] },
+
+  { size:7, dots:[{r:0,c:2,color:"red"},{r:5,c:0,color:"red"},
+    {r:0,c:4,color:"blue"},{r:4,c:6,color:"blue"},
+    {r:1,c:0,color:"green"},{r:6,c:3,color:"green"},
+    {r:1,c:5,color:"yellow"},{r:3,c:1,color:"yellow"},
+    {r:2,c:3,color:"orange"},{r:6,c:6,color:"orange"},
+    {r:0,c:6,color:"pink"},{r:4,c:2,color:"pink"},
+    {r:3,c:5,color:"maroon"},{r:6,c:1,color:"maroon"}] },
+
+  { size:7, dots:[{r:0,c:0,color:"red"},{r:3,c:4,color:"red"},
+    {r:0,c:6,color:"blue"},{r:4,c:2,color:"blue"},
+    {r:1,c:1,color:"green"},{r:5,c:5,color:"green"},
+    {r:1,c:4,color:"yellow"},{r:4,c:0,color:"yellow"},
+    {r:2,c:2,color:"orange"},{r:6,c:6,color:"orange"},
+    {r:2,c:6,color:"pink"},{r:5,c:3,color:"pink"},
+    {r:0,c:3,color:"maroon"},{r:6,c:3,color:"maroon"},
+    {r:3,c:0,color:"sky"},{r:6,c:1,color:"sky"}] },
+
+  { size:7, dots:[{r:0,c:0,color:"red"},{r:6,c:6,color:"red"},
+    {r:0,c:6,color:"blue"},{r:6,c:0,color:"blue"},
+    {r:0,c:2,color:"green"},{r:4,c:6,color:"green"},
+    {r:0,c:4,color:"yellow"},{r:2,c:0,color:"yellow"},
+    {r:2,c:5,color:"orange"},{r:6,c:1,color:"orange"},
+    {r:1,c:3,color:"pink"},{r:5,c:3,color:"pink"},
+    {r:3,c:2,color:"maroon"},{r:5,c:0,color:"maroon"},
+    {r:3,c:4,color:"sky"},{r:6,c:4,color:"sky"},
+    {r:4,c:1,color:"lime"},{r:6,c:3,color:"lime"}] },
+
+  // ── 8×8 ── levels 37-50
   { size:8, dots:[{r:0,c:0,color:"red"},{r:7,c:7,color:"red"},
     {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
     {r:0,c:3,color:"green"},{r:7,c:4,color:"green"},
@@ -114,15 +286,616 @@ const LEVELS: Level[] = [
     {r:1,c:5,color:"orange"},{r:6,c:2,color:"orange"},
     {r:3,c:2,color:"pink"},{r:4,c:5,color:"pink"},
     {r:3,c:6,color:"maroon"},{r:5,c:4,color:"maroon"}] },
+
+  { size:8, dots:[{r:0,c:0,color:"red"},{r:7,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:0,c:3,color:"green"},{r:7,c:4,color:"green"},
+    {r:3,c:0,color:"yellow"},{r:4,c:7,color:"yellow"},
+    {r:1,c:2,color:"orange"},{r:6,c:5,color:"orange"},
+    {r:2,c:5,color:"pink"},{r:5,c:2,color:"pink"}] },
+
+  { size:8, dots:[{r:0,c:0,color:"red"},{r:6,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:1,c:2,color:"green"},{r:5,c:5,color:"green"},
+    {r:0,c:4,color:"yellow"},{r:4,c:0,color:"yellow"},
+    {r:2,c:6,color:"orange"},{r:7,c:3,color:"orange"},
+    {r:3,c:1,color:"pink"},{r:6,c:4,color:"pink"},
+    {r:1,c:5,color:"maroon"},{r:4,c:7,color:"maroon"}] },
+
+  { size:8, dots:[{r:0,c:0,color:"red"},{r:7,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:0,c:3,color:"green"},{r:3,c:7,color:"green"},
+    {r:0,c:4,color:"yellow"},{r:7,c:3,color:"yellow"},
+    {r:2,c:1,color:"orange"},{r:5,c:6,color:"orange"},
+    {r:1,c:5,color:"pink"},{r:6,c:2,color:"pink"},
+    {r:3,c:0,color:"maroon"},{r:4,c:7,color:"maroon"},
+    {r:4,c:1,color:"sky"},{r:7,c:6,color:"sky"}] },
+
+  { size:8, dots:[{r:0,c:0,color:"red"},{r:7,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:1,c:1,color:"green"},{r:6,c:6,color:"green"},
+    {r:1,c:6,color:"yellow"},{r:6,c:1,color:"yellow"},
+    {r:2,c:2,color:"orange"},{r:5,c:5,color:"orange"},
+    {r:2,c:5,color:"pink"},{r:5,c:2,color:"pink"},
+    {r:0,c:3,color:"maroon"},{r:7,c:4,color:"maroon"},
+    {r:3,c:0,color:"sky"},{r:4,c:7,color:"sky"}] },
+
+  { size:8, dots:[{r:0,c:1,color:"red"},{r:7,c:6,color:"red"},
+    {r:0,c:6,color:"blue"},{r:7,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:6,c:7,color:"green"},
+    {r:1,c:7,color:"yellow"},{r:6,c:0,color:"yellow"},
+    {r:2,c:3,color:"orange"},{r:5,c:4,color:"orange"},
+    {r:0,c:3,color:"pink"},{r:3,c:0,color:"pink"},
+    {r:3,c:7,color:"maroon"},{r:7,c:4,color:"maroon"},
+    {r:4,c:2,color:"sky"},{r:7,c:3,color:"sky"}] },
+
+  { size:8, dots:[{r:0,c:0,color:"red"},{r:5,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:2,color:"blue"},
+    {r:1,c:3,color:"green"},{r:6,c:5,color:"green"},
+    {r:2,c:0,color:"yellow"},{r:7,c:5,color:"yellow"},
+    {r:0,c:4,color:"orange"},{r:4,c:7,color:"orange"},
+    {r:3,c:2,color:"pink"},{r:6,c:0,color:"pink"},
+    {r:1,c:6,color:"maroon"},{r:5,c:1,color:"maroon"},
+    {r:4,c:4,color:"sky"},{r:7,c:7,color:"sky"}] },
+
+  { size:8, dots:[{r:0,c:0,color:"red"},{r:7,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:0,c:3,color:"green"},{r:7,c:4,color:"green"},
+    {r:3,c:0,color:"yellow"},{r:4,c:7,color:"yellow"},
+    {r:1,c:1,color:"orange"},{r:6,c:6,color:"orange"},
+    {r:1,c:6,color:"pink"},{r:6,c:1,color:"pink"},
+    {r:2,c:4,color:"maroon"},{r:5,c:3,color:"maroon"},
+    {r:3,c:5,color:"sky"},{r:4,c:2,color:"sky"},
+    {r:0,c:5,color:"lime"},{r:5,c:0,color:"lime"}] },
+
+  { size:8, dots:[{r:0,c:0,color:"red"},{r:7,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:1,c:2,color:"green"},{r:6,c:5,color:"green"},
+    {r:2,c:1,color:"yellow"},{r:5,c:6,color:"yellow"},
+    {r:0,c:4,color:"orange"},{r:4,c:0,color:"orange"},
+    {r:3,c:7,color:"pink"},{r:7,c:3,color:"pink"},
+    {r:2,c:5,color:"maroon"},{r:5,c:2,color:"maroon"},
+    {r:1,c:4,color:"sky"},{r:6,c:3,color:"sky"},
+    {r:3,c:1,color:"lime"},{r:4,c:6,color:"lime"}] },
+
+  { size:8, dots:[{r:0,c:0,color:"red"},{r:7,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:0,c:2,color:"green"},{r:2,c:7,color:"green"},
+    {r:0,c:5,color:"yellow"},{r:5,c:0,color:"yellow"},
+    {r:1,c:4,color:"orange"},{r:6,c:3,color:"orange"},
+    {r:3,c:1,color:"pink"},{r:5,c:6,color:"pink"},
+    {r:2,c:3,color:"maroon"},{r:4,c:4,color:"maroon"},
+    {r:4,c:1,color:"sky"},{r:7,c:5,color:"sky"},
+    {r:1,c:6,color:"lime"},{r:6,c:1,color:"lime"}] },
+
+  { size:8, dots:[{r:0,c:0,color:"red"},{r:7,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:0,c:3,color:"green"},{r:3,c:7,color:"green"},
+    {r:4,c:0,color:"yellow"},{r:7,c:4,color:"yellow"},
+    {r:1,c:5,color:"orange"},{r:6,c:2,color:"orange"},
+    {r:2,c:2,color:"pink"},{r:5,c:5,color:"pink"},
+    {r:1,c:1,color:"maroon"},{r:6,c:6,color:"maroon"},
+    {r:3,c:4,color:"sky"},{r:4,c:3,color:"sky"},
+    {r:0,c:5,color:"lime"},{r:7,c:2,color:"lime"},
+    {r:2,c:6,color:"purple"},{r:5,c:1,color:"purple"}] },
+
+  { size:8, dots:[{r:0,c:0,color:"red"},{r:7,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:0,c:4,color:"green"},{r:4,c:7,color:"green"},
+    {r:3,c:0,color:"yellow"},{r:7,c:3,color:"yellow"},
+    {r:1,c:2,color:"orange"},{r:5,c:5,color:"orange"},
+    {r:2,c:6,color:"pink"},{r:6,c:1,color:"pink"},
+    {r:0,c:2,color:"maroon"},{r:2,c:0,color:"maroon"},
+    {r:5,c:7,color:"sky"},{r:7,c:5,color:"sky"},
+    {r:3,c:4,color:"lime"},{r:6,c:3,color:"lime"},
+    {r:1,c:5,color:"purple"},{r:4,c:2,color:"purple"}] },
 ];
 
-const TOTAL = LEVELS.length;
-const SAVE_KEY = "flow-free-v1";
-const OFF = 10; // canvas padding
+// ── Large Boards (9×9 – 10×10) — 50 levels ───────────────────────────────────
+const LARGE_LEVELS: Level[] = [
+  // ── 9×9 ── levels 1-25
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:0,c:4,color:"green"},{r:8,c:4,color:"green"},
+    {r:4,c:0,color:"yellow"},{r:4,c:8,color:"yellow"},
+    {r:2,c:2,color:"orange"},{r:6,c:6,color:"orange"},
+    {r:2,c:6,color:"pink"},{r:6,c:2,color:"pink"},
+    {r:1,c:4,color:"maroon"},{r:7,c:4,color:"maroon"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:0,c:4,color:"green"},{r:4,c:8,color:"green"},
+    {r:4,c:0,color:"yellow"},{r:8,c:4,color:"yellow"},
+    {r:1,c:2,color:"orange"},{r:7,c:6,color:"orange"},
+    {r:1,c:6,color:"pink"},{r:7,c:2,color:"pink"},
+    {r:3,c:1,color:"maroon"},{r:5,c:7,color:"maroon"},
+    {r:3,c:7,color:"sky"},{r:5,c:1,color:"sky"}] },
+
+  { size:9, dots:[{r:0,c:1,color:"red"},{r:8,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:8,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:7,c:8,color:"green"},
+    {r:1,c:8,color:"yellow"},{r:7,c:0,color:"yellow"},
+    {r:2,c:3,color:"orange"},{r:6,c:5,color:"orange"},
+    {r:2,c:5,color:"pink"},{r:6,c:3,color:"pink"},
+    {r:0,c:4,color:"maroon"},{r:8,c:4,color:"maroon"},
+    {r:4,c:0,color:"sky"},{r:4,c:8,color:"sky"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:5,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:3,color:"blue"},
+    {r:1,c:4,color:"green"},{r:7,c:6,color:"green"},
+    {r:2,c:0,color:"yellow"},{r:8,c:5,color:"yellow"},
+    {r:0,c:5,color:"orange"},{r:4,c:8,color:"orange"},
+    {r:3,c:2,color:"pink"},{r:7,c:1,color:"pink"},
+    {r:1,c:7,color:"maroon"},{r:6,c:0,color:"maroon"},
+    {r:4,c:4,color:"sky"},{r:8,c:8,color:"sky"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:0,c:3,color:"green"},{r:8,c:5,color:"green"},
+    {r:0,c:6,color:"yellow"},{r:6,c:0,color:"yellow"},
+    {r:3,c:8,color:"orange"},{r:8,c:2,color:"orange"},
+    {r:1,c:4,color:"pink"},{r:7,c:4,color:"pink"},
+    {r:2,c:1,color:"maroon"},{r:6,c:7,color:"maroon"},
+    {r:4,c:2,color:"sky"},{r:4,c:6,color:"sky"},
+    {r:3,c:5,color:"lime"},{r:5,c:3,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:1,c:2,color:"green"},{r:7,c:6,color:"green"},
+    {r:1,c:6,color:"yellow"},{r:7,c:2,color:"yellow"},
+    {r:0,c:4,color:"orange"},{r:8,c:4,color:"orange"},
+    {r:4,c:0,color:"pink"},{r:4,c:8,color:"pink"},
+    {r:2,c:4,color:"maroon"},{r:6,c:4,color:"maroon"},
+    {r:3,c:3,color:"sky"},{r:5,c:5,color:"sky"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:1,c:3,color:"green"},{r:7,c:5,color:"green"},
+    {r:2,c:0,color:"yellow"},{r:6,c:8,color:"yellow"},
+    {r:0,c:4,color:"orange"},{r:4,c:0,color:"orange"},
+    {r:4,c:8,color:"pink"},{r:8,c:4,color:"pink"},
+    {r:1,c:6,color:"maroon"},{r:6,c:1,color:"maroon"},
+    {r:3,c:2,color:"sky"},{r:5,c:6,color:"sky"},
+    {r:3,c:5,color:"lime"},{r:5,c:3,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:1,color:"red"},{r:8,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:8,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:7,c:8,color:"green"},
+    {r:1,c:8,color:"yellow"},{r:7,c:0,color:"yellow"},
+    {r:2,c:4,color:"orange"},{r:6,c:4,color:"orange"},
+    {r:0,c:4,color:"pink"},{r:8,c:4,color:"pink"},
+    {r:4,c:2,color:"maroon"},{r:4,c:6,color:"maroon"},
+    {r:2,c:2,color:"sky"},{r:6,c:6,color:"sky"},
+    {r:2,c:6,color:"lime"},{r:6,c:2,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:2,c:2,color:"green"},{r:6,c:6,color:"green"},
+    {r:2,c:6,color:"yellow"},{r:6,c:2,color:"yellow"},
+    {r:0,c:4,color:"orange"},{r:4,c:0,color:"orange"},
+    {r:4,c:8,color:"pink"},{r:8,c:4,color:"pink"},
+    {r:1,c:1,color:"maroon"},{r:7,c:7,color:"maroon"},
+    {r:1,c:7,color:"sky"},{r:7,c:1,color:"sky"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:4,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:4,color:"blue"},
+    {r:4,c:0,color:"green"},{r:8,c:8,color:"green"},
+    {r:0,c:4,color:"yellow"},{r:8,c:0,color:"yellow"},
+    {r:1,c:2,color:"orange"},{r:5,c:6,color:"orange"},
+    {r:2,c:7,color:"pink"},{r:6,c:1,color:"pink"},
+    {r:3,c:4,color:"maroon"},{r:7,c:4,color:"maroon"},
+    {r:1,c:5,color:"sky"},{r:5,c:1,color:"sky"},
+    {r:4,c:4,color:"lime"},{r:7,c:7,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:0,c:3,color:"green"},{r:3,c:8,color:"green"},
+    {r:0,c:6,color:"yellow"},{r:6,c:0,color:"yellow"},
+    {r:5,c:8,color:"orange"},{r:8,c:3,color:"orange"},
+    {r:3,c:5,color:"pink"},{r:5,c:3,color:"pink"},
+    {r:1,c:4,color:"maroon"},{r:7,c:4,color:"maroon"},
+    {r:4,c:1,color:"sky"},{r:4,c:7,color:"sky"},
+    {r:2,c:2,color:"lime"},{r:6,c:6,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:1,c:2,color:"green"},{r:6,c:5,color:"green"},
+    {r:2,c:8,color:"yellow"},{r:7,c:1,color:"yellow"},
+    {r:0,c:4,color:"orange"},{r:4,c:0,color:"orange"},
+    {r:4,c:8,color:"pink"},{r:8,c:4,color:"pink"},
+    {r:1,c:5,color:"maroon"},{r:5,c:7,color:"maroon"},
+    {r:3,c:3,color:"sky"},{r:5,c:5,color:"sky"},
+    {r:2,c:1,color:"lime"},{r:6,c:3,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:2,color:"red"},{r:8,c:6,color:"red"},
+    {r:0,c:6,color:"blue"},{r:8,c:2,color:"blue"},
+    {r:0,c:0,color:"green"},{r:4,c:8,color:"green"},
+    {r:4,c:0,color:"yellow"},{r:8,c:8,color:"yellow"},
+    {r:1,c:4,color:"orange"},{r:7,c:4,color:"orange"},
+    {r:2,c:1,color:"pink"},{r:6,c:7,color:"pink"},
+    {r:2,c:7,color:"maroon"},{r:6,c:1,color:"maroon"},
+    {r:4,c:4,color:"sky"},{r:8,c:0,color:"sky"}] },
+
+  { size:9, dots:[{r:0,c:1,color:"red"},{r:8,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:8,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:7,c:8,color:"green"},
+    {r:1,c:8,color:"yellow"},{r:7,c:0,color:"yellow"},
+    {r:0,c:4,color:"orange"},{r:8,c:4,color:"orange"},
+    {r:4,c:0,color:"pink"},{r:4,c:8,color:"pink"},
+    {r:2,c:3,color:"maroon"},{r:6,c:5,color:"maroon"},
+    {r:2,c:5,color:"sky"},{r:6,c:3,color:"sky"},
+    {r:4,c:4,color:"lime"},{r:7,c:5,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:7,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:1,color:"blue"},
+    {r:1,c:5,color:"green"},{r:6,c:3,color:"green"},
+    {r:0,c:3,color:"yellow"},{r:5,c:8,color:"yellow"},
+    {r:3,c:0,color:"orange"},{r:7,c:5,color:"orange"},
+    {r:2,c:2,color:"pink"},{r:5,c:5,color:"pink"},
+    {r:1,c:7,color:"maroon"},{r:6,c:0,color:"maroon"},
+    {r:4,c:3,color:"sky"},{r:8,c:6,color:"sky"},
+    {r:3,c:6,color:"lime"},{r:8,c:3,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:0,c:3,color:"green"},{r:8,c:5,color:"green"},
+    {r:3,c:0,color:"yellow"},{r:5,c:8,color:"yellow"},
+    {r:0,c:6,color:"orange"},{r:6,c:8,color:"orange"},
+    {r:2,c:8,color:"pink"},{r:8,c:2,color:"pink"},
+    {r:4,c:4,color:"maroon"},{r:7,c:1,color:"maroon"},
+    {r:1,c:2,color:"sky"},{r:5,c:6,color:"sky"},
+    {r:3,c:7,color:"lime"},{r:7,c:3,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:5,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:1,c:3,color:"green"},{r:8,c:5,color:"green"},
+    {r:2,c:8,color:"yellow"},{r:8,c:2,color:"yellow"},
+    {r:0,c:5,color:"orange"},{r:5,c:0,color:"orange"},
+    {r:3,c:6,color:"pink"},{r:7,c:4,color:"pink"},
+    {r:1,c:1,color:"maroon"},{r:6,c:6,color:"maroon"},
+    {r:4,c:2,color:"sky"},{r:6,c:8,color:"sky"},
+    {r:3,c:4,color:"lime"},{r:8,c:7,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:2,color:"red"},{r:8,c:6,color:"red"},
+    {r:0,c:6,color:"blue"},{r:8,c:2,color:"blue"},
+    {r:1,c:0,color:"green"},{r:7,c:8,color:"green"},
+    {r:1,c:8,color:"yellow"},{r:7,c:0,color:"yellow"},
+    {r:2,c:4,color:"orange"},{r:6,c:4,color:"orange"},
+    {r:0,c:4,color:"pink"},{r:8,c:4,color:"pink"},
+    {r:4,c:2,color:"maroon"},{r:4,c:6,color:"maroon"},
+    {r:2,c:1,color:"sky"},{r:6,c:7,color:"sky"},
+    {r:3,c:3,color:"lime"},{r:5,c:5,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:0,c:4,color:"green"},{r:8,c:4,color:"green"},
+    {r:4,c:0,color:"yellow"},{r:4,c:8,color:"yellow"},
+    {r:1,c:2,color:"orange"},{r:7,c:6,color:"orange"},
+    {r:1,c:6,color:"pink"},{r:7,c:2,color:"pink"},
+    {r:2,c:1,color:"maroon"},{r:6,c:7,color:"maroon"},
+    {r:2,c:7,color:"sky"},{r:6,c:1,color:"sky"},
+    {r:3,c:3,color:"lime"},{r:5,c:5,color:"lime"},
+    {r:3,c:5,color:"purple"},{r:5,c:3,color:"purple"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:1,c:2,color:"green"},{r:7,c:5,color:"green"},
+    {r:1,c:5,color:"yellow"},{r:7,c:2,color:"yellow"},
+    {r:0,c:4,color:"orange"},{r:4,c:8,color:"orange"},
+    {r:4,c:0,color:"pink"},{r:8,c:4,color:"pink"},
+    {r:2,c:3,color:"maroon"},{r:6,c:5,color:"maroon"},
+    {r:2,c:6,color:"sky"},{r:6,c:2,color:"sky"},
+    {r:3,c:1,color:"lime"},{r:5,c:7,color:"lime"},
+    {r:3,c:8,color:"purple"},{r:5,c:1,color:"purple"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:6,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:2,color:"blue"},
+    {r:2,c:0,color:"green"},{r:8,c:6,color:"green"},
+    {r:0,c:5,color:"yellow"},{r:5,c:0,color:"yellow"},
+    {r:3,c:3,color:"orange"},{r:6,c:6,color:"orange"},
+    {r:1,c:7,color:"pink"},{r:7,c:1,color:"pink"},
+    {r:4,c:5,color:"maroon"},{r:8,c:8,color:"maroon"},
+    {r:1,c:2,color:"sky"},{r:5,c:4,color:"sky"},
+    {r:3,c:6,color:"lime"},{r:7,c:3,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:3,color:"red"},{r:8,c:5,color:"red"},
+    {r:3,c:0,color:"blue"},{r:5,c:8,color:"blue"},
+    {r:0,c:0,color:"green"},{r:8,c:8,color:"green"},
+    {r:0,c:8,color:"yellow"},{r:8,c:0,color:"yellow"},
+    {r:1,c:5,color:"orange"},{r:7,c:3,color:"orange"},
+    {r:2,c:2,color:"pink"},{r:6,c:6,color:"pink"},
+    {r:2,c:6,color:"maroon"},{r:6,c:2,color:"maroon"},
+    {r:4,c:4,color:"sky"},{r:8,c:3,color:"sky"},
+    {r:1,c:1,color:"lime"},{r:5,c:6,color:"lime"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:8,color:"red"},
+    {r:0,c:4,color:"blue"},{r:4,c:0,color:"blue"},
+    {r:0,c:8,color:"green"},{r:8,c:0,color:"green"},
+    {r:4,c:8,color:"yellow"},{r:8,c:4,color:"yellow"},
+    {r:1,c:2,color:"orange"},{r:5,c:5,color:"orange"},
+    {r:2,c:7,color:"pink"},{r:6,c:3,color:"pink"},
+    {r:0,c:6,color:"maroon"},{r:6,c:8,color:"maroon"},
+    {r:2,c:1,color:"sky"},{r:6,c:5,color:"sky"},
+    {r:3,c:4,color:"lime"},{r:7,c:2,color:"lime"},
+    {r:4,c:6,color:"purple"},{r:8,c:3,color:"purple"}] },
+
+  { size:9, dots:[{r:0,c:1,color:"red"},{r:8,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:8,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:7,c:8,color:"green"},
+    {r:1,c:8,color:"yellow"},{r:7,c:0,color:"yellow"},
+    {r:0,c:4,color:"orange"},{r:8,c:4,color:"orange"},
+    {r:4,c:0,color:"pink"},{r:4,c:8,color:"pink"},
+    {r:2,c:3,color:"maroon"},{r:6,c:5,color:"maroon"},
+    {r:2,c:5,color:"sky"},{r:6,c:3,color:"sky"},
+    {r:3,c:2,color:"lime"},{r:5,c:6,color:"lime"},
+    {r:3,c:6,color:"purple"},{r:5,c:2,color:"purple"}] },
+
+  { size:9, dots:[{r:0,c:0,color:"red"},{r:8,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:1,c:4,color:"green"},{r:8,c:3,color:"green"},
+    {r:0,c:3,color:"yellow"},{r:5,c:8,color:"yellow"},
+    {r:2,c:0,color:"orange"},{r:6,c:7,color:"orange"},
+    {r:0,c:5,color:"pink"},{r:4,c:8,color:"pink"},
+    {r:3,c:2,color:"maroon"},{r:7,c:6,color:"maroon"},
+    {r:1,c:7,color:"sky"},{r:6,c:1,color:"sky"},
+    {r:4,c:5,color:"lime"},{r:8,c:5,color:"lime"},
+    {r:3,c:4,color:"purple"},{r:6,c:4,color:"purple"}] },
+
+  // ── 10×10 ── levels 26-50
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:9,color:"red"},
+    {r:0,c:9,color:"blue"},{r:9,c:0,color:"blue"},
+    {r:0,c:4,color:"green"},{r:9,c:5,color:"green"},
+    {r:4,c:0,color:"yellow"},{r:5,c:9,color:"yellow"},
+    {r:2,c:2,color:"orange"},{r:7,c:7,color:"orange"},
+    {r:2,c:7,color:"pink"},{r:7,c:2,color:"pink"},
+    {r:1,c:5,color:"maroon"},{r:8,c:4,color:"maroon"},
+    {r:3,c:3,color:"sky"},{r:6,c:6,color:"sky"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:9,color:"red"},
+    {r:0,c:9,color:"blue"},{r:9,c:0,color:"blue"},
+    {r:0,c:4,color:"green"},{r:4,c:9,color:"green"},
+    {r:5,c:0,color:"yellow"},{r:9,c:5,color:"yellow"},
+    {r:0,c:7,color:"orange"},{r:7,c:9,color:"orange"},
+    {r:2,c:0,color:"pink"},{r:9,c:2,color:"pink"},
+    {r:1,c:3,color:"maroon"},{r:6,c:6,color:"maroon"},
+    {r:3,c:7,color:"sky"},{r:8,c:4,color:"sky"},
+    {r:4,c:4,color:"lime"},{r:7,c:7,color:"lime"}] },
+
+  { size:10, dots:[{r:0,c:1,color:"red"},{r:9,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:9,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:8,c:9,color:"green"},
+    {r:1,c:9,color:"yellow"},{r:8,c:0,color:"yellow"},
+    {r:2,c:4,color:"orange"},{r:7,c:5,color:"orange"},
+    {r:2,c:5,color:"pink"},{r:7,c:4,color:"pink"},
+    {r:0,c:4,color:"maroon"},{r:9,c:5,color:"maroon"},
+    {r:4,c:0,color:"sky"},{r:5,c:9,color:"sky"},
+    {r:4,c:4,color:"lime"},{r:5,c:5,color:"lime"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:9,c:0,color:"blue"},
+    {r:1,c:3,color:"green"},{r:8,c:5,color:"green"},
+    {r:0,c:5,color:"yellow"},{r:5,c:9,color:"yellow"},
+    {r:5,c:0,color:"orange"},{r:9,c:4,color:"orange"},
+    {r:2,c:7,color:"pink"},{r:7,c:2,color:"pink"},
+    {r:3,c:1,color:"maroon"},{r:6,c:8,color:"maroon"},
+    {r:1,c:6,color:"sky"},{r:6,c:1,color:"sky"},
+    {r:4,c:4,color:"lime"},{r:8,c:7,color:"lime"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:9,color:"red"},
+    {r:0,c:9,color:"blue"},{r:9,c:0,color:"blue"},
+    {r:0,c:4,color:"green"},{r:9,c:5,color:"green"},
+    {r:4,c:0,color:"yellow"},{r:5,c:9,color:"yellow"},
+    {r:1,c:2,color:"orange"},{r:8,c:7,color:"orange"},
+    {r:1,c:7,color:"pink"},{r:8,c:2,color:"pink"},
+    {r:2,c:5,color:"maroon"},{r:7,c:4,color:"maroon"},
+    {r:2,c:1,color:"sky"},{r:7,c:8,color:"sky"},
+    {r:4,c:4,color:"lime"},{r:5,c:5,color:"lime"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:9,color:"red"},
+    {r:0,c:9,color:"blue"},{r:9,c:0,color:"blue"},
+    {r:0,c:4,color:"green"},{r:4,c:9,color:"green"},
+    {r:5,c:0,color:"yellow"},{r:9,c:5,color:"yellow"},
+    {r:1,c:2,color:"orange"},{r:8,c:7,color:"orange"},
+    {r:1,c:7,color:"pink"},{r:8,c:2,color:"pink"},
+    {r:2,c:4,color:"maroon"},{r:7,c:5,color:"maroon"},
+    {r:2,c:6,color:"sky"},{r:7,c:3,color:"sky"},
+    {r:3,c:1,color:"lime"},{r:6,c:8,color:"lime"},
+    {r:3,c:8,color:"purple"},{r:6,c:1,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:1,c:4,color:"green"},{r:8,c:5,color:"green"},
+    {r:0,c:5,color:"yellow"},{r:5,c:9,color:"yellow"},
+    {r:5,c:0,color:"orange"},{r:9,c:4,color:"orange"},
+    {r:2,c:2,color:"pink"},{r:7,c:7,color:"pink"},
+    {r:2,c:7,color:"maroon"},{r:7,c:2,color:"maroon"},
+    {r:3,c:4,color:"sky"},{r:6,c:5,color:"sky"},
+    {r:1,c:7,color:"lime"},{r:7,c:1,color:"lime"},
+    {r:4,c:1,color:"purple"},{r:5,c:8,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:1,color:"red"},{r:9,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:9,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:8,c:9,color:"green"},
+    {r:1,c:9,color:"yellow"},{r:8,c:0,color:"yellow"},
+    {r:2,c:3,color:"orange"},{r:7,c:6,color:"orange"},
+    {r:2,c:6,color:"pink"},{r:7,c:3,color:"pink"},
+    {r:0,c:4,color:"maroon"},{r:9,c:5,color:"maroon"},
+    {r:4,c:0,color:"sky"},{r:5,c:9,color:"sky"},
+    {r:3,c:2,color:"lime"},{r:6,c:7,color:"lime"},
+    {r:3,c:7,color:"purple"},{r:6,c:2,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:9,color:"red"},
+    {r:0,c:9,color:"blue"},{r:9,c:0,color:"blue"},
+    {r:1,c:1,color:"green"},{r:8,c:8,color:"green"},
+    {r:1,c:8,color:"yellow"},{r:8,c:1,color:"yellow"},
+    {r:2,c:2,color:"orange"},{r:7,c:7,color:"orange"},
+    {r:2,c:7,color:"pink"},{r:7,c:2,color:"pink"},
+    {r:3,c:3,color:"maroon"},{r:6,c:6,color:"maroon"},
+    {r:3,c:6,color:"sky"},{r:6,c:3,color:"sky"},
+    {r:0,c:4,color:"lime"},{r:4,c:9,color:"lime"},
+    {r:5,c:0,color:"purple"},{r:9,c:5,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:8,c:9,color:"red"},
+    {r:0,c:9,color:"blue"},{r:9,c:1,color:"blue"},
+    {r:1,c:3,color:"green"},{r:7,c:6,color:"green"},
+    {r:0,c:6,color:"yellow"},{r:6,c:0,color:"yellow"},
+    {r:3,c:9,color:"orange"},{r:9,c:3,color:"orange"},
+    {r:2,c:2,color:"pink"},{r:6,c:7,color:"pink"},
+    {r:1,c:7,color:"maroon"},{r:7,c:2,color:"maroon"},
+    {r:4,c:5,color:"sky"},{r:9,c:6,color:"sky"},
+    {r:3,c:1,color:"lime"},{r:5,c:8,color:"lime"},
+    {r:4,c:3,color:"purple"},{r:8,c:4,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:2,color:"red"},{r:9,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:9,c:2,color:"blue"},
+    {r:1,c:0,color:"green"},{r:8,c:9,color:"green"},
+    {r:1,c:9,color:"yellow"},{r:8,c:0,color:"yellow"},
+    {r:2,c:5,color:"orange"},{r:7,c:4,color:"orange"},
+    {r:0,c:4,color:"pink"},{r:4,c:0,color:"pink"},
+    {r:5,c:9,color:"maroon"},{r:9,c:5,color:"maroon"},
+    {r:3,c:3,color:"sky"},{r:6,c:6,color:"sky"},
+    {r:3,c:7,color:"lime"},{r:6,c:2,color:"lime"},
+    {r:5,c:5,color:"purple"},{r:8,c:6,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:9,color:"red"},
+    {r:0,c:9,color:"blue"},{r:9,c:0,color:"blue"},
+    {r:0,c:5,color:"green"},{r:9,c:4,color:"green"},
+    {r:5,c:0,color:"yellow"},{r:4,c:9,color:"yellow"},
+    {r:1,c:3,color:"orange"},{r:8,c:6,color:"orange"},
+    {r:1,c:6,color:"pink"},{r:8,c:3,color:"pink"},
+    {r:2,c:1,color:"maroon"},{r:7,c:8,color:"maroon"},
+    {r:2,c:8,color:"sky"},{r:7,c:1,color:"sky"},
+    {r:4,c:4,color:"lime"},{r:6,c:5,color:"lime"},
+    {r:3,c:7,color:"purple"},{r:7,c:3,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:9,color:"red"},
+    {r:0,c:9,color:"blue"},{r:9,c:0,color:"blue"},
+    {r:1,c:2,color:"green"},{r:8,c:7,color:"green"},
+    {r:1,c:7,color:"yellow"},{r:8,c:2,color:"yellow"},
+    {r:2,c:4,color:"orange"},{r:7,c:5,color:"orange"},
+    {r:2,c:5,color:"pink"},{r:7,c:4,color:"pink"},
+    {r:0,c:4,color:"maroon"},{r:4,c:0,color:"maroon"},
+    {r:5,c:9,color:"sky"},{r:9,c:5,color:"sky"},
+    {r:3,c:3,color:"lime"},{r:6,c:6,color:"lime"},
+    {r:4,c:6,color:"purple"},{r:6,c:3,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:9,color:"red"},
+    {r:0,c:9,color:"blue"},{r:9,c:0,color:"blue"},
+    {r:1,c:4,color:"green"},{r:8,c:5,color:"green"},
+    {r:4,c:1,color:"yellow"},{r:5,c:8,color:"yellow"},
+    {r:0,c:6,color:"orange"},{r:6,c:9,color:"orange"},
+    {r:3,c:0,color:"pink"},{r:9,c:3,color:"pink"},
+    {r:0,c:3,color:"maroon"},{r:3,c:9,color:"maroon"},
+    {r:6,c:0,color:"sky"},{r:9,c:6,color:"sky"},
+    {r:2,c:2,color:"lime"},{r:7,c:7,color:"lime"},
+    {r:4,c:5,color:"purple"},{r:6,c:4,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:1,color:"red"},{r:8,c:8,color:"red"},
+    {r:1,c:0,color:"blue"},{r:8,c:1,color:"blue"},
+    {r:0,c:5,color:"green"},{r:5,c:9,color:"green"},
+    {r:4,c:0,color:"yellow"},{r:9,c:2,color:"yellow"},
+    {r:0,c:8,color:"orange"},{r:8,c:0,color:"orange"},
+    {r:2,c:3,color:"pink"},{r:6,c:6,color:"pink"},
+    {r:4,c:5,color:"maroon"},{r:8,c:8,color:"maroon"},
+    {r:1,c:7,color:"sky"},{r:7,c:1,color:"sky"},
+    {r:3,c:2,color:"lime"},{r:7,c:5,color:"lime"},
+    {r:2,c:8,color:"purple"},{r:6,c:3,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:3,color:"red"},{r:9,c:6,color:"red"},
+    {r:3,c:0,color:"blue"},{r:6,c:9,color:"blue"},
+    {r:0,c:6,color:"green"},{r:6,c:0,color:"green"},
+    {r:3,c:9,color:"yellow"},{r:9,c:3,color:"yellow"},
+    {r:1,c:1,color:"orange"},{r:8,c:8,color:"orange"},
+    {r:1,c:8,color:"pink"},{r:8,c:1,color:"pink"},
+    {r:2,c:4,color:"maroon"},{r:7,c:5,color:"maroon"},
+    {r:2,c:5,color:"sky"},{r:7,c:4,color:"sky"},
+    {r:4,c:2,color:"lime"},{r:5,c:7,color:"lime"},
+    {r:4,c:7,color:"purple"},{r:5,c:2,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:2,color:"red"},{r:8,c:7,color:"red"},
+    {r:2,c:0,color:"blue"},{r:7,c:9,color:"blue"},
+    {r:0,c:7,color:"green"},{r:7,c:0,color:"green"},
+    {r:2,c:9,color:"yellow"},{r:9,c:5,color:"yellow"},
+    {r:1,c:4,color:"orange"},{r:5,c:0,color:"orange"},
+    {r:4,c:9,color:"pink"},{r:9,c:6,color:"pink"},
+    {r:0,c:0,color:"maroon"},{r:4,c:5,color:"maroon"},
+    {r:5,c:4,color:"sky"},{r:9,c:9,color:"sky"},
+    {r:3,c:2,color:"lime"},{r:7,c:5,color:"lime"},
+    {r:1,c:7,color:"purple"},{r:6,c:3,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:7,color:"red"},
+    {r:0,c:7,color:"blue"},{r:7,c:0,color:"blue"},
+    {r:1,c:5,color:"green"},{r:8,c:4,color:"green"},
+    {r:3,c:9,color:"yellow"},{r:9,c:3,color:"yellow"},
+    {r:0,c:9,color:"orange"},{r:9,c:0,color:"orange"},
+    {r:2,c:3,color:"pink"},{r:6,c:6,color:"pink"},
+    {r:5,c:8,color:"maroon"},{r:8,c:1,color:"maroon"},
+    {r:1,c:2,color:"sky"},{r:5,c:5,color:"sky"},
+    {r:4,c:7,color:"lime"},{r:8,c:9,color:"lime"},
+    {r:3,c:1,color:"purple"},{r:7,c:4,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:9,color:"red"},
+    {r:0,c:9,color:"blue"},{r:9,c:0,color:"blue"},
+    {r:2,c:2,color:"green"},{r:7,c:7,color:"green"},
+    {r:2,c:7,color:"yellow"},{r:7,c:2,color:"yellow"},
+    {r:0,c:5,color:"orange"},{r:9,c:4,color:"orange"},
+    {r:4,c:0,color:"pink"},{r:5,c:9,color:"pink"},
+    {r:1,c:3,color:"maroon"},{r:8,c:6,color:"maroon"},
+    {r:3,c:8,color:"sky"},{r:8,c:1,color:"sky"},
+    {r:4,c:5,color:"lime"},{r:6,c:4,color:"lime"},
+    {r:1,c:6,color:"purple"},{r:6,c:1,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:1,color:"red"},{r:9,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:9,c:1,color:"blue"},
+    {r:1,c:0,color:"green"},{r:8,c:9,color:"green"},
+    {r:1,c:9,color:"yellow"},{r:8,c:0,color:"yellow"},
+    {r:2,c:4,color:"orange"},{r:7,c:5,color:"orange"},
+    {r:2,c:5,color:"pink"},{r:7,c:4,color:"pink"},
+    {r:0,c:5,color:"maroon"},{r:9,c:4,color:"maroon"},
+    {r:5,c:0,color:"sky"},{r:4,c:9,color:"sky"},
+    {r:3,c:2,color:"lime"},{r:6,c:7,color:"lime"},
+    {r:3,c:7,color:"purple"},{r:6,c:2,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:9,color:"red"},
+    {r:0,c:9,color:"blue"},{r:9,c:0,color:"blue"},
+    {r:0,c:4,color:"green"},{r:4,c:9,color:"green"},
+    {r:5,c:0,color:"yellow"},{r:9,c:5,color:"yellow"},
+    {r:2,c:2,color:"orange"},{r:6,c:7,color:"orange"},
+    {r:2,c:7,color:"pink"},{r:7,c:2,color:"pink"},
+    {r:1,c:6,color:"maroon"},{r:8,c:3,color:"maroon"},
+    {r:3,c:1,color:"sky"},{r:6,c:8,color:"sky"},
+    {r:4,c:4,color:"lime"},{r:7,c:5,color:"lime"},
+    {r:3,c:5,color:"purple"},{r:5,c:4,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:1,color:"red"},{r:8,c:9,color:"red"},
+    {r:1,c:0,color:"blue"},{r:9,c:7,color:"blue"},
+    {r:0,c:6,color:"green"},{r:6,c:9,color:"green"},
+    {r:3,c:0,color:"yellow"},{r:9,c:2,color:"yellow"},
+    {r:0,c:3,color:"orange"},{r:3,c:9,color:"orange"},
+    {r:6,c:0,color:"pink"},{r:9,c:4,color:"pink"},
+    {r:2,c:4,color:"maroon"},{r:7,c:6,color:"maroon"},
+    {r:1,c:7,color:"sky"},{r:7,c:1,color:"sky"},
+    {r:4,c:5,color:"lime"},{r:8,c:3,color:"lime"},
+    {r:2,c:8,color:"purple"},{r:6,c:3,color:"purple"}] },
+
+  { size:10, dots:[{r:0,c:0,color:"red"},{r:9,c:8,color:"red"},
+    {r:0,c:8,color:"blue"},{r:8,c:0,color:"blue"},
+    {r:1,c:3,color:"green"},{r:7,c:6,color:"green"},
+    {r:0,c:5,color:"yellow"},{r:5,c:0,color:"yellow"},
+    {r:4,c:9,color:"orange"},{r:9,c:4,color:"orange"},
+    {r:2,c:1,color:"pink"},{r:6,c:9,color:"pink"},
+    {r:1,c:8,color:"maroon"},{r:8,c:1,color:"maroon"},
+    {r:3,c:5,color:"sky"},{r:6,c:4,color:"sky"},
+    {r:4,c:2,color:"lime"},{r:8,c:7,color:"lime"},
+    {r:2,c:7,color:"purple"},{r:7,c:2,color:"purple"}] },
+];
+
+const SMALL_SAVE = "flow-free-small-v2";
+const LARGE_SAVE = "flow-free-large-v2";
+const OFF = 10;
 
 // ─── GAME STATE ───────────────────────────────────────────────────────────────
 type Board = (string|null)[][];
-
 interface GS {
   level:    Level;
   board:    Board;
@@ -132,19 +905,15 @@ interface GS {
   won:      boolean;
   moves:    number;
 }
-
 function emptyBoard(n: number): Board {
   return Array.from({length:n}, () => new Array(n).fill(null));
 }
-
 function dotAt(level: Level, r: number, c: number): string|null {
   return level.dots.find(d => d.r===r && d.c===c)?.color ?? null;
 }
-
 function adj([r1,c1]: [number,number], [r2,c2]: [number,number]): boolean {
   return Math.abs(r1-r2) + Math.abs(c1-c2) === 1;
 }
-
 function initGS(level: Level): GS {
   const board = emptyBoard(level.size);
   const pipes: Record<string, [number,number][]> = {};
@@ -154,21 +923,18 @@ function initGS(level: Level): GS {
   }
   return { level, board, pipes, dragging: null, lastCell: null, won: false, moves: 0 };
 }
-
 function clearPipe(gs: GS, color: string) {
   for (const [r,c] of gs.pipes[color] ?? []) {
     if (!dotAt(gs.level, r, c)) gs.board[r][c] = null;
   }
   gs.pipes[color] = [];
 }
-
 function getCoverage(gs: GS): number {
   const n = gs.level.size;
   let k = 0;
   for (let r=0;r<n;r++) for (let c=0;c<n;c++) if (gs.board[r][c]) k++;
   return k / (n*n);
 }
-
 function checkWin(gs: GS): boolean {
   const colors = new Set(gs.level.dots.map(d => d.color));
   for (const color of colors) {
@@ -182,7 +948,6 @@ function checkWin(gs: GS): boolean {
   }
   return true;
 }
-
 function pointerDown(gs: GS, r: number, c: number): boolean {
   const cellColor = gs.board[r][c];
   if (!cellColor) return false;
@@ -205,7 +970,6 @@ function pointerDown(gs: GS, r: number, c: number): boolean {
   }
   return true;
 }
-
 function pointerMove(gs: GS, r: number, c: number): boolean {
   const color = gs.dragging;
   if (!color) return false;
@@ -213,8 +977,6 @@ function pointerMove(gs: GS, r: number, c: number): boolean {
   if (path.length === 0) return false;
   const last = path[path.length-1];
   if (!adj(last, [r,c])) return false;
-
-  // Backtrack if going backwards on our own path
   const bi = path.findIndex(([pr,pc]) => pr===r&&pc===c);
   if (bi >= 0) {
     const removed = path.splice(bi+1);
@@ -222,21 +984,15 @@ function pointerMove(gs: GS, r: number, c: number): boolean {
     gs.lastCell = [r,c];
     return true;
   }
-
-  // Block entry into another color's dot
   const dc = dotAt(gs.level, r, c);
   if (dc && dc !== color) return false;
-
-  // Erase another color's pipe if we enter it
   const cellColor = gs.board[r][c];
   if (cellColor && cellColor !== color) clearPipe(gs, cellColor);
-
   path.push([r,c]);
   gs.board[r][c] = color;
   gs.lastCell = [r,c];
   return true;
 }
-
 function pointerUp(gs: GS) {
   gs.dragging = null;
   gs.lastCell = null;
@@ -252,80 +1008,52 @@ function render(canvas: HTMLCanvasElement, gs: GS, winPulse: number) {
   const CH  = canvas.height;
   const CS  = (CW - OFF*2) / n;
 
-  // ── Background
   ctx.fillStyle = "#f2f2ed";
   ctx.fillRect(0, 0, CW, CH);
-
-  // ── Board background
   ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.roundRect(OFF, OFF, n*CS, n*CS, 10);
-  ctx.fill();
+  ctx.beginPath(); ctx.roundRect(OFF, OFF, n*CS, n*CS, 10); ctx.fill();
 
-  // ── Grid lines
-  ctx.strokeStyle = "#e2e2e2";
-  ctx.lineWidth = 0.8;
+  ctx.strokeStyle = "#e2e2e2"; ctx.lineWidth = 0.8;
   for (let i=0; i<=n; i++) {
     ctx.beginPath(); ctx.moveTo(OFF+i*CS, OFF); ctx.lineTo(OFF+i*CS, OFF+n*CS); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(OFF, OFF+i*CS); ctx.lineTo(OFF+n*CS, OFF+i*CS); ctx.stroke();
   }
-  // Outer border
-  ctx.strokeStyle = "#c8c8c8";
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "#c8c8c8"; ctx.lineWidth = 1.5;
   ctx.strokeRect(OFF, OFF, n*CS, n*CS);
 
-  // ── Pipes
   const PW = CS * 0.52;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
   for (const [color, path] of Object.entries(pipes)) {
     if (path.length < 2) continue;
     ctx.save();
     ctx.strokeStyle = PAL[color] ?? "#888";
     ctx.lineWidth = PW;
-    if (won) {
-      const pulse = 0.85 + 0.15 * Math.sin(winPulse * 0.18);
-      ctx.globalAlpha = pulse;
-    }
+    if (won) { const pulse = 0.85 + 0.15 * Math.sin(winPulse * 0.18); ctx.globalAlpha = pulse; }
     ctx.beginPath();
     ctx.moveTo(OFF + path[0][1]*CS + CS/2, OFF + path[0][0]*CS + CS/2);
     for (let i=1; i<path.length; i++) {
       ctx.lineTo(OFF + path[i][1]*CS + CS/2, OFF + path[i][0]*CS + CS/2);
     }
-    ctx.stroke();
-    ctx.restore();
+    ctx.stroke(); ctx.restore();
   }
 
-  // ── Dots (rendered on top)
   for (const dot of level.dots) {
     const px = OFF + dot.c*CS + CS/2;
     const py = OFF + dot.r*CS + CS/2;
     const dr = CS * 0.29;
-
     ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.22)";
-    ctx.shadowBlur  = 6;
-    ctx.fillStyle   = PAL[dot.color] ?? "#888";
-    ctx.beginPath();
-    ctx.arc(px, py, dr, 0, Math.PI*2);
-    ctx.fill();
+    ctx.shadowColor = "rgba(0,0,0,0.22)"; ctx.shadowBlur = 6;
+    ctx.fillStyle = PAL[dot.color] ?? "#888";
+    ctx.beginPath(); ctx.arc(px, py, dr, 0, Math.PI*2); ctx.fill();
     ctx.restore();
-
-    // White inner ring
-    ctx.strokeStyle = "rgba(255,255,255,0.75)";
-    ctx.lineWidth   = dr * 0.28;
-    ctx.beginPath();
-    ctx.arc(px, py, dr * 0.52, 0, Math.PI*2);
-    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.75)"; ctx.lineWidth = dr * 0.28;
+    ctx.beginPath(); ctx.arc(px, py, dr * 0.52, 0, Math.PI*2); ctx.stroke();
   }
 
-  // ── Win glow overlay
   if (won) {
     const alpha = 0.06 + 0.04 * Math.sin(winPulse * 0.22);
     ctx.fillStyle = `rgba(39,174,96,${alpha})`;
-    ctx.beginPath();
-    ctx.roundRect(OFF, OFF, n*CS, n*CS, 10);
-    ctx.fill();
+    ctx.beginPath(); ctx.roundRect(OFF, OFF, n*CS, n*CS, 10); ctx.fill();
   }
 }
 
@@ -333,14 +1061,21 @@ function render(canvas: HTMLCanvasElement, gs: GS, winPulse: number) {
 type Screen = "menu" | "game";
 
 export default function FlowFree() {
-  const [screen, setScreen]   = useState<Screen>("menu");
-  const [lvlIdx, setLvlIdx]   = useState(0);
-  const [won, setWon]         = useState(false);
-  const [moves, setMoves]     = useState(0);
-  const [cov, setCov]         = useState(0);
-  const [cSize, setCSize]     = useState(360);
-  const [completed, setCompleted] = useState<Set<number>>(() => {
-    try { return new Set(JSON.parse(localStorage.getItem(SAVE_KEY)||"[]") as number[]); }
+  const [screen, setScreen]     = useState<Screen>("menu");
+  const [menuTab, setMenuTab]   = useState<"small"|"large">("small");
+  const [lvlCat, setLvlCat]     = useState<"small"|"large">("small");
+  const [lvlIdx, setLvlIdx]     = useState(0);
+  const [won, setWon]           = useState(false);
+  const [moves, setMoves]       = useState(0);
+  const [cov, setCov]           = useState(0);
+  const [cSize, setCSize]       = useState(400);
+
+  const [smallDone, setSmallDone] = useState<Set<number>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(SMALL_SAVE)||"[]") as number[]); }
+    catch { return new Set(); }
+  });
+  const [largeDone, setLargeDone] = useState<Set<number>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(LARGE_SAVE)||"[]") as number[]); }
     catch { return new Set(); }
   });
 
@@ -350,11 +1085,15 @@ export default function FlowFree() {
   const winPulse   = useRef(0);
   const animRef    = useRef(0);
 
-  // Responsive canvas size
+  const currentLevels = lvlCat === "small" ? SMALL_LEVELS : LARGE_LEVELS;
+  const currentDone   = lvlCat === "small" ? smallDone : largeDone;
+
   useEffect(() => {
     const upd = () => {
-      const avail = Math.min(window.innerWidth - 32, window.innerHeight - 210, 500);
-      setCSize(Math.max(250, avail));
+      const sz = gsRef.current?.level?.size ?? 8;
+      const maxPx = sz >= 9 ? 600 : 500;
+      const avail = Math.min(window.innerWidth - 32, window.innerHeight - 210, maxPx);
+      setCSize(Math.max(260, avail));
     };
     upd();
     window.addEventListener("resize", upd);
@@ -368,7 +1107,6 @@ export default function FlowFree() {
     setMoves(gs.moves);
   }, []);
 
-  // Win pulse animation
   useEffect(() => {
     if (!won) return;
     const loop = () => {
@@ -380,12 +1118,10 @@ export default function FlowFree() {
     return () => cancelAnimationFrame(animRef.current);
   }, [won, doRender]);
 
-  // Re-render when canvas size changes
   useEffect(() => {
     if (screen === "game" && gsRef.current) doRender(gsRef.current);
   }, [cSize, screen, doRender]);
 
-  // Touch: prevent scroll while playing
   useEffect(() => {
     if (screen !== "game") return;
     const el = canvasRef.current;
@@ -396,19 +1132,24 @@ export default function FlowFree() {
     return () => { el.removeEventListener("touchstart", block); el.removeEventListener("touchmove", block); };
   }, [screen]);
 
-  const startLevel = useCallback((idx: number) => {
+  const startLevel = useCallback((idx: number, cat: "small"|"large") => {
     cancelAnimationFrame(animRef.current);
     winPulse.current = 0;
-    gsRef.current = initGS(LEVELS[idx]);
+    const levels = cat === "small" ? SMALL_LEVELS : LARGE_LEVELS;
+    gsRef.current = initGS(levels[idx]);
+    setLvlCat(cat);
     setLvlIdx(idx);
     setWon(false);
     setMoves(0);
     setCov(0);
     setScreen("game");
+    const sz = levels[idx].size;
+    const maxPx = sz >= 9 ? 600 : 500;
+    const avail = Math.min(window.innerWidth - 32, window.innerHeight - 210, maxPx);
+    setCSize(Math.max(260, avail));
     requestAnimationFrame(() => { if (gsRef.current) doRender(gsRef.current); });
   }, [doRender]);
 
-  // ── Pointer helpers ─────────────────────────────────────────────────────────
   function getPos(e: React.MouseEvent | React.TouchEvent): {x:number;y:number}|null {
     const rect = canvasRef.current!.getBoundingClientRect();
     const sx = cSize / rect.width, sy = cSize / rect.height;
@@ -454,9 +1195,15 @@ export default function FlowFree() {
     pointerUp(gs);
     if (gs.won) {
       setWon(true);
-      const next = new Set(completed); next.add(lvlIdx);
-      setCompleted(next);
-      try { localStorage.setItem(SAVE_KEY, JSON.stringify([...next])); } catch {}
+      if (lvlCat === "small") {
+        const next = new Set(smallDone); next.add(lvlIdx);
+        setSmallDone(next);
+        try { localStorage.setItem(SMALL_SAVE, JSON.stringify([...next])); } catch {}
+      } else {
+        const next = new Set(largeDone); next.add(lvlIdx);
+        setLargeDone(next);
+        try { localStorage.setItem(LARGE_SAVE, JSON.stringify([...next])); } catch {}
+      }
     }
     doRender(gs);
   };
@@ -465,14 +1212,17 @@ export default function FlowFree() {
     if (!gsRef.current) return;
     cancelAnimationFrame(animRef.current);
     winPulse.current = 0;
-    gsRef.current = initGS(LEVELS[lvlIdx]);
+    gsRef.current = initGS(currentLevels[lvlIdx]);
     setWon(false); setMoves(0); setCov(0);
     doRender(gsRef.current);
   };
 
   // ── MENU ────────────────────────────────────────────────────────────────────
   if (screen === "menu") {
-    const maxUnlocked = Math.min(TOTAL - 1, completed.size);
+    const menuLevels = menuTab === "small" ? SMALL_LEVELS : LARGE_LEVELS;
+    const menuDone   = menuTab === "small" ? smallDone : largeDone;
+    const maxUnlocked = Math.min(menuLevels.length - 1, menuDone.size);
+
     return (
       <div style={{
         minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center",
@@ -482,58 +1232,62 @@ export default function FlowFree() {
           <Link href="/"><span style={{ background:"rgba(0,0,0,0.08)", border:"1.5px solid rgba(0,0,0,0.15)", borderRadius:8, padding:"6px 14px", color:"#333", fontSize:14, fontWeight:700, cursor:"pointer" }}>← Menu</span></Link>
         </div>
 
-        {/* Title */}
-        <div style={{ textAlign:"center", marginBottom:32 }}>
+        <div style={{ textAlign:"center", marginBottom:24 }}>
           <div style={{ fontSize:52, marginBottom:8 }}>🔵</div>
-          <h1 style={{
-            fontSize:38, fontWeight:900, margin:"0 0 4px",
+          <h1 style={{ fontSize:38, fontWeight:900, margin:"0 0 4px",
             background:"linear-gradient(135deg,#E63946,#F4A523,#27AE60,#2176AE)",
-            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
-            letterSpacing:-1,
-          }}>Flow Free</h1>
+            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", letterSpacing:-1 }}>Flow Free</h1>
           <p style={{ color:"#999", fontSize:14, margin:0 }}>Connect the dots · Cover the board</p>
         </div>
 
-        {/* Level grid */}
-        <div style={{
-          display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:8,
-          maxWidth:380, width:"100%", marginBottom:24,
-        }}>
-          {LEVELS.map((lv, idx) => {
-            const done = completed.has(idx);
+        {/* Board size tabs */}
+        <div style={{ display:"flex", gap:8, marginBottom:20, background:"#e8e8e3", padding:4, borderRadius:12 }}>
+          {(["small","large"] as const).map(t => (
+            <button key={t} onClick={() => setMenuTab(t)} style={{
+              padding:"8px 20px", borderRadius:9, border:"none", cursor:"pointer",
+              fontWeight:700, fontSize:13, transition:"all 0.15s",
+              background: menuTab===t ? "#fff" : "transparent",
+              color: menuTab===t ? "#333" : "#888",
+              boxShadow: menuTab===t ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
+            }}>
+              {t === "small" ? "🟦 Small (5–8)" : "🟩 Large (9–10)"}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:8,
+          maxWidth:380, width:"100%", marginBottom:20 }}>
+          {menuLevels.map((lv, idx) => {
+            const done = menuDone.has(idx);
             const locked = idx > maxUnlocked;
             return (
-              <button key={idx} onClick={() => !locked && startLevel(idx)} style={{
-                aspectRatio:"1", borderRadius:10, border:"none", fontSize:13, fontWeight:700,
+              <button key={idx} onClick={() => !locked && startLevel(idx, menuTab)} style={{
+                aspectRatio:"1", borderRadius:10, border:"none", fontSize:12, fontWeight:700,
                 cursor: locked ? "not-allowed" : "pointer",
                 background: done ? "#e6f7ee" : locked ? "#eee" : "#fff",
                 color: done ? "#27AE60" : locked ? "#bbb" : "#333",
                 boxShadow: locked ? "none" : "0 1px 4px rgba(0,0,0,0.10)",
-                display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:2,
+                display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:1,
                 transition:"transform 0.1s",
               }}>
                 {locked ? "🔒" : done ? "✓" : idx+1}
-                {!locked && <span style={{ fontSize:9, fontWeight:400, color:"#bbb" }}>{lv.size}×{lv.size}</span>}
+                {!locked && <span style={{ fontSize:8, fontWeight:400, color:"#bbb" }}>{lv.size}×{lv.size}</span>}
               </button>
             );
           })}
         </div>
 
-        <div style={{
-          padding:"10px 24px", background:"#fff", borderRadius:12,
-          color:"#888", fontSize:13,
-          boxShadow:"0 1px 4px rgba(0,0,0,0.08)",
-        }}>
-          {completed.size}/{TOTAL} solved
+        <div style={{ padding:"10px 24px", background:"#fff", borderRadius:12,
+          color:"#888", fontSize:13, boxShadow:"0 1px 4px rgba(0,0,0,0.08)" }}>
+          {menuDone.size}/{menuLevels.length} solved · {smallDone.size + largeDone.size}/100 total
         </div>
       </div>
     );
   }
 
   // ── GAME SCREEN ─────────────────────────────────────────────────────────────
-  const level = LEVELS[lvlIdx];
+  const level = currentLevels[lvlIdx];
   const colorCount = new Set(level.dots.map(d => d.color)).size;
-  const allConnected = won;
 
   return (
     <div style={{
@@ -541,9 +1295,8 @@ export default function FlowFree() {
       background:"#f2f2ed", fontFamily:"'Segoe UI',sans-serif", userSelect:"none",
       paddingBottom:24,
     }}>
-      {/* Header */}
       <div style={{
-        width:"100%", maxWidth:520, padding:"12px 16px",
+        width:"100%", maxWidth:620, padding:"12px 16px",
         display:"flex", alignItems:"center", justifyContent:"space-between",
         borderBottom:"1px solid #e0e0da", background:"#f2f2ed",
       }}>
@@ -553,7 +1306,9 @@ export default function FlowFree() {
         }}>← Menu</button>
 
         <div style={{ textAlign:"center", lineHeight:1.3 }}>
-          <div style={{ fontSize:11, color:"#aaa", textTransform:"uppercase", letterSpacing:1 }}>Level</div>
+          <div style={{ fontSize:11, color:"#aaa", textTransform:"uppercase", letterSpacing:1 }}>
+            {lvlCat === "large" ? "Large · " : ""}Level
+          </div>
           <div style={{ fontSize:20, fontWeight:900, color:"#333" }}>{lvlIdx+1}</div>
           <div style={{ fontSize:10, color:"#ccc" }}>{level.size}×{level.size} · {colorCount} colors</div>
         </div>
@@ -564,63 +1319,43 @@ export default function FlowFree() {
         </div>
       </div>
 
-      {/* Coverage bar */}
       <div style={{ width: cSize, marginTop:10, marginBottom:6 }}>
         <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#aaa", marginBottom:3 }}>
           <span>Coverage</span>
           <span style={{ fontWeight:700, color: cov===100 ? "#27AE60" : "#aaa" }}>{cov}%</span>
         </div>
         <div style={{ height:5, background:"#e8e8e3", borderRadius:3, overflow:"hidden" }}>
-          <div style={{
-            height:"100%", borderRadius:3,
-            width:`${cov}%`,
+          <div style={{ height:"100%", borderRadius:3, width:`${cov}%`,
             background: cov===100 ? "#27AE60" : "#2176AE",
-            transition:"width 0.2s, background 0.3s",
-          }} />
+            transition:"width 0.2s, background 0.3s" }} />
         </div>
       </div>
 
-      {/* Canvas */}
       <canvas
         ref={canvasRef}
-        width={cSize}
-        height={cSize}
+        width={cSize} height={cSize}
         style={{ display:"block", borderRadius:12, boxShadow:"0 2px 16px rgba(0,0,0,0.10)", touchAction:"none" }}
-        onMouseDown={onDown}
-        onMouseMove={onMove}
-        onMouseUp={onUp}
-        onMouseLeave={onUp}
-        onTouchStart={onDown}
-        onTouchMove={onMove}
-        onTouchEnd={onUp}
+        onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}
+        onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
       />
 
-      {/* Win overlay */}
       {won && (
-        <div style={{
-          position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
-          background:"rgba(0,0,0,0.45)", zIndex:100, backdropFilter:"blur(4px)",
-        }}>
-          <div style={{
-            background:"#fff", borderRadius:24, padding:"36px 48px",
+        <div style={{ position:"fixed", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
+          background:"rgba(0,0,0,0.45)", zIndex:100, backdropFilter:"blur(4px)" }}>
+          <div style={{ background:"#fff", borderRadius:24, padding:"36px 48px",
             textAlign:"center", boxShadow:"0 20px 60px rgba(0,0,0,0.2)",
-            animation:"ff-pop 0.3s ease",
-          }}>
+            animation:"ff-pop 0.3s ease" }}>
             <style>{`@keyframes ff-pop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}`}</style>
             <div style={{ fontSize:52, marginBottom:10 }}>🎉</div>
             <h2 style={{ fontSize:28, fontWeight:900, color:"#27AE60", margin:"0 0 6px" }}>Solved!</h2>
-            <p style={{ color:"#aaa", fontSize:15, margin:"0 0 4px" }}>
-              {moves} move{moves!==1?"s":""}
-            </p>
+            <p style={{ color:"#aaa", fontSize:15, margin:"0 0 4px" }}>{moves} move{moves!==1?"s":""}</p>
             {cov===100 && (
-              <p style={{ color:"#2176AE", fontWeight:700, fontSize:14, margin:"0 0 24px" }}>
-                ✨ Perfect — board fully covered!
-              </p>
+              <p style={{ color:"#2176AE", fontWeight:700, fontSize:14, margin:"0 0 24px" }}>✨ Perfect — board fully covered!</p>
             )}
             {cov < 100 && <div style={{ marginBottom:24 }} />}
             <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-              {lvlIdx+1 < TOTAL && (
-                <button onClick={() => startLevel(lvlIdx+1)} style={{
+              {lvlIdx+1 < currentLevels.length && (
+                <button onClick={() => startLevel(lvlIdx+1, lvlCat)} style={{
                   padding:"12px 28px", background:"linear-gradient(135deg,#27AE60,#1e8749)",
                   border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:15,
                   cursor:"pointer", boxShadow:"0 4px 16px rgba(39,174,96,0.4)",
@@ -635,19 +1370,15 @@ export default function FlowFree() {
         </div>
       )}
 
-      {/* Controls */}
       <div style={{ display:"flex", gap:10, marginTop:14 }}>
-        <button onClick={reset} style={{
-          padding:"9px 20px", background:"#fff", border:"1.5px solid #e0e0da",
+        <button onClick={reset} style={{ padding:"9px 20px", background:"#fff", border:"1.5px solid #e0e0da",
           borderRadius:11, fontSize:14, fontWeight:600, color:"#555", cursor:"pointer",
-          boxShadow:"0 1px 4px rgba(0,0,0,0.07)",
-        }}>↺ Reset</button>
-        {lvlIdx+1 < TOTAL && !won && (
-          <button onClick={() => startLevel(lvlIdx+1)} style={{
+          boxShadow:"0 1px 4px rgba(0,0,0,0.07)" }}>↺ Reset</button>
+        {lvlIdx+1 < currentLevels.length && !won && (
+          <button onClick={() => startLevel(lvlIdx+1, lvlCat)} style={{
             padding:"9px 20px", background:"#fff", border:"1.5px solid #e0e0da",
             borderRadius:11, fontSize:14, fontWeight:600, color:"#aaa", cursor:"pointer",
-            boxShadow:"0 1px 4px rgba(0,0,0,0.07)",
-          }}>Skip →</button>
+            boxShadow:"0 1px 4px rgba(0,0,0,0.07)" }}>Skip →</button>
         )}
       </div>
     </div>
