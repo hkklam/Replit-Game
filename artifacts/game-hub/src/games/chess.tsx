@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { useRelaySocket } from "../lib/relay-socket";
+import { QRCode, buildInviteUrl, getUrlRoomCode } from "../components/QRCode";
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -516,15 +517,15 @@ function drawBoard(
 // ─── Online Lobby ─────────────────────────────────────────────────────────────
 function OnlineLobby({
   status, roomCode, error,
-  onHost, onJoin, onBack,
+  onHost, onJoin, onBack, initialCode = "",
 }: {
-  status: string; roomCode: string; error: string;
+  status: string; roomCode: string; error: string; initialCode?: string;
   onHost: () => void;
   onJoin: (code: string) => void;
   onBack: () => void;
 }) {
-  const [code, setCode] = useState("");
-  const [view, setView] = useState<"pick"|"host"|"join">("pick");
+  const [code, setCode] = useState(initialCode);
+  const [view, setView] = useState<"pick"|"host"|"join">(() => initialCode.length >= 4 ? "join" : "pick");
 
   if (view === "pick") return (
     <div className="flex flex-col items-center gap-4 w-full max-w-xs">
@@ -549,6 +550,10 @@ function OnlineLobby({
         <>
           <p className="text-muted-foreground text-sm">Share this code with your opponent:</p>
           <div className="text-5xl font-black text-violet-300 tracking-widest font-mono bg-violet-500/10 border border-violet-500/30 rounded-2xl px-6 py-4">{roomCode}</div>
+          <p className="text-xs text-muted-foreground">or scan to join instantly:</p>
+          <div className="p-2 bg-white rounded-xl">
+            <QRCode value={buildInviteUrl(roomCode)} size={130} />
+          </div>
           <p className="text-muted-foreground text-xs animate-pulse">Waiting for opponent to join…</p>
         </>
       )}
@@ -599,7 +604,7 @@ export default function Chess() {
 
   const [mode,         setMode]         = useState<Mode>("ai");
   const [aiDiff,       setAiDiff]       = useState<AIDiff>("medium");
-  const [screen,       setScreen]       = useState<"menu"|"online-lobby"|"game">("menu");
+  const [screen,       setScreen]       = useState<"menu"|"online-lobby"|"game">(() => getUrlRoomCode() ? "online-lobby" : "menu");
   const [status,       setStatus]       = useState("White's turn");
   const [promoVisible, setPromoVisible] = useState(false);
   const [result,       setResult]       = useState<string|null>(null);
@@ -801,6 +806,7 @@ export default function Chess() {
         status={relayStatus}
         roomCode={onlineCode}
         error={onlineError}
+        initialCode={getUrlRoomCode()}
         onHost={() => { setOnlineError(""); createRoom(); }}
         onJoin={(code) => { setOnlineError(""); joinRoom(code); }}
         onBack={() => { relayDisconnect(); setScreen("menu"); }}

@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { useOnlineMultiplayer } from "../lib/multiplayer";
 import { OnlineLobby } from "../components/OnlineLobby";
+import { getUrlRoomCode } from "../components/QRCode";
 
 function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
   return (
@@ -92,7 +93,7 @@ const DIFF_LABELS: Record<Difficulty, { label: string; color: string; desc: stri
 export default function Pong() {
   const cv = useRef<HTMLCanvasElement>(null);
   const g = useRef<PongState>(initState("local"));
-  const [screen, setScreen] = useState<"menu" | "ai-diff" | "online-lobby" | "game">("menu");
+  const [screen, setScreen] = useState<"menu" | "ai-diff" | "online-lobby" | "game">(() => getUrlRoomCode() ? "online-lobby" : "menu");
   const [scores, setScores] = useState([0, 0]);
   const [over, setOver] = useState(false);
   const [winner, setWinner] = useState("");
@@ -269,6 +270,7 @@ export default function Pong() {
     <Shell title="Pong — Online">
       <OnlineLobby
         status={mp.status} roomCode={mp.roomCode} role={mp.role} error={mp.error}
+        initialCode={getUrlRoomCode()}
         onCreate={() => { g.current = initState("online"); mp.createRoom("pong"); setScreen("game"); }}
         onJoin={(code) => { g.current = initState("online"); mp.joinRoom(code); setScreen("game"); }}
         onDisconnect={() => { mp.disconnect(); setScreen("menu"); }}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "wouter";
 import { useRelaySocket } from "../lib/relay-socket";
+import { QRCode, buildInviteUrl, getUrlRoomCode } from "../components/QRCode";
 
 // ─── CANVAS / LAYOUT ─────────────────────────────────────────────────────────
 const COLS = 10, ROWS = 20;
@@ -710,13 +711,35 @@ interface GameRef {
   guestGarbagePending: number; // garbage to add to online opponent next frame
 }
 
+function JoinInput({ initialCode, onJoin, disabled }: { initialCode: string; onJoin: (code: string) => void; disabled: boolean }) {
+  const [code, setCode] = useState(initialCode);
+  return (
+    <div style={{ display: "flex", gap: 8 }}>
+      <input
+        value={code}
+        onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+        maxLength={4}
+        placeholder="ROOM CODE"
+        style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.06)", color: "#fff", fontSize: 16, fontWeight: 700, outline: "none", letterSpacing: 4, textTransform: "uppercase" }}
+      />
+      <button
+        onClick={() => code.length === 4 && onJoin(code)}
+        disabled={disabled || code.length !== 4}
+        style={{ padding: "10px 18px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: disabled || code.length !== 4 ? "not-allowed" : "pointer", opacity: disabled || code.length !== 4 ? 0.4 : 1 }}
+      >
+        Join
+      </button>
+    </div>
+  );
+}
+
 export default function TetrisRoyale() {
   const cvRef     = useRef<HTMLCanvasElement>(null);
   const gameRef   = useRef<GameRef|null>(null);
   const rafRef    = useRef(0);
   const hardRef   = useRef(false); // space held guard
 
-  const [screen,    setScreen]    = useState<Screen>("menu");
+  const [screen,    setScreen]    = useState<Screen>(() => getUrlRoomCode() ? "setup" : "menu");
   const [mode,      setMode]      = useState<Mode>("solo");
   const [numBots,   setNumBots]   = useState(3);
   const [botDiff,   setBotDiff]   = useState<AIDiff>("normal");
@@ -1063,12 +1086,16 @@ export default function TetrisRoyale() {
         ):(
           <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
             <Btn onClick={()=>relay.createRoom()} style={{background:"linear-gradient(135deg,#0369a1,#0891b2)"}} disabled={relay.status==="connecting"||relay.status==="waiting"}>🏠 Create Room</Btn>
-            <div style={{display:"flex",gap:8}}>
-              <input id="joinCode" maxLength={4} placeholder="ROOM CODE"
-                style={{flex:1,padding:"10px 14px",borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.06)",color:"#fff",fontSize:16,fontWeight:700,outline:"none",letterSpacing:4,textTransform:"uppercase"}} />
-              <Btn onClick={()=>{const el=document.getElementById("joinCode") as HTMLInputElement;relay.joinRoom(el.value);}} style={{background:"rgba(255,255,255,0.1)",padding:"10px 18px"}} disabled={relay.status==="connecting"}>Join</Btn>
-            </div>
-            {roomCode&&<div style={{textAlign:"center",padding:"10px 0",fontSize:22,fontWeight:900,letterSpacing:6,color:"#c084fc"}}>📋 {roomCode}</div>}
+            <JoinInput initialCode={getUrlRoomCode()} onJoin={(code)=>relay.joinRoom(code)} disabled={relay.status==="connecting"} />
+            {roomCode&&(
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+                <div style={{textAlign:"center",padding:"10px 0",fontSize:22,fontWeight:900,letterSpacing:6,color:"#c084fc"}}>📋 {roomCode}</div>
+                <div style={{padding:"8px",background:"#fff",borderRadius:12}}>
+                  <QRCode value={buildInviteUrl(roomCode)} size={120} />
+                </div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>Scan to join instantly</div>
+              </div>
+            )}
             {olStatus&&<div style={{textAlign:"center",color:"rgba(255,255,255,0.5)",fontSize:13}}>{olStatus}</div>}
           </div>
         )}

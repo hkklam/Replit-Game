@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { UnoOnlineStatus, LobbyPlayer, Variant } from "../lib/uno-online";
+import { QRCode, buildInviteUrl } from "./QRCode";
 
 const VARIANT_LABELS: Record<Variant, { icon: string; name: string }> = {
   classic:     { icon: "🃏", name: "Classic" },
@@ -15,6 +16,7 @@ type Props = {
   isHost: boolean;
   players: LobbyPlayer[];
   error: string;
+  initialCode?: string;   // pre-filled from URL ?room= param
   onCreate: (name: string) => void;
   onJoin: (code: string, name: string) => void;
   onStart: (variant: Variant) => void;
@@ -23,12 +25,14 @@ type Props = {
 };
 
 export function UnoOnlineLobby({
-  status, roomCode, myIdx, isHost, players, error,
+  status, roomCode, myIdx, isHost, players, error, initialCode = "",
   onCreate, onJoin, onStart, onDisconnect, onBack,
 }: Props) {
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
+  const [name,    setName]    = useState("");
+  const [code,    setCode]    = useState(initialCode);
   const [variant, setVariant] = useState<Variant>("classic");
+
+  const inviteUrl = roomCode ? buildInviteUrl(roomCode) : "";
 
   if (status === "idle" || status === "error") return (
     <div className="flex flex-col items-center gap-5 p-6 max-w-sm w-full">
@@ -97,8 +101,18 @@ export function UnoOnlineLobby({
         >
           {roomCode}
         </div>
-        <p className="text-xs text-gray-500 mt-2">Share this code with friends to join</p>
+        <p className="text-xs text-gray-500 mt-2">Share this code or QR with friends to join</p>
       </div>
+
+      {/* QR code invite */}
+      {inviteUrl && (
+        <div className="flex flex-col items-center gap-2">
+          <div className="p-2 bg-white rounded-xl shadow-md">
+            <QRCode value={inviteUrl} size={130} />
+          </div>
+          <p className="text-[10px] text-gray-600 font-mono break-all max-w-[200px] text-center">{inviteUrl}</p>
+        </div>
+      )}
 
       <div className="w-full">
         <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-2">

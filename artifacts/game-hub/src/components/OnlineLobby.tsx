@@ -1,19 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { MPStatus, MPRole } from "../lib/multiplayer";
+import { QRCode, buildInviteUrl } from "./QRCode";
 
 type Props = {
   status: MPStatus;
   roomCode: string;
   role: MPRole | null;
   error: string;
+  initialCode?: string;   // pre-filled room code from URL ?room= param
   onCreate: () => void;
   onJoin: (code: string) => void;
   onDisconnect: () => void;
   onBack: () => void;
 };
 
-export function OnlineLobby({ status, roomCode, error, onCreate, onJoin, onDisconnect, onBack }: Props) {
-  const [input, setInput] = useState("");
+export function OnlineLobby({ status, roomCode, role, error, initialCode = "", onCreate, onJoin, onDisconnect, onBack }: Props) {
+  const [input, setInput] = useState(initialCode);
+  const autoJoinedRef    = useRef(false);
+
+  // Auto-join when a room code comes in via URL (?room=ABCD)
+  useEffect(() => {
+    if (!autoJoinedRef.current && initialCode.length >= 4 && status === "idle") {
+      autoJoinedRef.current = true;
+      onJoin(initialCode);
+    }
+  }, [initialCode, status, onJoin]);
+
+  const inviteUrl = roomCode ? buildInviteUrl(roomCode) : "";
 
   if (status === "idle" || status === "error") return (
     <div className="flex flex-col items-center gap-5 p-6 max-w-xs w-full">
@@ -61,7 +74,7 @@ export function OnlineLobby({ status, roomCode, error, onCreate, onJoin, onDisco
   );
 
   if (status === "waiting") return (
-    <div className="flex flex-col items-center gap-6 p-6 max-w-xs w-full text-center">
+    <div className="flex flex-col items-center gap-5 p-6 max-w-xs w-full text-center">
       <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
       <h3 className="text-xl font-black text-green-400">Room Ready!</h3>
       <p className="text-sm text-muted-foreground">Share this code with your friend:</p>
@@ -72,6 +85,18 @@ export function OnlineLobby({ status, roomCode, error, onCreate, onJoin, onDisco
       >
         {roomCode}
       </div>
+
+      {/* QR code — friend scans this to join directly */}
+      {inviteUrl && (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-xs text-muted-foreground">or scan to join instantly:</p>
+          <div className="p-2 bg-white rounded-xl shadow-md">
+            <QRCode value={inviteUrl} size={140} />
+          </div>
+          <p className="text-[10px] text-muted-foreground/60 font-mono break-all max-w-[200px] text-center">{inviteUrl}</p>
+        </div>
+      )}
+
       <p className="text-xs text-muted-foreground animate-pulse">Waiting for opponent to join…</p>
       <button onClick={onDisconnect} className="text-xs text-muted-foreground hover:text-red-400 transition-colors">✕ Cancel</button>
     </div>

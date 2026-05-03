@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { useOnlineMultiplayer } from "../lib/multiplayer";
 import { OnlineLobby } from "../components/OnlineLobby";
+import { getUrlRoomCode } from "../components/QRCode";
 
 function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
   return (
@@ -290,7 +291,7 @@ function drawFood(ctx: CanvasRenderingContext2D, food: P) {
 export default function SnakeGame() {
   const cv = useRef<HTMLCanvasElement>(null);
   const g = useRef(initState("1p"));
-  const [screen, setScreen] = useState<"menu" | "ai-diff" | "game" | "over" | "online-lobby">("menu");
+  const [screen, setScreen] = useState<"menu" | "ai-diff" | "game" | "over" | "online-lobby">(() => getUrlRoomCode() ? "online-lobby" : "menu");
   const [p1Score, setP1Score] = useState(0);
   const [p2Score, setP2Score] = useState(0);
   const [best, setBest] = useState(() => +localStorage.getItem("snk-best")! || 0);
@@ -498,6 +499,7 @@ export default function SnakeGame() {
     <Shell title="Snake — Online">
       <OnlineLobby
         status={mp.status} roomCode={mp.roomCode} role={mp.role} error={mp.error}
+        initialCode={getUrlRoomCode()}
         onCreate={() => mp.createRoom("snake")}
         onJoin={(code) => { mp.joinRoom(code); startOnlineGame("guest"); }}
         onDisconnect={() => { mp.disconnect(); }}

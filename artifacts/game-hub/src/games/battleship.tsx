@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { useRelaySocket } from "../lib/relay-socket";
+import { QRCode, buildInviteUrl, getUrlRoomCode } from "../components/QRCode";
 
 function Shell({ title, controls, children }: { title: string; controls?: string; children: React.ReactNode }) {
   return (
@@ -248,12 +249,12 @@ function AIGame({ onMenu }: { onMenu: () => void }) {
 }
 
 // ─── ONLINE LOBBY ─────────────────────────────────────────────────────────────
-function OnlineLobby({ status, roomCode, error, onHost, onJoin, onBack }: {
-  status: string; roomCode: string; error: string;
+function OnlineLobby({ status, roomCode, error, onHost, onJoin, onBack, initialCode = "" }: {
+  status: string; roomCode: string; error: string; initialCode?: string;
   onHost: () => void; onJoin: (code: string) => void; onBack: () => void;
 }) {
-  const [code, setCode] = useState("");
-  const [view, setView] = useState<"pick"|"host"|"join">("pick");
+  const [code, setCode] = useState(initialCode);
+  const [view, setView] = useState<"pick"|"host"|"join">(() => initialCode.length >= 4 ? "join" : "pick");
 
   if (view === "pick") return (
     <div className="flex flex-col items-center gap-4 w-full max-w-xs">
@@ -280,6 +281,10 @@ function OnlineLobby({ status, roomCode, error, onHost, onJoin, onBack }: {
         <>
           <p className="text-muted-foreground text-sm">Share this code with your opponent:</p>
           <div className="text-5xl font-black text-cyan-300 tracking-widest font-mono bg-cyan-500/10 border border-cyan-500/30 rounded-2xl px-6 py-4">{roomCode}</div>
+          <p className="text-xs text-muted-foreground">or scan to join instantly:</p>
+          <div className="p-2 bg-white rounded-xl">
+            <QRCode value={buildInviteUrl(roomCode)} size={130} />
+          </div>
           <p className="text-muted-foreground text-xs animate-pulse">Waiting for opponent…</p>
         </>
       )}
@@ -474,7 +479,7 @@ function OnlineGame({ isHost, relaySend, onMenu, onMessage }: {
 type Screen = "menu" | "ai" | "online-lobby" | "online-game";
 
 export default function Battleship() {
-  const [screen,      setScreen]      = useState<Screen>("menu");
+  const [screen,      setScreen]      = useState<Screen>(() => getUrlRoomCode() ? "online-lobby" : "menu");
   const [onlineError, setOnlineError] = useState("");
   const [isHost,      setIsHost]      = useState(false);
   const [gameKey,     setGameKey]     = useState(0);
@@ -535,6 +540,7 @@ export default function Battleship() {
         status={relayStatus}
         roomCode={onlineCode}
         error={onlineError}
+        initialCode={getUrlRoomCode()}
         onHost={() => { setOnlineError(""); createRoom(); }}
         onJoin={(code) => { setOnlineError(""); joinRoom(code); }}
         onBack={() => { relayDisconnect(); setScreen("menu"); }}

@@ -4,6 +4,7 @@ import { ArrowLeft, HelpCircle, X } from "lucide-react";
 import { useUnoOnline } from "../lib/uno-online";
 import type { PlayerView, Variant as OnlineVariant } from "../lib/uno-online";
 import { UnoOnlineLobby } from "../components/UnoOnlineLobby";
+import { getUrlRoomCode } from "../components/QRCode";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type LColor = "red" | "green" | "blue" | "yellow";
@@ -650,7 +651,7 @@ function PassScreen({ name, onReveal }: { name: string; onReveal: () => void }) 
 const UNO_TIMER = 3000;
 
 export default function Uno() {
-  const [screen, setScreen] = useState<"menu" | "setup" | "online-lobby" | "game">("menu");
+  const [screen, setScreen] = useState<"menu" | "setup" | "online-lobby" | "game">(() => getUrlRoomCode() ? "online-lobby" : "menu");
   const [mode, setMode] = useState<"ai" | "online">("ai");
   const [gs, setGs] = useState<UnoState | null>(null);
   const [picking, setPicking] = useState(false);
@@ -902,6 +903,7 @@ export default function Uno() {
           isHost={unoOnline.isHost}
           players={unoOnline.players}
           error={unoOnline.error}
+          initialCode={getUrlRoomCode()}
           onCreate={(name) => { setMode("online"); unoOnline.createRoom(name); }}
           onJoin={(code, name) => { setMode("online"); unoOnline.joinRoom(code, name); }}
           onStart={(variant) => unoOnline.startGame(variant as OnlineVariant)}

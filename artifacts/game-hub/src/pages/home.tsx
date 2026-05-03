@@ -1,10 +1,12 @@
 import { Link } from "wouter";
 import { GAMES } from "@/games/registry";
+import { QRCode } from "@/components/QRCode";
 
 export default function Home() {
   const simple = GAMES.filter(g => g.tier === "🟢");
   const medium = GAMES.filter(g => g.tier === "🟡");
   const hard   = GAMES.filter(g => g.tier === "🔴");
+  const hubUrl = window.location.origin + window.location.pathname;
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -31,6 +33,14 @@ export default function Home() {
             <span className="text-emerald-400 font-semibold">🟢 Simple ({simple.length})</span>
             <span className="text-yellow-400 font-semibold">🟡 Medium ({medium.length})</span>
             <span className="text-red-400 font-semibold">🔴 Hard ({hard.length})</span>
+          </div>
+
+          {/* Share QR code */}
+          <div className="flex flex-col items-center gap-2 mt-6">
+            <div className="p-2.5 bg-white rounded-2xl shadow-lg inline-block">
+              <QRCode value={hubUrl} size={108} />
+            </div>
+            <p className="text-xs text-muted-foreground">Scan to share Game Hub</p>
           </div>
         </div>
 

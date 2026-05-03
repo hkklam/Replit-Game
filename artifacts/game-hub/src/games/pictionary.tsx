@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "wouter";
+import { QRCode, buildInviteUrl, getUrlRoomCode } from "../components/QRCode";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 type Diff = "easy" | "medium" | "hard";
@@ -105,7 +106,7 @@ export default function Pictionary() {
   // ── Screen / Room ─────────────────────────────────────────────────────────
   const [screen, setScreen]     = useState<Screen>("landing");
   const [myName, setMyName]     = useState("");
-  const [joinInput, setJoinInput] = useState("");
+  const [joinInput, setJoinInput] = useState(() => getUrlRoomCode());
   const [myIdx, setMyIdx]       = useState(-1);
   const myIdxRef = useRef(-1);
   const [roomCode, setRoomCode] = useState("");
@@ -468,7 +469,15 @@ export default function Pictionary() {
     <div style={panelStyle}>
       <Link href="/"><span style={{ position: "absolute", top: 16, left: 20, color: "rgba(255,255,255,0.3)", fontSize: 14, cursor: "pointer" }}>← Hub</span></Link>
       <h2 style={{ fontSize: 28, fontWeight: 900, color: "#c084fc", marginBottom: 4 }}>🎨 DrawIt Lobby</h2>
-      <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: 6, color: "#ffd700", marginBottom: 24 }}>{roomCode}</div>
+      <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: 6, color: "#ffd700", marginBottom: 8 }}>{roomCode}</div>
+      {roomCode && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginBottom: 20 }}>
+          <div style={{ padding: 10, background: "#fff", borderRadius: 14, display: "inline-block" }}>
+            <QRCode value={buildInviteUrl(roomCode)} size={120} />
+          </div>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>Scan to join instantly</p>
+        </div>
+      )}
       <Card style={{ maxWidth: 480 }}>
         <div style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>PLAYERS ({players.length}/8)</div>
