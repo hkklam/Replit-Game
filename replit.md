@@ -46,6 +46,7 @@ All games are in `artifacts/game-hub/src/games/`. Routing via `wouter`.
 - All remaining games (Chess, Candy Crush, Uno, Mahjong, etc.): click/button-based — works natively on mobile
 
 **Online multiplayer** (via WebSocket relay in `artifacts/api-server`):
+- **Mahjong** — up to 3 human players + 1 AI bot, server-authoritative (`mahjong-rooms.ts`, `mahjong-logic.ts`); lobby with room code; per-player hidden hand view; server-run AI turns; claim window with 7s auto-skip
 - **UNO** — up to 8 players, full server-authoritative game logic (`uno-rooms.ts`, `uno-logic.ts`)
 - **Chess** — 2-player relay; host=White, guest=Black; board flips for Black; move sync over relay
 - **Battleship** — 2-player relay; simultaneous ship placement; fire/result protocol keeps ships private

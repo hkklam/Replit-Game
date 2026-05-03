@@ -13,6 +13,11 @@ import {
   startPicGame, startDrawingTimer, triggerScoring, applyPicScores,
 } from "./pictionary-rooms";
 import type { PicDiff } from "./pictionary-rooms";
+import {
+  createMjRoom, joinMjRoom, getMjRoom, removeMjPlayer,
+  broadcastMjState, startMjGame, applyMjDiscard, applyMjClaim, lobbySnapshotMj, MAX_MJ_HUMANS,
+} from "./mahjong-rooms";
+import type { ClaimOpt } from "./mahjong-logic";
 import { logger } from "./lib/logger";
 
 type Msg = Record<string, unknown> & { type: string };
@@ -47,6 +52,10 @@ export function attachWebSocket(server: Server): void {
     // ── Pictionary state ─────────────────────────────────────────────────────
     let picCode: string | null = null;
     let picIdx: number = -1;
+
+    // ── Mahjong state ─────────────────────────────────────────────────────────
+    let mjCode: string | null = null;
+    let mjSeat: number = -1;
 
     ws.on("message", (raw) => {
       let msg: Msg;
@@ -268,6 +277,61 @@ export function attachWebSocket(server: Server): void {
           break;
         }
 
+        // ── Mahjong ───────────────────────────────────────────────────────────
+        case "mj_create": {
+          const name = String(msg.name ?? "Host").slice(0, 16).trim() || "Host";
+          mjCode = createMjRoom(ws, name);
+          mjSeat = 0;
+          const room = getMjRoom(mjCode)!;
+          send(ws, { type: "mj_room_created", roomCode: mjCode, seat: 0, players: lobbySnapshotMj(room) });
+          logger.info({ mjCode }, "Mahjong room created");
+          break;
+        }
+        case "mj_join": {
+          const code = String(msg.roomCode ?? "").toUpperCase().trim();
+          const name = String(msg.name ?? "Player").slice(0, 16).trim() || "Player";
+          const result = joinMjRoom(code, ws, name);
+          if (!result) {
+            send(ws, { type: "error", message: `Room not found, started, or full (max ${MAX_MJ_HUMANS} humans).` });
+            break;
+          }
+          mjCode = code; mjSeat = result.seat;
+          const snap = lobbySnapshotMj(result.room);
+          send(ws, { type: "mj_joined", roomCode: code, seat: mjSeat, players: snap });
+          for (const p of result.room.players) {
+            if (p.ws !== ws) send(p.ws, { type: "mj_lobby_update", players: snap });
+          }
+          logger.info({ mjCode: code, mjSeat }, "Mahjong player joined");
+          break;
+        }
+        case "mj_start": {
+          if (!mjCode || mjSeat !== 0) break;
+          const room = getMjRoom(mjCode);
+          if (!room || room.started) break;
+          if (room.players.length < 2) { send(ws, { type: "error", message: "Need at least 2 players to start." }); break; }
+          for (const p of room.players) send(p.ws, { type: "mj_started" });
+          startMjGame(room);
+          logger.info({ mjCode, players: room.players.map(p => p.name) }, "Mahjong game started");
+          break;
+        }
+        case "mj_discard": {
+          if (!mjCode || mjSeat < 0) break;
+          const room = getMjRoom(mjCode);
+          if (!room?.state) break;
+          const tileId = Number(msg.tileId);
+          applyMjDiscard(room, mjSeat, tileId);
+          break;
+        }
+        case "mj_claim": {
+          if (!mjCode || mjSeat < 0) break;
+          const room = getMjRoom(mjCode);
+          if (!room?.state) break;
+          const opt = String(msg.opt ?? "") as ClaimOpt;
+          if (!["win","pung","chow","skip"].includes(opt)) break;
+          applyMjClaim(room, mjSeat, opt);
+          break;
+        }
+
         case "ping":
           send(ws, { type: "pong" });
           break;
@@ -296,6 +360,16 @@ export function attachWebSocket(server: Server): void {
           broadcastPic(result.room, { type: "pic_lobby_update", players: lobbySnapshotPic(result.room) });
         }
         logger.info({ picCode, picIdx }, "Pictionary player left");
+      }
+      // Mahjong cleanup
+      if (mjCode) {
+        const result = removeMjPlayer(mjCode, ws);
+        if (result && result.room.players.length > 0) {
+          const snap = lobbySnapshotMj(result.room);
+          for (const p of result.room.players) send(p.ws, { type: "mj_lobby_update", players: snap });
+          if (result.room.state) broadcastMjState(result.room);
+        }
+        logger.info({ mjCode, mjSeat }, "Mahjong player left");
       }
     });
 
