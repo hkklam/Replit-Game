@@ -94,88 +94,154 @@ function GridView({ board, isTarget, onAttack, disabled, label }: {
   );
 }
 
-// ─── LOCAL GAME ──────────────────────────────────────────────────────────────
-type LocalPhase = "p1-place" | "p2-place" | "p1-attack" | "p2-attack" | "done";
-
-function LocalGame({ onMenu }: { onMenu: () => void }) {
-  const [phase,   setPhase]   = useState<LocalPhase>("p1-place");
-  const [p1board, setP1Board] = useState<Board>({ grid: emptyGrid(), ships: [] });
-  const [p2board, setP2Board] = useState<Board>({ grid: emptyGrid(), ships: [] });
-  const [winner,  setWinner]  = useState<string | null>(null);
-  const [msg,     setMsg]     = useState("Player 1: Auto-place your ships, then confirm.");
-
-  const autoPlace = (player: 1 | 2) => {
-    const b = placeShipsRandom();
-    if (player === 1) setP1Board(b); else setP2Board(b);
-  };
-
-  const confirm = () => {
-    if (phase === "p1-place") {
-      if (!p1board.ships.length) { setMsg("Player 1: place ships first!"); return; }
-      setPhase("p2-place"); setMsg("Player 2: Auto-place your ships — Player 1, look away!");
-    } else if (phase === "p2-place") {
-      if (!p2board.ships.length) { setMsg("Player 2: place ships first!"); return; }
-      setPhase("p1-attack"); setMsg("Player 1: Click a cell to attack Player 2's grid.");
+// ─── AI helpers ───────────────────────────────────────────────────────────────
+function aiPickTarget(playerGrid: Grid): [number, number] {
+  // Hunt mode: collect cells adjacent to existing hits that haven't been attacked yet
+  const adjacent: [number, number][] = [];
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (playerGrid[r][c] !== "hit") continue;
+      for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE &&
+            (playerGrid[nr][nc] === "empty" || playerGrid[nr][nc] === "ship"))
+          adjacent.push([nr, nc]);
+      }
     }
+  }
+  if (adjacent.length > 0) return adjacent[Math.floor(Math.random() * adjacent.length)];
+
+  // Random mode: pick any untouched cell
+  const untouched: [number, number][] = [];
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (playerGrid[r][c] === "empty" || playerGrid[r][c] === "ship")
+        untouched.push([r, c]);
+  return untouched[Math.floor(Math.random() * untouched.length)];
+}
+
+// ─── AI GAME (vs Computer) ───────────────────────────────────────────────────
+type AIPhase = "placement" | "battle" | "done";
+
+function AIGame({ onMenu }: { onMenu: () => void }) {
+  const [myBoard,   setMyBoard]   = useState<Board>({ grid: emptyGrid(), ships: [] });
+  const [aiBoard,   setAiBoard]   = useState<Board>(placeShipsRandom);
+  const [phase,     setPhase]     = useState<AIPhase>("placement");
+  const [playerTurn, setPlayerTurn] = useState(true);
+  const [winner,    setWinner]    = useState<"you"|"ai"|null>(null);
+  const [msg,       setMsg]       = useState("Auto-place your ships, then click Start!");
+  const [lastAiShot, setLastAiShot] = useState<string>("");
+
+  // Refs for AI access inside setTimeout closures
+  const myBoardRef = useRef(myBoard);
+  myBoardRef.current = myBoard;
+
+  const autoPlace = () => {
+    const b = placeShipsRandom();
+    setMyBoard(b);
   };
 
-  const attack = (row: number, col: number) => {
-    if (phase !== "p1-attack" && phase !== "p2-attack") return;
-    const isP1 = phase === "p1-attack";
-    const defBoard = isP1 ? p2board : p1board;
-    const setDef   = isP1 ? setP2Board : setP1Board;
-    if (defBoard.grid[row][col] === "hit" || defBoard.grid[row][col] === "miss") return;
-    const newGrid = cloneGrid(defBoard.grid);
+  const startBattle = () => {
+    if (!myBoard.ships.length) { setMsg("Place your ships first!"); return; }
+    setPhase("battle");
+    setPlayerTurn(true);
+    setMsg("Your turn — click the enemy grid to fire.");
+  };
+
+  const newGame = () => {
+    setMyBoard({ grid: emptyGrid(), ships: [] });
+    setAiBoard(placeShipsRandom());
+    setPhase("placement");
+    setPlayerTurn(true);
+    setWinner(null);
+    setMsg("Auto-place your ships, then click Start!");
+    setLastAiShot("");
+  };
+
+  // Player fires at AI board
+  const playerFire = useCallback((row: number, col: number) => {
+    if (!playerTurn || phase !== "battle") return;
+    if (aiBoard.grid[row][col] === "hit" || aiBoard.grid[row][col] === "miss") return;
+
+    const newGrid = cloneGrid(aiBoard.grid);
     const isHit = newGrid[row][col] === "ship";
     newGrid[row][col] = isHit ? "hit" : "miss";
-    const newBoard: Board = { grid: newGrid, ships: defBoard.ships };
-    setDef(newBoard);
-    if (newBoard.ships.every(s => s.cells.every(([r, c]) => newGrid[r][c] === "hit"))) {
-      setWinner(`Player ${isP1 ? 1 : 2}`); setPhase("done"); return;
-    }
-    const next = isP1 ? "p2-attack" : "p1-attack";
-    setPhase(next);
-    setMsg(`Player ${next === "p1-attack" ? 1 : 2}: Your turn!${isHit ? " 💥 Hit!" : " Miss!"}`);
-  };
+    const newAiBoard: Board = { grid: newGrid, ships: aiBoard.ships };
+    setAiBoard(newAiBoard);
 
-  const reset = () => {
-    setPhase("p1-place"); setP1Board({ grid: emptyGrid(), ships: [] });
-    setP2Board({ grid: emptyGrid(), ships: [] }); setWinner(null);
-    setMsg("Player 1: Auto-place your ships, then confirm.");
-  };
+    if (newAiBoard.ships.every(s => isSunk(s, newGrid))) {
+      setWinner("you"); setPhase("done"); return;
+    }
+
+    const sunkShip = isHit ? newAiBoard.ships.find(s => isSunk(s, newGrid)) : null;
+    const shotLabel = isHit ? (sunkShip ? `💥 Hit & sunk ${sunkShip.name}!` : "💥 Hit!") : "Miss…";
+    setMsg(`${shotLabel} AI is thinking…`);
+    setPlayerTurn(false);
+
+    // AI fires back after a short delay
+    setTimeout(() => {
+      const board = myBoardRef.current;
+      const [ar, ac] = aiPickTarget(board.grid);
+      const ng = cloneGrid(board.grid);
+      const aiHit = ng[ar][ac] === "ship";
+      ng[ar][ac] = aiHit ? "hit" : "miss";
+      const updatedMyBoard: Board = { grid: ng, ships: board.ships };
+      myBoardRef.current = updatedMyBoard;
+      setMyBoard(updatedMyBoard);
+
+      if (updatedMyBoard.ships.every(s => isSunk(s, ng))) {
+        setWinner("ai"); setPhase("done"); return;
+      }
+
+      const sunk = aiHit ? updatedMyBoard.ships.find(s => isSunk(s, ng)) : null;
+      const aiLabel = aiHit ? (sunk ? `AI sunk your ${sunk.name}!` : "AI hit your ship!") : "AI missed.";
+      setLastAiShot(aiLabel);
+      setPlayerTurn(true);
+      setMsg("Your turn — click the enemy grid to fire.");
+    }, 700);
+  }, [playerTurn, phase, aiBoard]);
 
   if (winner) return (
-    <div className="flex flex-col items-center gap-4">
-      <p className="text-3xl font-black text-cyan-300">🏆 {winner} Wins!</p>
+    <div className="flex flex-col items-center gap-5">
+      <p className="text-4xl font-black" style={{ color: winner === "you" ? "#22d3ee" : "#f87171" }}>
+        {winner === "you" ? "🏆 You Win!" : "💀 AI Wins!"}
+      </p>
       <div className="flex gap-3">
-        <button onClick={reset}  className="px-6 py-2 bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 font-bold rounded-xl">Play Again</button>
-        <button onClick={onMenu} className="px-6 py-2 bg-secondary text-foreground font-bold rounded-xl">Menu</button>
+        <button onClick={newGame} className="px-6 py-2 bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 font-bold rounded-xl">Play Again</button>
+        <button onClick={onMenu}  className="px-6 py-2 bg-secondary text-foreground font-bold rounded-xl">Menu</button>
       </div>
     </div>
   );
 
   return (
     <div className="flex flex-col items-center gap-4 w-full max-w-3xl">
-      <div className="text-center px-4 py-2 bg-card border border-border rounded-xl text-sm">{msg}</div>
-      {(phase === "p1-place" || phase === "p2-place") && (
+      <div className="text-center px-4 py-2 bg-card border border-border rounded-xl text-sm max-w-sm">{msg}</div>
+      {lastAiShot && phase === "battle" && (
+        <p className="text-xs text-red-400 -mt-2">{lastAiShot}</p>
+      )}
+
+      {phase === "placement" && (
         <div className="flex flex-col items-center gap-4">
           <div className="flex gap-3">
-            <button onClick={() => autoPlace(phase === "p1-place" ? 1 : 2)}
+            <button onClick={autoPlace}
               className="px-5 py-2 bg-secondary hover:bg-secondary/80 rounded-lg font-semibold">⚡ Auto-Place</button>
-            <button onClick={confirm}
-              className="px-5 py-2 bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 font-bold rounded-lg">Confirm →</button>
+            <button onClick={startBattle}
+              className="px-5 py-2 bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 font-bold rounded-lg">Start Battle →</button>
           </div>
-          {phase === "p1-place" && p1board.ships.length > 0 && <GridView board={p1board} isTarget={false} label="Your Fleet" />}
-          {phase === "p2-place" && p2board.ships.length > 0 && <GridView board={p2board} isTarget={false} label="Your Fleet" />}
+          {myBoard.ships.length > 0 && <GridView board={myBoard} isTarget={false} label="Your Fleet" />}
         </div>
       )}
-      {(phase === "p1-attack" || phase === "p2-attack") && (
-        <div className="flex gap-8 flex-wrap justify-center">
-          <GridView board={phase === "p1-attack" ? p1board : p2board} isTarget={false} label="Your Grid" />
-          <GridView board={phase === "p1-attack" ? p2board : p1board} isTarget={true}
-            label="Enemy — Click to attack" onAttack={attack} />
+
+      {phase === "battle" && (
+        <div className="flex gap-6 flex-wrap justify-center">
+          <GridView board={myBoard} isTarget={false} label="Your Grid" />
+          <GridView
+            board={aiBoard} isTarget label={playerTurn ? "AI Grid — Click to fire!" : "AI Grid (thinking…)"}
+            onAttack={playerFire} disabled={!playerTurn}
+          />
         </div>
       )}
+
       <button onClick={onMenu} className="text-sm text-muted-foreground hover:text-foreground">← Menu</button>
     </div>
   );
@@ -405,7 +471,7 @@ function OnlineGame({ isHost, relaySend, onMenu, onMessage }: {
 }
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
-type Screen = "menu" | "local" | "online-lobby" | "online-game";
+type Screen = "menu" | "ai" | "online-lobby" | "online-game";
 
 export default function Battleship() {
   const [screen,      setScreen]      = useState<Screen>("menu");
@@ -441,10 +507,10 @@ export default function Battleship() {
         <h2 className="text-2xl font-black text-cyan-300">Battleship</h2>
         <div className="w-full flex flex-col gap-3">
           <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest">2 Players</p>
-          <button onClick={() => setScreen("local")}
+          <button onClick={() => setScreen("ai")}
             className="py-3 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 font-bold rounded-2xl transition-colors">
-            👥 Local Hotseat
-            <span className="text-xs font-normal text-muted-foreground block mt-0.5">Pass &amp; play on one screen</span>
+            🤖 vs Computer
+            <span className="text-xs font-normal text-muted-foreground block mt-0.5">Play against the AI</span>
           </button>
           <button onClick={() => { setOnlineError(""); setScreen("online-lobby"); }}
             className="py-3 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-bold rounded-2xl transition-colors">
@@ -457,9 +523,9 @@ export default function Battleship() {
     </Shell>
   );
 
-  if (screen === "local") return (
-    <Shell title="Battleship" controls="Local 2-player hotseat">
-      <LocalGame onMenu={() => setScreen("menu")} />
+  if (screen === "ai") return (
+    <Shell title="Battleship" controls="vs Computer">
+      <AIGame onMenu={() => setScreen("menu")} />
     </Shell>
   );
 
