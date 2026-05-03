@@ -36,6 +36,7 @@ export default function TypingRacer() {
   const [p2, setP2] = useState<PlayerState>(emptyP());
   const [winner, setWinner] = useState<string | null>(null);
   const [phase, setPhase] = useState<"lobby" | "playing" | "done">("lobby");
+  const [paused, setPaused] = useState(false);
   const p1ref = useRef<HTMLTextAreaElement>(null);
   const p2ref = useRef<HTMLTextAreaElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,7 +48,7 @@ export default function TypingRacer() {
   };
 
   const handleType = useCallback((player: 1 | 2, value: string, state: PlayerState, setState: (s: PlayerState) => void) => {
-    if (state.done || phase !== "playing") return;
+    if (state.done || phase !== "playing" || paused) return;
     const now = Date.now();
     const startTime = state.startTime ?? now;
     const correct = passage.startsWith(value);
@@ -60,21 +61,23 @@ export default function TypingRacer() {
       setWinner(player === 1 ? "Player 1 (Blue)" : "Player 2 (Red)");
       setPhase("done");
     }
-  }, [passage, phase, winner]);
+  }, [passage, phase, winner, paused]);
 
   useEffect(() => {
-    if (phase === "playing") {
+    if (phase === "playing" && !paused) {
       timerRef.current = setInterval(() => {
         setP1(s => s.startTime && !s.done ? { ...s, wpm: calcWpm(s.typed, s.startTime) } : s);
         setP2(s => s.startTime && !s.done ? { ...s, wpm: calcWpm(s.typed, s.startTime) } : s);
       }, 500);
+    } else {
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [phase]);
+  }, [phase, paused]);
 
   const start = () => {
     const idx = Math.floor(Math.random() * PASSAGES.length);
-    setPassage(PASSAGES[idx]); setP1(emptyP()); setP2(emptyP()); setWinner(null); setPhase("playing");
+    setPassage(PASSAGES[idx]); setP1(emptyP()); setP2(emptyP()); setWinner(null); setPaused(false); setPhase("playing");
     setTimeout(() => { p1ref.current?.focus(); }, 100);
   };
 
@@ -100,20 +103,36 @@ export default function TypingRacer() {
       )}
       {(phase === "playing" || phase === "done") && (
         <div className="w-full max-w-5xl flex flex-col gap-6">
-          {winner && (
-            <div className="text-center py-3 bg-primary/20 border border-primary/40 rounded-xl">
-              <span className="text-xl font-black text-primary">🏆 {winner} wins!</span>
+          <div className="flex items-center justify-between">
+            {winner ? (
+              <div className="flex-1 text-center py-3 bg-primary/20 border border-primary/40 rounded-xl">
+                <span className="text-xl font-black text-primary">🏆 {winner} wins!</span>
+              </div>
+            ) : <div className="flex-1" />}
+            {phase === "playing" && !winner && (
+              <button onClick={() => setPaused(p => !p)} className="ml-4 px-4 py-2 rounded-xl border border-border bg-card text-lg font-bold hover:bg-secondary transition-all">
+                {paused ? "▶" : "⏸"}
+              </button>
+            )}
+          </div>
+          <div className="relative">
+            <div className="font-mono text-base leading-relaxed bg-card border border-border rounded-xl p-4 select-none">
+              {renderHighlight(p1.typed.length >= p2.typed.length ? p1.typed : p2.typed)}
             </div>
-          )}
-          <div className="font-mono text-base leading-relaxed bg-card border border-border rounded-xl p-4 select-none">
-            {renderHighlight(p1.typed.length >= p2.typed.length ? p1.typed : p2.typed)}
+            {paused && phase === "playing" && (
+              <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center gap-4 rounded-xl">
+                <span className="text-4xl">⏸</span>
+                <span className="text-lg font-black text-primary">Paused</span>
+                <button onClick={() => setPaused(false)} className="px-8 py-2 bg-primary text-black font-bold rounded-xl">▶ Resume</button>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             {/* Player 1 */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between text-sm"><span className="text-sky-400 font-bold">Player 1 (Blue)</span><span className="text-muted-foreground font-mono">{p1.wpm} WPM</span></div>
               <div className="h-2 bg-secondary rounded-full"><div className="h-2 bg-sky-500 rounded-full transition-all" style={{ width: `${pct(p1.typed)}%` }} /></div>
-              <textarea ref={p1ref} disabled={p1.done || phase === "done"} value={p1.typed}
+              <textarea ref={p1ref} disabled={p1.done || phase === "done" || paused} value={p1.typed}
                 onChange={e => handleType(1, e.target.value, p1, setP1)}
                 placeholder="Type here..." rows={3}
                 className="font-mono text-sm p-3 bg-sky-950/40 border border-sky-800/50 rounded-lg resize-none focus:outline-none focus:border-sky-500 text-sky-100 placeholder:text-sky-900"
@@ -124,7 +143,7 @@ export default function TypingRacer() {
             <div className="flex flex-col gap-2">
               <div className="flex justify-between text-sm"><span className="text-rose-400 font-bold">Player 2 (Red)</span><span className="text-muted-foreground font-mono">{p2.wpm} WPM</span></div>
               <div className="h-2 bg-secondary rounded-full"><div className="h-2 bg-rose-500 rounded-full transition-all" style={{ width: `${pct(p2.typed)}%` }} /></div>
-              <textarea ref={p2ref} disabled={p2.done || phase === "done"} value={p2.typed}
+              <textarea ref={p2ref} disabled={p2.done || phase === "done" || paused} value={p2.typed}
                 onChange={e => handleType(2, e.target.value, p2, setP2)}
                 placeholder="Type here..." rows={3}
                 className="font-mono text-sm p-3 bg-rose-950/40 border border-rose-800/50 rounded-lg resize-none focus:outline-none focus:border-rose-500 text-rose-100 placeholder:text-rose-900"

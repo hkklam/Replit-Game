@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'wouter';
 
 // ─── QUESTION BANK (200+ questions, Grades 5–8, 4 subjects) ──────────────────
 type Grade = 5 | 6 | 7 | 8;
@@ -727,6 +728,7 @@ export default function BrainRace() {
   const [selectedCount, setSelectedCount] = useState(10);
   const [gs, setGs] = useState<GameState | null>(null);
   const [earnedPts, setEarnedPts] = useState<number[]>([]);
+  const [paused, setPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopTimer = useCallback(() => {
@@ -760,6 +762,7 @@ export default function BrainRace() {
   useEffect(() => {
     if (!gs || gs.mode !== 'question') return;
     stopTimer();
+    if (paused) return;
     timerRef.current = setInterval(() => {
       setGs(prev => {
         if (!prev || prev.mode !== 'question') return prev;
@@ -771,7 +774,7 @@ export default function BrainRace() {
       });
     }, 1000);
     return stopTimer;
-  }, [gs?.mode, gs?.qIdx, doReveal, stopTimer]);
+  }, [gs?.mode, gs?.qIdx, paused, doReveal, stopTimer]);
 
   // Auto-reveal when all multiplayer players answered
   useEffect(() => {
@@ -835,12 +838,14 @@ export default function BrainRace() {
   }, [startQuestion]);
 
   const handleRematch = useCallback(() => setScreen('setup'), []);
-  const handleMenu = useCallback(() => { stopTimer(); setGs(null); setScreen('menu'); }, [stopTimer]);
+  const handleMenu = useCallback(() => { stopTimer(); setGs(null); setPaused(false); setScreen('menu'); }, [stopTimer]);
+  const togglePause = useCallback(() => setPaused(p => !p), []);
 
   // ── MENU ──
   if (screen === 'menu') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', fontFamily: "'Segoe UI', sans-serif" }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', fontFamily: "'Segoe UI', sans-serif", position: 'relative' }}>
+        <Link href="/"><span style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '5px 12px', color: 'rgba(255,255,255,0.6)', fontSize: 13, cursor: 'pointer' }}>← Menu</span></Link>
         <div style={{ fontSize: 64, marginBottom: 8 }}>🧠</div>
         <h1 style={{ color: '#f0c040', fontSize: 32, margin: '0 0 4px', textAlign: 'center', letterSpacing: 1 }}>BrainRace</h1>
         <p style={{ color: '#888', marginBottom: 32, textAlign: 'center', fontSize: 14 }}>Multiplayer Academic Trivia · Grades 5–8<br/>Science · History · Geography · Math</p>
@@ -909,17 +914,26 @@ export default function BrainRace() {
             ? <span style={{ marginLeft: 8, fontSize: 11, color: '#555' }}>Q{gs.qIdx + 1}/{gs.questions.length}</span>
             : null}
         </div>
-        <div style={{ width: 56 }} />
+        {gs.mode === 'question' ? (
+          <button onClick={togglePause} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, padding: '4px 10px', color: '#aaa', fontSize: 14, cursor: 'pointer', width: 56 }}>{paused ? '▶' : '⏸'}</button>
+        ) : <div style={{ width: 56 }} />}
       </div>
 
       {/* Score bar */}
       {(gs.mode === 'question' || gs.mode === 'reveal') && <ScoreBar gs={gs} />}
 
       {/* Content */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
         {gs.mode === 'question' && <QuestionScreen gs={gs} onAnswer={handleAnswer} />}
         {gs.mode === 'reveal' && <RevealScreen gs={gs} onNext={handleNext} earned={earnedPts} />}
         {gs.mode === 'results' && <ResultsScreen gs={gs} onMenu={handleMenu} onRematch={handleRematch} />}
+        {paused && gs.mode === 'question' && (
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(5,5,24,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+            <div style={{ fontSize: 48 }}>⏸</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#f0c040' }}>Paused</div>
+            <button onClick={togglePause} style={{ padding: '12px 36px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#1e3a8a,#3b82f6)', color: '#fff', fontWeight: 800, fontSize: 16, cursor: 'pointer' }}>▶ Resume</button>
+          </div>
+        )}
       </div>
     </div>
   );

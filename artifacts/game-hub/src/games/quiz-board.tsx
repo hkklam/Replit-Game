@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'wouter';
 
 // ─── QUESTION BANK ────────────────────────────────────────────────────────────
 // Format: q = clue text, a = canonical answer (lowercase), alt = accepted aliases
@@ -666,18 +667,20 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 // ─── TIMER HOOK ───────────────────────────────────────────────────────────────
-function useTimer(initial: number, active: boolean, onEnd: () => void) {
+function useTimer(initial: number, active: boolean, onEnd: () => void, paused = false) {
   const [time, setTime] = useState(initial);
   const ref = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!active) { if (ref.current) clearInterval(ref.current); return; }
-    setTime(initial);
+    if (!active || paused) { if (ref.current) clearInterval(ref.current); return; }
+    if (!paused) setTime(t => t); // keep current time when resuming
     ref.current = setInterval(() => {
       setTime(t => { if (t <= 1) { clearInterval(ref.current!); onEnd(); return 0; } return t - 1; });
     }, 1000);
     return () => { if (ref.current) clearInterval(ref.current); };
-  }, [active, initial]);
+  }, [active, paused]);
+
+  useEffect(() => { if (active) setTime(initial); }, [active, initial]);
 
   return time;
 }
@@ -847,15 +850,17 @@ function BoardScreen({ gs, onClueSelect }: { gs: GameState; onClueSelect: (cat: 
 }
 
 // ─── CLUE MODAL ───────────────────────────────────────────────────────────────
-function ClueModal({ gs, clue, onSubmit, onTimeout }: {
+function ClueModal({ gs, clue, onSubmit, onTimeout, paused, onTogglePause }: {
   gs: GameState; clue: ClueState;
   onSubmit: (answer: string) => void;
   onTimeout: () => void;
+  paused: boolean;
+  onTogglePause: () => void;
 }) {
   const [input, setInput] = useState('');
   const [locked, setLocked] = useState(false);
   const catColor = CAT_COLORS[clue.category] || '#1d4ed8';
-  const pct = (useTimer(gs.timerSecs, !locked, onTimeout) / gs.timerSecs) * 100;
+  const pct = (useTimer(gs.timerSecs, !locked, onTimeout, paused) / gs.timerSecs) * 100;
   const timerColor = pct > 50 ? '#22c55e' : pct > 25 ? '#f59e0b' : '#ef4444';
   const currentPlayer = gs.players[gs.currentPlayer];
 
@@ -881,16 +886,29 @@ function ClueModal({ gs, clue, onSubmit, onTimeout }: {
               <span style={{ color: PLAYER_COLORS_GAME[gs.currentPlayer], fontWeight: 700 }}>{currentPlayer.name}</span>'s turn
             </div>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#fbbf24' }}>${clue.value}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {!locked && (
+              <button onClick={onTogglePause} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 7, padding: '4px 10px', color: '#aaa', fontSize: 14, cursor: 'pointer' }}>{paused ? '▶' : '⏸'}</button>
+            )}
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#fbbf24' }}>${clue.value}</div>
+          </div>
         </div>
 
         {/* Clue text */}
-        <div style={{ padding: '20px 18px', textAlign: 'center' }}>
-          <p style={{ fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1.6, margin: 0 }}>{clue.entry.q}</p>
+        <div style={{ padding: '20px 18px', textAlign: 'center', position: 'relative', minHeight: 80 }}>
+          {paused ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+              <div style={{ fontSize: 36 }}>⏸</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#aaa' }}>Paused</div>
+              <button onClick={onTogglePause} style={{ padding: '10px 28px', borderRadius: 10, border: 'none', background: catColor, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>▶ Resume</button>
+            </div>
+          ) : (
+            <p style={{ fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1.6, margin: 0 }}>{clue.entry.q}</p>
+          )}
         </div>
 
         {/* Answer input */}
-        {!locked && (
+        {!locked && !paused && (
           <div style={{ padding: '0 16px 16px', display: 'flex', gap: 8 }}>
             <input autoFocus value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}
@@ -1048,8 +1066,10 @@ export default function QuizBoard() {
     setScreen(allUsed ? 'final' : 'board');
   }, [gs, totalClues]);
 
-  const handleMenu = useCallback(() => { setGs(null); setScreen('menu'); }, []);
+  const [paused, setPaused] = useState(false);
+  const handleMenu = useCallback(() => { setGs(null); setPaused(false); setScreen('menu'); }, []);
   const handleRematch = useCallback(() => setScreen('setup'), []);
+  const togglePause = useCallback(() => setPaused(p => !p), []);
 
   const progress = gs ? `${gs.usedClues.size}/${totalClues}` : '';
 
@@ -1075,7 +1095,8 @@ export default function QuizBoard() {
       {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {screen === 'menu' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: 24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: 24, position: 'relative' }}>
+            <Link href="/"><span style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '5px 12px', color: 'rgba(255,255,255,0.6)', fontSize: 13, cursor: 'pointer' }}>← Menu</span></Link>
             <div style={{ fontSize: 72, marginBottom: 8 }}>🎯</div>
             <h1 style={{ color: '#fbbf24', fontSize: 30, margin: '0 0 6px', letterSpacing: 1 }}>Quiz Board Arena</h1>
             <p style={{ color: '#666', fontSize: 14, textAlign: 'center', marginBottom: 32, maxWidth: 340 }}>Jeopardy-style trivia for 1–4 players. 12 categories · 1800+ questions · Base & Expanded packs.</p>
@@ -1111,7 +1132,7 @@ export default function QuizBoard() {
 
       {/* Clue modal */}
       {screen === 'clue' && gs?.activeClue && (
-        <ClueModal gs={gs} clue={gs.activeClue} onSubmit={handleSubmit} onTimeout={handleTimeout} />
+        <ClueModal gs={gs} clue={gs.activeClue} onSubmit={handleSubmit} onTimeout={handleTimeout} paused={paused} onTogglePause={togglePause} />
       )}
 
       {/* Result modal */}
