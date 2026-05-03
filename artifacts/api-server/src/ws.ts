@@ -31,6 +31,11 @@ import {
   createSsRoom, joinSsRoom, getSsRoom, removeSsPlayer,
   startSsGame, handleSsAction, lobbySnapshotSs, MAX_SS_HUMANS,
 } from "./ss-rooms";
+import {
+  createQbRoom, joinQbRoom, getQbRoom, removeQbPlayer,
+  startQbGame, handleQbAction, lobbySnapshotQb, MAX_QB_HUMANS,
+} from "./qb-rooms";
+import type { QbEntry } from "./qb-rooms";
 import { logger } from "./lib/logger";
 
 type Msg = Record<string, unknown> & { type: string };
@@ -81,6 +86,10 @@ export function attachWebSocket(server: Server): void {
     // ── Spin & Solve state ─────────────────────────────────────────────────────
     let ssCode: string | null = null;
     let ssSeat: number = -1;
+
+    // ── Quiz Board state ───────────────────────────────────────────────────────
+    let qbCode: string | null = null;
+    let qbSeat: number = -1;
 
     ws.on("message", (raw) => {
       let msg: Msg;
@@ -536,6 +545,67 @@ export function attachWebSocket(server: Server): void {
           break;
         }
 
+        // ── Quiz Board ────────────────────────────────────────────────────
+        case "qb_create": {
+          const name = String(msg.name ?? "Host").slice(0, 16).trim() || "Host";
+          qbCode = createQbRoom(ws, name);
+          qbSeat = 0;
+          const room = getQbRoom(qbCode)!;
+          send(ws, { type: "qb_room_created", roomCode: qbCode, seat: 0, players: lobbySnapshotQb(room) });
+          logger.info({ qbCode }, "QB room created");
+          break;
+        }
+        case "qb_join": {
+          const code = String(msg.roomCode ?? "").toUpperCase().trim();
+          const name = String(msg.name ?? "Player").slice(0, 16).trim() || "Player";
+          const result = joinQbRoom(code, ws, name);
+          if (!result) {
+            send(ws, { type: "error", message: `Room not found, already started, or full (max ${MAX_QB_HUMANS} players).` });
+            break;
+          }
+          qbCode = code; qbSeat = result.seat;
+          const snap = lobbySnapshotQb(result.room);
+          send(ws, { type: "qb_joined", roomCode: code, seat: qbSeat, players: snap });
+          for (const p of result.room.players) {
+            if (p.ws !== ws) send(p.ws, { type: "qb_lobby_update", players: snap });
+          }
+          logger.info({ qbCode: code, qbSeat }, "QB player joined");
+          break;
+        }
+        case "qb_start": {
+          if (!qbCode || qbSeat !== 0) break;
+          const room = getQbRoom(qbCode);
+          if (!room || room.started) break;
+          if (room.players.length < 2) { send(ws, { type: "error", message: "Need at least 2 players to start." }); break; }
+          const categories = Array.isArray(msg.categories) ? (msg.categories as string[]).slice(0, 12) : [];
+          const timerSecs = [15, 30, 45, 60].includes(Number(msg.timerSecs)) ? Number(msg.timerSecs) : 30;
+          const rawBoard = msg.board as Record<string, Record<string, { q: string; a: string; alt?: string[] }>>;
+          if (!rawBoard || typeof rawBoard !== 'object') break;
+          const board: Record<string, Record<number, QbEntry>> = {};
+          for (const cat of categories) {
+            if (!rawBoard[cat]) continue;
+            board[cat] = {};
+            for (const [v, e] of Object.entries(rawBoard[cat])) {
+              const val = Number(v);
+              if (e && typeof e.q === 'string' && typeof e.a === 'string') {
+                board[cat][val] = { q: e.q, a: e.a, alt: Array.isArray(e.alt) ? e.alt : undefined };
+              }
+            }
+          }
+          startQbGame(room, categories, board, timerSecs);
+          logger.info({ qbCode, categories, timerSecs, players: room.players.map(p => p.name) }, "QB game started");
+          break;
+        }
+        case "qb_action": {
+          if (!qbCode || qbSeat < 0) break;
+          const room = getQbRoom(qbCode);
+          if (!room?.started) break;
+          const action = String(msg.action ?? '');
+          const data = (msg.data && typeof msg.data === 'object') ? msg.data as Record<string, unknown> : {};
+          handleQbAction(room, qbSeat, action, data);
+          break;
+        }
+
         case "ping":
           send(ws, { type: "pong" });
           break;
@@ -604,6 +674,16 @@ export function attachWebSocket(server: Server): void {
           for (const p of result.room.players) send(p.ws, { type: "ss_player_left", seat: result.seat, name: result.name });
         }
         logger.info({ ssCode, ssSeat }, "SS player left");
+      }
+      // Quiz Board cleanup
+      if (qbCode) {
+        const result = removeQbPlayer(qbCode, ws);
+        if (result && result.room.players.length > 0) {
+          const snap = lobbySnapshotQb(result.room);
+          for (const p of result.room.players) send(p.ws, { type: "qb_lobby_update", players: snap });
+          for (const p of result.room.players) send(p.ws, { type: "qb_player_left", seat: result.seat });
+        }
+        logger.info({ qbCode, qbSeat }, "QB player left");
       }
     });
 
