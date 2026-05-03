@@ -27,6 +27,10 @@ import {
   createTrRoom, joinTrRoom, getTrRoom, removeTrPlayer,
   startTrGame, updateTrPlayerState, routeTrGarbage, lobbySnapshotTr, MAX_TR_HUMANS,
 } from "./tr-rooms";
+import {
+  createSsRoom, joinSsRoom, getSsRoom, removeSsPlayer,
+  startSsGame, handleSsAction, lobbySnapshotSs, MAX_SS_HUMANS,
+} from "./ss-rooms";
 import { logger } from "./lib/logger";
 
 type Msg = Record<string, unknown> & { type: string };
@@ -73,6 +77,10 @@ export function attachWebSocket(server: Server): void {
     // ── Tetris Royale state ────────────────────────────────────────────────────
     let trCode: string | null = null;
     let trSeat: number = -1;
+
+    // ── Spin & Solve state ─────────────────────────────────────────────────────
+    let ssCode: string | null = null;
+    let ssSeat: number = -1;
 
     ws.on("message", (raw) => {
       let msg: Msg;
@@ -481,6 +489,53 @@ export function attachWebSocket(server: Server): void {
           break;
         }
 
+        // ── Spin & Solve ──────────────────────────────────────────────────────
+        case "ss_create": {
+          const name = String(msg.name ?? "Host").slice(0, 12).trim() || "Host";
+          ssCode = createSsRoom(ws, name);
+          ssSeat = 0;
+          const room = getSsRoom(ssCode)!;
+          const snap = lobbySnapshotSs(room);
+          send(ws, { type: "ss_room_created", roomCode: ssCode, seat: 0, color: snap[0].color, players: snap });
+          logger.info({ ssCode }, "SS room created");
+          break;
+        }
+        case "ss_join": {
+          const code = String(msg.roomCode ?? "").toUpperCase().trim();
+          const name = String(msg.name ?? "Player").slice(0, 12).trim() || "Player";
+          const result = joinSsRoom(code, ws, name);
+          if (!result) {
+            send(ws, { type: "error", message: `Room not found, already started, or full (max ${MAX_SS_HUMANS} players).` });
+            break;
+          }
+          ssCode = code; ssSeat = result.seat;
+          const snap = lobbySnapshotSs(result.room);
+          const myEntry = snap.find(p => p.seat === ssSeat)!;
+          send(ws, { type: "ss_joined", roomCode: code, seat: ssSeat, color: myEntry.color, players: snap });
+          for (const p of result.room.players) {
+            if (p.ws !== ws) send(p.ws, { type: "ss_lobby_update", players: snap });
+          }
+          logger.info({ ssCode: code, ssSeat }, "SS player joined");
+          break;
+        }
+        case "ss_start": {
+          if (!ssCode || ssSeat !== 0) break;
+          const room = getSsRoom(ssCode);
+          if (!room || room.started) break;
+          if (room.players.length < 2) { send(ws, { type: "error", message: "Need at least 2 players to start." }); break; }
+          const totalRounds = typeof msg.totalRounds === 'number' ? Math.max(1, Math.min(10, msg.totalRounds)) : 5;
+          startSsGame(room, totalRounds);
+          logger.info({ ssCode, players: room.players.map(p => p.name) }, "SS game started");
+          break;
+        }
+        case "ss_action": {
+          if (!ssCode || ssSeat < 0) break;
+          const room = getSsRoom(ssCode);
+          if (!room?.started) break;
+          handleSsAction(room, ssSeat, String(msg.action ?? ''), msg.letter ? String(msg.letter) : undefined, msg.answer ? String(msg.answer) : undefined);
+          break;
+        }
+
         case "ping":
           send(ws, { type: "pong" });
           break;
@@ -539,6 +594,16 @@ export function attachWebSocket(server: Server): void {
           for (const p of result.room.players) send(p.ws, { type: "tr_player_left", seat: result.seat, name: result.name });
         }
         logger.info({ trCode, trSeat }, "TR player left");
+      }
+      // Spin & Solve cleanup
+      if (ssCode) {
+        const result = removeSsPlayer(ssCode, ws);
+        if (result && result.room.players.length > 0) {
+          const snap = lobbySnapshotSs(result.room);
+          for (const p of result.room.players) send(p.ws, { type: "ss_lobby_update", players: snap });
+          for (const p of result.room.players) send(p.ws, { type: "ss_player_left", seat: result.seat, name: result.name });
+        }
+        logger.info({ ssCode, ssSeat }, "SS player left");
       }
     });
 

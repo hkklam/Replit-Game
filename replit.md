@@ -47,6 +47,7 @@ All games are in `artifacts/game-hub/src/games/`. Routing via `wouter`.
 
 **Online multiplayer** (via WebSocket relay in `artifacts/api-server`):
 - **Tetris Royale** — up to 4 human players online (`tr-rooms.ts`, `tr-online.ts`); lobby with room code; client-authoritative physics; server routes garbage to random alive opponents; win detection; OR AI-only mode with 1–4 bots each with independent easy/normal/hard difficulty
+- **Spin & Solve** — up to 4 human players online (`ss-rooms.ts`, `ss-online.ts`); server-authoritative turn-based play; lobby with room code; OR AI-only mode with 1–3 bots (Nikki/Rex/Zara) each with independent easy/normal/hard difficulty; puzzle difficulty picker; rounds selector (3/5/7)
 - **Sneezing Kittens** — up to 4 human players + AI bots, server-authoritative (`sk-rooms.ts`); lobby with room code; hidden hands; 4s Nope window; steal/favor target picking; AI fills empty seats
 - **Mahjong** — up to 3 human players + 1 AI bot, server-authoritative (`mahjong-rooms.ts`, `mahjong-logic.ts`); lobby with room code; per-player hidden hand view; server-run AI turns; claim window with 7s auto-skip
 - **UNO** — up to 8 players, full server-authoritative game logic (`uno-rooms.ts`, `uno-logic.ts`)
