@@ -7,6 +7,12 @@ import {
 } from "./uno-rooms";
 import { initGame, canPlay, applyPlay, applyForcedDraw, buildPlayerView } from "./uno-logic";
 import type { Variant, Color } from "./uno-logic";
+import {
+  createPicRoom, joinPicRoom, getPicRoom, removePicPlayer,
+  broadcastPic, sendToPic, lobbySnapshotPic,
+  startPicGame, startDrawingTimer, triggerScoring, applyPicScores,
+} from "./pictionary-rooms";
+import type { PicDiff } from "./pictionary-rooms";
 import { logger } from "./lib/logger";
 
 type Msg = Record<string, unknown> & { type: string };
@@ -30,7 +36,7 @@ export function attachWebSocket(server: Server): void {
   const wss = new WebSocketServer({ server, path: "/api/ws" });
 
   wss.on("connection", (ws) => {
-    // ── 2-player relay state (other games) ───────────────────────────────────
+    // ── 2-player relay state ──────────────────────────────────────────────────
     let roomCode: string | null = null;
     let isHost = false;
 
@@ -38,12 +44,17 @@ export function attachWebSocket(server: Server): void {
     let unoCode: string | null = null;
     let unoIdx: number = -1;
 
+    // ── Pictionary state ─────────────────────────────────────────────────────
+    let picCode: string | null = null;
+    let picIdx: number = -1;
+
     ws.on("message", (raw) => {
       let msg: Msg;
       try { msg = JSON.parse(String(raw)); } catch { return; }
 
       switch (msg.type) {
-        // ── Existing 2-player relay (other games) ─────────────────────────────
+
+        // ── 2-player relay ────────────────────────────────────────────────────
         case "create_room": {
           const gameType = typeof msg.gameType === "string" ? msg.gameType : "game";
           roomCode = createRoom(gameType, ws);
@@ -90,8 +101,7 @@ export function attachWebSocket(server: Server): void {
             send(ws, { type: "error", message: "Room not found, already started, or full (max 8 players)." });
             break;
           }
-          unoCode = code;
-          unoIdx = result.playerIdx;
+          unoCode = code; unoIdx = result.playerIdx;
           const snap = lobbySnapshot(result.room);
           send(ws, { type: "uno_joined", roomCode: code, playerIdx: unoIdx, players: snap });
           broadcastUno(result.room, { type: "uno_lobby_update", players: snap });
@@ -102,13 +112,9 @@ export function attachWebSocket(server: Server): void {
           if (!unoCode || unoIdx !== 0) break;
           const room = getUnoRoom(unoCode);
           if (!room || room.started) break;
-          if (room.players.length < 2) {
-            send(ws, { type: "error", message: "Need at least 2 players to start." });
-            break;
-          }
+          if (room.players.length < 2) { send(ws, { type: "error", message: "Need at least 2 players to start." }); break; }
           const variant = (VALID_VARIANTS.has(String(msg.variant)) ? msg.variant : "classic") as Variant;
-          room.variant = variant;
-          room.started = true;
+          room.variant = variant; room.started = true;
           const names = room.players.map(p => p.name);
           room.state = initGame(names, variant);
           broadcastUno(room, { type: "uno_started", variant });
@@ -155,6 +161,113 @@ export function attachWebSocket(server: Server): void {
           break;
         }
 
+        // ── Pictionary ────────────────────────────────────────────────────────
+        case "pic_create": {
+          const name = String(msg.name ?? "Host").slice(0, 16).trim() || "Host";
+          const result = createPicRoom(ws, name);
+          picCode = result.room.code; picIdx = 0;
+          send(ws, { type: "pic_room_created", roomCode: picCode, playerIdx: 0, players: lobbySnapshotPic(result.room) });
+          logger.info({ picCode }, "Pictionary room created");
+          break;
+        }
+        case "pic_join": {
+          const code = String(msg.roomCode ?? "").toUpperCase().trim();
+          const name = String(msg.name ?? "Player").slice(0, 16).trim() || "Player";
+          const result = joinPicRoom(code, ws, name);
+          if (!result) { send(ws, { type: "error", message: "Room not found, full, or already started." }); break; }
+          picCode = code; picIdx = result.playerIdx;
+          send(ws, { type: "pic_joined", roomCode: code, playerIdx: picIdx, players: lobbySnapshotPic(result.room) });
+          broadcastPic(result.room, { type: "pic_lobby_update", players: lobbySnapshotPic(result.room) }, picIdx);
+          logger.info({ picCode: code, picIdx }, "Pictionary player joined");
+          break;
+        }
+        case "pic_start": {
+          if (!picCode || picIdx !== 0) break;
+          const room = getPicRoom(picCode);
+          if (!room || room.started || room.players.length < 2) {
+            send(ws, { type: "error", message: "Need at least 2 players to start." }); break;
+          }
+          const rounds = Math.min(5, Math.max(1, Number(msg.rounds ?? 3)));
+          const valid = [30, 45, 60];
+          const timerSec = valid.includes(Number(msg.timerSeconds)) ? Number(msg.timerSeconds) : 60;
+          startPicGame(room, rounds, timerSec);
+          logger.info({ picCode, rounds, timerSec }, "Pictionary game started");
+          break;
+        }
+        case "pic_select_word": {
+          const room = getPicRoom(picCode!);
+          if (!room?.state || room.state.phase !== "word_select" || picIdx !== room.state.drawerIdx) break;
+          const diff = msg.diff as PicDiff;
+          if (!["easy", "medium", "hard"].includes(diff)) break;
+
+          const word = room.state.wordOpts![diff];
+          room.state.selectedDiff = diff;
+          room.state.selectedWord = word;
+          room.state.phase = "drawing";
+          room.state.timerEnd = Date.now() + room.settings.timerSeconds * 1000;
+          room.state.canvasOps = [];
+          room.state.chatMessages = [];
+          room.state.guessCount = 0;
+
+          const hint = word.split("").map(c => /[a-zA-Z]/.test(c) ? "_" : c).join(" ");
+          broadcastPic(room, {
+            type: "pic_drawing_started",
+            drawerIdx: room.state.drawerIdx,
+            timerEnd: room.state.timerEnd,
+            wordHint: hint,
+            wordLen: word.length,
+          });
+          // Drawer also needs timerEnd
+          send(ws, { type: "pic_drawing_started_self", timerEnd: room.state.timerEnd });
+
+          startDrawingTimer(room, () => {
+            const r = getPicRoom(picCode!);
+            if (r?.state?.phase === "drawing") triggerScoring(r);
+          });
+          break;
+        }
+        case "pic_draw": {
+          const room = getPicRoom(picCode!);
+          if (!room?.state || room.state.phase !== "drawing" || picIdx !== room.state.drawerIdx) break;
+          const op = msg.op as Record<string, unknown> & { t: string };
+          if (!op?.t) break;
+          room.state.canvasOps.push(op);
+          broadcastPic(room, { type: "pic_draw", op }, picIdx);
+          break;
+        }
+        case "pic_end_turn": {
+          const room = getPicRoom(picCode!);
+          if (!room?.state || room.state.phase !== "drawing" || picIdx !== room.state.drawerIdx) break;
+          triggerScoring(room);
+          break;
+        }
+        case "pic_chat": {
+          const room = getPicRoom(picCode!);
+          if (!room?.state || room.state.phase !== "drawing" || picIdx === room.state.drawerIdx) break;
+          const text = String(msg.text ?? "").slice(0, 120).trim();
+          if (!text) break;
+          const sender = room.players[picIdx];
+          const chatMsg = { playerIdx: picIdx, name: sender?.name ?? "?", text };
+          room.state.chatMessages.push(chatMsg);
+          room.state.guessCount++;
+          // Send to all guessers (not drawer)
+          broadcastPic(room, { type: "pic_chat", ...chatMsg }, room.state.drawerIdx);
+          // Send count to drawer
+          sendToPic(room, room.state.drawerIdx, { type: "pic_guess_count", count: room.state.guessCount });
+          break;
+        }
+        case "pic_score": {
+          const room = getPicRoom(picCode!);
+          if (!room?.state || room.state.phase !== "scoring" || picIdx !== room.state.drawerIdx) break;
+          const winners = (Array.isArray(msg.winners) ? msg.winners as number[] : []).filter(
+            i => typeof i === "number" && i !== room.state!.drawerIdx
+          );
+          const diff = (["easy","medium","hard"].includes(String(msg.diff)) ? msg.diff : room.state.selectedDiff) as PicDiff;
+          applyPicScores(room, winners, diff);
+          logger.info({ picCode, winners, diff }, "Pictionary scores applied");
+          break;
+        }
+
         case "ping":
           send(ws, { type: "pong" });
           break;
@@ -165,27 +278,24 @@ export function attachWebSocket(server: Server): void {
       // 2-player relay cleanup
       if (roomCode) {
         const room = getRoom(roomCode);
-        if (room) {
-          const other = isHost ? room.guest : room.host;
-          if (other) send(other, { type: "opponent_left" });
-        }
+        if (room) { const other = isHost ? room.guest : room.host; if (other) send(other, { type: "opponent_left" }); }
         closeRoom(roomCode);
-        logger.info({ roomCode }, "Room closed");
       }
       // UNO cleanup
       if (unoCode) {
         const result = removeUnoPlayer(unoCode, ws);
         if (result && result.room.players.length > 0) {
-          broadcastUno(result.room, {
-            type: "uno_player_left",
-            playerIdx: result.player.idx,
-            name: result.player.name,
-          });
-          if (!result.room.started) {
-            broadcastUno(result.room, { type: "uno_lobby_update", players: lobbySnapshot(result.room) });
-          }
+          broadcastUno(result.room, { type: "uno_player_left", playerIdx: result.player.idx, name: result.player.name });
+          if (!result.room.started) broadcastUno(result.room, { type: "uno_lobby_update", players: lobbySnapshot(result.room) });
         }
-        logger.info({ unoCode, unoIdx }, "UNO player left");
+      }
+      // Pictionary cleanup
+      if (picCode) {
+        const result = removePicPlayer(picCode, ws);
+        if (result && result.room.players.length > 0) {
+          broadcastPic(result.room, { type: "pic_lobby_update", players: lobbySnapshotPic(result.room) });
+        }
+        logger.info({ picCode, picIdx }, "Pictionary player left");
       }
     });
 

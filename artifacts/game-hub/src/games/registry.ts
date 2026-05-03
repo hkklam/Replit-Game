@@ -16,6 +16,7 @@ import MagicSort from "./magic-sort";
 import Tetris from "./tetris";
 import FlowFree from "./flow-free";
 import TetrisRoyale from "./tetris-royale";
+import Pictionary from "./pictionary";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -225,6 +226,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-purple-950/80 via-fuchsia-900/30 to-transparent",
     borderColor: "#c084fc30",
     component: TetrisRoyale,
+  },
+  {
+    id: "pictionary",
+    name: "DrawIt",
+    icon: "🎨",
+    tier: "🔴",
+    desc: "Online Pictionary for 2–8 players. Draw words, guess fast, score by difficulty. Easy/Medium/Hard.",
+    color: "#f472b6",
+    gradient: "from-pink-950/80 via-rose-900/30 to-transparent",
+    borderColor: "#f472b630",
+    component: Pictionary,
   },
 ];
 
