@@ -23,6 +23,10 @@ import {
   broadcastSkState, startSkGame, applySkDraw, applySkPlay, applySkNope,
   applySkStealTarget, applySkPeekClose, lobbySnapshotSk, MAX_SK_HUMANS,
 } from "./sk-rooms";
+import {
+  createTrRoom, joinTrRoom, getTrRoom, removeTrPlayer,
+  startTrGame, updateTrPlayerState, routeTrGarbage, lobbySnapshotTr, MAX_TR_HUMANS,
+} from "./tr-rooms";
 import { logger } from "./lib/logger";
 
 type Msg = Record<string, unknown> & { type: string };
@@ -65,6 +69,10 @@ export function attachWebSocket(server: Server): void {
     // ── Sneezing Kittens state ─────────────────────────────────────────────────
     let skCode: string | null = null;
     let skSeat: number = -1;
+
+    // ── Tetris Royale state ────────────────────────────────────────────────────
+    let trCode: string | null = null;
+    let trSeat: number = -1;
 
     ws.on("message", (raw) => {
       let msg: Msg;
@@ -419,6 +427,60 @@ export function attachWebSocket(server: Server): void {
           break;
         }
 
+        // ── Tetris Royale ─────────────────────────────────────────────────────
+        case "tr_create": {
+          const name = String(msg.name ?? "Host").slice(0, 12).trim() || "Host";
+          trCode = createTrRoom(ws, name);
+          trSeat = 0;
+          const room = getTrRoom(trCode)!;
+          const snap = lobbySnapshotTr(room);
+          send(ws, { type: "tr_room_created", roomCode: trCode, seat: 0, color: snap[0].color, name: snap[0].name, players: snap });
+          logger.info({ trCode }, "TR room created");
+          break;
+        }
+        case "tr_join": {
+          const code = String(msg.roomCode ?? "").toUpperCase().trim();
+          const name = String(msg.name ?? "Player").slice(0, 12).trim() || "Player";
+          const result = joinTrRoom(code, ws, name);
+          if (!result) {
+            send(ws, { type: "error", message: `Room not found, already started, or full (max ${MAX_TR_HUMANS} players).` });
+            break;
+          }
+          trCode = code; trSeat = result.seat;
+          const snap = lobbySnapshotTr(result.room);
+          const myEntry = snap.find(p => p.seat === trSeat)!;
+          send(ws, { type: "tr_joined", roomCode: code, seat: trSeat, color: myEntry.color, players: snap });
+          for (const p of result.room.players) {
+            if (p.ws !== ws) send(p.ws, { type: "tr_lobby_update", players: snap });
+          }
+          logger.info({ trCode: code, trSeat }, "TR player joined");
+          break;
+        }
+        case "tr_start": {
+          if (!trCode || trSeat !== 0) break;
+          const room = getTrRoom(trCode);
+          if (!room || room.started) break;
+          if (room.players.length < 2) { send(ws, { type: "error", message: "Need at least 2 players to start." }); break; }
+          startTrGame(room);
+          logger.info({ trCode, players: room.players.map(p => p.name) }, "TR game started");
+          break;
+        }
+        case "tr_state": {
+          if (!trCode || trSeat < 0) break;
+          const room = getTrRoom(trCode);
+          if (!room?.started) break;
+          const board = Array.isArray(msg.board) ? msg.board as string[][] : [];
+          updateTrPlayerState(room, trSeat, board, Number(msg.score ?? 0), Number(msg.lines ?? 0), Boolean(msg.alive ?? true));
+          break;
+        }
+        case "tr_garbage": {
+          if (!trCode || trSeat < 0) break;
+          const room = getTrRoom(trCode);
+          if (!room?.started) break;
+          routeTrGarbage(room, trSeat, Number(msg.count ?? 0));
+          break;
+        }
+
         case "ping":
           send(ws, { type: "pong" });
           break;
@@ -467,6 +529,16 @@ export function attachWebSocket(server: Server): void {
           if (result.room.state) broadcastSkState(result.room);
         }
         logger.info({ skCode, skSeat }, "SK player left");
+      }
+      // Tetris Royale cleanup
+      if (trCode) {
+        const result = removeTrPlayer(trCode, ws);
+        if (result && result.room.players.length > 0) {
+          const snap = lobbySnapshotTr(result.room);
+          for (const p of result.room.players) send(p.ws, { type: "tr_lobby_update", players: snap });
+          for (const p of result.room.players) send(p.ws, { type: "tr_player_left", seat: result.seat, name: result.name });
+        }
+        logger.info({ trCode, trSeat }, "TR player left");
       }
     });
 
