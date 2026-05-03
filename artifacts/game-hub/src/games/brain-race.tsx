@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'wouter';
+import { useRelaySocket } from '@/lib/relay-socket';
+import { QRCode } from '@/components/QRCode';
 
 // ─── QUESTION BANK (200+ questions, Grades 5–8, 4 subjects) ──────────────────
 type Grade = 5 | 6 | 7 | 8;
@@ -349,9 +351,8 @@ function calcPoints(q: Q, timeLeft: number, maxTime: number, streak: number): nu
 }
 
 // ─── SETUP SCREEN ─────────────────────────────────────────────────────────────
-function SetupScreen({ onStart, isSolo }: {
+function SetupScreen({ onStart }: {
   onStart: (grades: Grade[], subjects: Subject[], count: number) => void;
-  isSolo: boolean;
 }) {
   const [grades, setGrades] = useState<Grade[]>([6]);
   const [subjects, setSubjects] = useState<Subject[]>(['Science', 'Math']);
@@ -412,50 +413,79 @@ function SetupScreen({ onStart, isSolo }: {
           color: '#fff', fontWeight: 800, fontSize: 17, cursor: available > 0 ? 'pointer' : 'not-allowed',
           boxShadow: available > 0 ? '0 4px 20px rgba(59,130,246,0.5)' : 'none',
         }}>
-        {isSolo ? '🧠 Start Solo Practice' : '👥 Continue to Lobby →'}
+        {'🚀 Start Game →'}
       </button>
     </div>
   );
 }
 
-// ─── LOBBY SCREEN (multiplayer) ────────────────────────────────────────────────
-function LobbyScreen({ onStart }: { onStart: (names: string[]) => void }) {
-  const [count, setCount] = useState(2);
-  const [names, setNames] = useState(['', '', '', '']);
+// ─── ONLINE HELPERS ───────────────────────────────────────────────────────────
+function getUrlRoomCode(): string {
+  const m = window.location.search.match(/[?&]room=([A-Z0-9]{4})/i);
+  return m ? m[1].toUpperCase() : "";
+}
+function buildInviteUrl(code: string): string {
+  return `${window.location.origin}${window.location.pathname}?room=${code}`;
+}
+
+// ─── ONLINE LOBBY ─────────────────────────────────────────────────────────────
+function OnlineLobby({ status, roomCode, error, onHost, onJoin, onBack, initialCode = "" }: {
+  status: string; roomCode: string; error: string; initialCode?: string;
+  onHost: () => void; onJoin: (code: string) => void; onBack: () => void;
+}) {
+  const [code, setCode] = useState(initialCode);
+  const [view, setView] = useState<"pick" | "host" | "join">(() => initialCode.length >= 4 ? "join" : "pick");
+  const baseBtn: React.CSSProperties = { padding: '16px 0', borderRadius: 14, border: 'none', color: '#fff', fontWeight: 800, fontSize: 16, cursor: 'pointer', width: '100%' };
+  const backBtn: React.CSSProperties = { background: 'none', border: 'none', color: '#555', fontSize: 14, cursor: 'pointer', marginTop: 8 };
+
+  if (view === "pick") return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, maxWidth: 320, width: '100%' }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: '#f0c040', marginBottom: 4 }}>🧠 BrainRace Online</div>
+      <button onClick={() => { setView("host"); onHost(); }}
+        style={{ ...baseBtn, background: 'linear-gradient(135deg,#7c2d12,#ea580c)', boxShadow: '0 4px 20px rgba(234,88,12,0.4)' }}>
+        🏠 Host a Game
+        <span style={{ display: 'block', fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>Create a room · share the code</span>
+      </button>
+      <button onClick={() => setView("join")}
+        style={{ ...baseBtn, background: 'linear-gradient(135deg,#1e3a8a,#3b82f6)', boxShadow: '0 4px 20px rgba(59,130,246,0.4)' }}>
+        🔗 Join a Game
+        <span style={{ display: 'block', fontSize: 11, fontWeight: 400, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>Enter the host's 4-letter code</span>
+      </button>
+      <button onClick={onBack} style={backBtn}>← Back to Menu</button>
+    </div>
+  );
+
+  if (view === "host") return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, maxWidth: 320, width: '100%', textAlign: 'center' }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: '#f0c040' }}>Hosting a Room</div>
+      {status === "connecting" && <p style={{ color: '#888', fontSize: 13 }}>Connecting…</p>}
+      {status === "waiting" && (<>
+        <p style={{ color: '#888', fontSize: 13, margin: 0 }}>Share this code with your opponent:</p>
+        <div style={{ fontSize: 52, fontWeight: 900, color: '#f0c040', letterSpacing: 8, fontFamily: 'monospace', background: 'rgba(240,192,64,0.08)', border: '2px solid rgba(240,192,64,0.3)', borderRadius: 16, padding: '12px 24px' }}>{roomCode}</div>
+        <p style={{ color: '#666', fontSize: 12, margin: 0 }}>or scan to join:</p>
+        <div style={{ padding: 8, background: '#fff', borderRadius: 12 }}><QRCode value={buildInviteUrl(roomCode)} size={120} /></div>
+        <p style={{ color: '#888', fontSize: 12, margin: 0 }}>Waiting for opponent to join…</p>
+      </>)}
+      {error && <p style={{ color: '#ef4444', fontSize: 13 }}>{error}</p>}
+      <button onClick={() => { setView("pick"); onBack(); }} style={backBtn}>← Cancel</button>
+    </div>
+  );
 
   return (
-    <div style={{ padding: '20px 16px', maxWidth: 400, margin: '0 auto' }}>
-      <div style={{ fontSize: 13, color: '#888', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Number of Players</div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-        {[2, 3, 4].map(n => (
-          <button key={n} onClick={() => setCount(n)} style={{
-            flex: 1, padding: '10px 0', borderRadius: 10, border: `2px solid ${count === n ? '#f0c040' : 'rgba(255,255,255,0.08)'}`,
-            background: count === n ? 'rgba(240,192,64,0.15)' : 'rgba(255,255,255,0.04)',
-            color: count === n ? '#f0c040' : '#666', fontWeight: 700, fontSize: 18, cursor: 'pointer',
-          }}>{n}</button>
-        ))}
-      </div>
-
-      <div style={{ fontSize: 13, color: '#888', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Player Names</div>
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: PLAYER_COLORS[i], flexShrink: 0 }} />
-          <input
-            value={names[i]}
-            onChange={e => setNames(prev => prev.map((n, j) => j === i ? e.target.value : n))}
-            placeholder={`Player ${i + 1}`}
-            style={{ flex: 1, padding: '10px 12px', background: 'rgba(255,255,255,0.06)', border: `1.5px solid ${PLAYER_COLORS[i]}40`, borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 600 }}
-          />
-        </div>
-      ))}
-
-      <button onClick={() => onStart(names.slice(0, count).map((n, i) => n.trim() || `Player ${i + 1}`))}
-        style={{ width: '100%', marginTop: 14, padding: '14px 0', borderRadius: 12, border: 'none',
-          background: 'linear-gradient(135deg,#065f46,#22c55e)', color: '#fff', fontWeight: 800, fontSize: 17, cursor: 'pointer',
-          boxShadow: '0 4px 20px rgba(34,197,94,0.4)',
-        }}>
-        🎮 Start Game!
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, maxWidth: 320, width: '100%', textAlign: 'center' }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: '#f0c040' }}>Join a Room</div>
+      <p style={{ color: '#888', fontSize: 13, margin: 0 }}>Enter the 4-letter room code:</p>
+      <input value={code} onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))}
+        placeholder="ABCD"
+        style={{ textAlign: 'center', fontSize: 32, fontWeight: 900, fontFamily: 'monospace', letterSpacing: 8, background: 'rgba(255,255,255,0.06)', border: '2px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '12px 16px', color: '#fff', width: 180, outline: 'none' }}
+      />
+      <button onClick={() => code.length === 4 && onJoin(code)}
+        disabled={code.length !== 4 || status === "connecting"}
+        style={{ ...baseBtn, background: code.length === 4 ? 'linear-gradient(135deg,#065f46,#22c55e)' : 'rgba(255,255,255,0.05)', color: code.length === 4 ? '#fff' : '#444', boxShadow: code.length === 4 ? '0 4px 20px rgba(34,197,94,0.4)' : 'none', cursor: code.length === 4 ? 'pointer' : 'not-allowed' }}>
+        {status === "connecting" ? "Connecting…" : "Join →"}
       </button>
+      {error && <p style={{ color: '#ef4444', fontSize: 13 }}>{error}</p>}
+      <button onClick={() => { setView("pick"); onBack(); }} style={backBtn}>← Back</button>
     </div>
   );
 }
@@ -582,10 +612,11 @@ function QuestionScreen({ gs, onAnswer }: {
 }
 
 // ─── REVEAL SCREEN ────────────────────────────────────────────────────────────
-function RevealScreen({ gs, onNext, earned }: {
+function RevealScreen({ gs, onNext, earned, isWaiting = false }: {
   gs: GameState;
   onNext: () => void;
   earned: number[];
+  isWaiting?: boolean;
 }) {
   const q = gs.questions[gs.qIdx];
   const optLabels = ['A', 'B', 'C', 'D'];
@@ -641,14 +672,20 @@ function RevealScreen({ gs, onNext, earned }: {
       </div>
 
       <div style={{ padding: '0 14px 14px' }}>
-        <button onClick={onNext}
-          style={{ width: '100%', padding: '13px 0', borderRadius: 12, border: 'none',
-            background: gs.qIdx + 1 < gs.questions.length ? 'linear-gradient(135deg,#1e3a8a,#2563eb)' : 'linear-gradient(135deg,#7c1a8a,#a855f7)',
-            color: '#fff', fontWeight: 800, fontSize: 15, cursor: 'pointer',
-            boxShadow: '0 4px 16px rgba(37,99,235,0.4)',
-          }}>
-          {gs.qIdx + 1 < gs.questions.length ? `Next Question →` : '🏆 See Results'}
-        </button>
+        {isWaiting ? (
+          <div style={{ textAlign: 'center', padding: '13px 0', color: '#555', fontSize: 14 }}>
+            ⏳ Waiting for host to advance…
+          </div>
+        ) : (
+          <button onClick={onNext}
+            style={{ width: '100%', padding: '13px 0', borderRadius: 12, border: 'none',
+              background: gs.qIdx + 1 < gs.questions.length ? 'linear-gradient(135deg,#1e3a8a,#2563eb)' : 'linear-gradient(135deg,#7c1a8a,#a855f7)',
+              color: '#fff', fontWeight: 800, fontSize: 15, cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(37,99,235,0.4)',
+            }}>
+            {gs.qIdx + 1 < gs.questions.length ? `Next Question →` : '🏆 See Results'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -719,222 +756,371 @@ function ScoreBar({ gs }: { gs: GameState }) {
   );
 }
 
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function BrainRace() {
-  const [screen, setScreen] = useState<'menu' | 'setup' | 'lobby' | 'game'>('menu');
-  const [isSolo, setIsSolo] = useState(true);
-  const [selectedGrades, setSelectedGrades] = useState<Grade[]>([6]);
-  const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>(['Science', 'Math']);
-  const [selectedCount, setSelectedCount] = useState(10);
-  const [gs, setGs] = useState<GameState | null>(null);
-  const [earnedPts, setEarnedPts] = useState<number[]>([]);
+// ─── ONLINE BRAIN GAME ────────────────────────────────────────────────────────
+function OnlineBrainGame({ isHost, relaySend, onMessage, onMenu }: {
+  isHost: boolean;
+  relaySend: (d: unknown) => void;
+  onMessage: (handler: (d: unknown) => void) => void;
+  onMenu: () => void;
+}) {
+  const [innerPhase, setInnerPhase] = useState<'pre' | 'question' | 'reveal' | 'results'>('pre');
+  const [myName, setMyName] = useState('');
+  const [oppName, setOppName] = useState('');
+  const [questions, setQuestions] = useState<Q[]>([]);
+  const [qIdx, setQIdx] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [maxTime, setMaxTime] = useState(30);
+  const [myAns, setMyAns] = useState<number | null>(null);
+  const [oppHasAnswered, setOppHasAnswered] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [myScore, setMyScore] = useState(0);
+  const [oppScore, setOppScore] = useState(0);
+  const [myStreak, setMyStreak] = useState(0);
+  const [oppStreak, setOppStreak] = useState(0);
+  const [myCorrect, setMyCorrect] = useState(0);
+  const [oppCorrect, setOppCorrect] = useState(0);
+  const [roundTotal, setRoundTotal] = useState(0);
+  const [earnedPts, setEarnedPts] = useState<number[]>([0, 0]);
+  const [revealAns, setRevealAns] = useState<{ hostAns: number | null; guestAns: number | null } | null>(null);
+
+  // Host-side mutable refs (avoid stale closures)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeLeftRef = useRef(30);
+  const maxTimeRef = useRef(30);
+  const pausedRef = useRef(false);
+  const qIdxRef = useRef(0);
+  const questionsRef = useRef<Q[]>([]);
+  const hostAnsRef = useRef<{ ans: number | null; time: number | null }>({ ans: null, time: null });
+  const guestAnsRef = useRef<{ ans: number | null; time: number | null }>({ ans: null, time: null });
+  const myScoreRef = useRef({ score: 0, streak: 0, correct: 0, total: 0 });
+  const oppScoreRef = useRef({ score: 0, streak: 0, correct: 0, total: 0 });
 
   const stopTimer = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
   }, []);
 
-  const startQuestion = useCallback((state: GameState): GameState => {
-    const q = state.questions[state.qIdx];
-    const maxTime = DIFF_TIMER[q.d];
-    return { ...state, mode: 'question', timeLeft: maxTime, maxTime, answers: state.players.map(() => null), answerTimes: state.players.map(() => null) };
-  }, []);
-
-  const doReveal = useCallback((state: GameState) => {
+  const doRevealHost = useCallback(() => {
     stopTimer();
-    const q = state.questions[state.qIdx];
-    const pts: number[] = state.players.map((p, pi) => {
-      const ans = state.answers[pi];
+    const qs = questionsRef.current;
+    const qi = qIdxRef.current;
+    const q = qs[qi];
+    const mt = maxTimeRef.current;
+    const hAns = hostAnsRef.current;
+    const gAns = guestAnsRef.current;
+
+    const calcPts = (ans: number | null, time: number | null, streak: number) => {
       if (ans === null || ans !== q.ans) return 0;
-      return calcPoints(q, state.answerTimes[pi] ?? 0, state.maxTime, p.streak);
-    });
-    setEarnedPts(pts);
-    const newPlayers = state.players.map((p, pi) => {
-      const correct = state.answers[pi] === q.ans;
-      const newStreak = correct ? p.streak + 1 : 0;
-      return { ...p, score: p.score + pts[pi], streak: newStreak, correct: p.correct + (correct ? 1 : 0), total: p.total + 1 };
-    });
-    setGs({ ...state, mode: 'reveal', players: newPlayers });
-  }, [stopTimer]);
+      return calcPoints(q, time ?? 0, mt, streak);
+    };
+    const hPts = calcPts(hAns.ans, hAns.time, myScoreRef.current.streak);
+    const gPts = calcPts(gAns.ans, gAns.time, oppScoreRef.current.streak);
+    const hCorrect = hAns.ans === q.ans;
+    const gCorrect = gAns.ans === q.ans;
 
-  // Timer effect
-  useEffect(() => {
-    if (!gs || gs.mode !== 'question') return;
+    myScoreRef.current = { score: myScoreRef.current.score + hPts, streak: hCorrect ? myScoreRef.current.streak + 1 : 0, correct: myScoreRef.current.correct + (hCorrect ? 1 : 0), total: myScoreRef.current.total + 1 };
+    oppScoreRef.current = { score: oppScoreRef.current.score + gPts, streak: gCorrect ? oppScoreRef.current.streak + 1 : 0, correct: oppScoreRef.current.correct + (gCorrect ? 1 : 0), total: oppScoreRef.current.total + 1 };
+
+    const payload = { qIdx: qi, hostAns: hAns.ans, guestAns: gAns.ans, hostPts: hPts, guestPts: gPts, hostScore: myScoreRef.current.score, guestScore: oppScoreRef.current.score, hostStreak: myScoreRef.current.streak, guestStreak: oppScoreRef.current.streak, hostCorrect: myScoreRef.current.correct, guestCorrect: oppScoreRef.current.correct, totalSoFar: myScoreRef.current.total };
+    relaySend({ type: 'reveal', ...payload });
+
+    setMyScore(myScoreRef.current.score); setOppScore(oppScoreRef.current.score);
+    setMyStreak(myScoreRef.current.streak); setOppStreak(oppScoreRef.current.streak);
+    setMyCorrect(myScoreRef.current.correct); setOppCorrect(oppScoreRef.current.correct);
+    setRoundTotal(myScoreRef.current.total);
+    setEarnedPts([hPts, gPts]);
+    setRevealAns({ hostAns: hAns.ans, guestAns: gAns.ans });
+    setInnerPhase('reveal');
+  }, [stopTimer, relaySend]);
+
+  const startHostQuestion = useCallback((qs: Q[], qi: number) => {
+    const q = qs[qi];
+    const mt = DIFF_TIMER[q.d];
+    questionsRef.current = qs; qIdxRef.current = qi;
+    maxTimeRef.current = mt; timeLeftRef.current = mt;
+    hostAnsRef.current = { ans: null, time: null };
+    guestAnsRef.current = { ans: null, time: null };
+    setQIdx(qi); setMaxTime(mt); setTimeLeft(mt);
+    setMyAns(null); setOppHasAnswered(false); setRevealAns(null);
+    setInnerPhase('question');
     stopTimer();
-    if (paused) return;
     timerRef.current = setInterval(() => {
-      setGs(prev => {
-        if (!prev || prev.mode !== 'question') return prev;
-        if (prev.timeLeft <= 1) {
-          doReveal(prev);
-          return prev;
-        }
-        return { ...prev, timeLeft: prev.timeLeft - 1 };
-      });
+      if (pausedRef.current) return;
+      timeLeftRef.current -= 1;
+      setTimeLeft(timeLeftRef.current);
+      relaySend({ type: 'tick', qIdx: qi, timeLeft: timeLeftRef.current });
+      if (timeLeftRef.current <= 0) { stopTimer(); doRevealHost(); }
     }, 1000);
-    return stopTimer;
-  }, [gs?.mode, gs?.qIdx, paused, doReveal, stopTimer]);
+  }, [stopTimer, doRevealHost, relaySend]);
 
-  // Auto-reveal when all multiplayer players answered
-  useEffect(() => {
-    if (!gs || gs.mode !== 'question') return;
-    const allAnswered = gs.answers.every(a => a !== null);
-    if (allAnswered) doReveal(gs);
-  }, [gs?.answers, gs?.mode, doReveal]);
+  // Incoming message handler
+  const handleMessage = useCallback((raw: unknown) => {
+    const msg = raw as Record<string, unknown>;
+    if (isHost) {
+      if (msg.type === 'answer') {
+        const { qIdx: aq, optIdx, timeLeft: at } = msg as { qIdx: number; optIdx: number; timeLeft: number };
+        if (aq !== qIdxRef.current) return;
+        guestAnsRef.current = { ans: optIdx, time: at };
+        setOppHasAnswered(true);
+        relaySend({ type: 'opp_answered' });
+        if (hostAnsRef.current.ans !== null) doRevealHost();
+      }
+      if (msg.type === 'name') setOppName(String(msg.name || 'Guest'));
+    } else {
+      if (msg.type === 'start') {
+        const qs = msg.questions as Q[];
+        setQuestions(qs); setOppName(String(msg.hostName || 'Host'));
+        setMyScore(0); setOppScore(0); setMyStreak(0); setOppStreak(0);
+        setMyCorrect(0); setOppCorrect(0); setRoundTotal(0);
+        const q = qs[0]; const mt = DIFF_TIMER[q.d];
+        setMaxTime(mt); setTimeLeft(mt); setQIdx(0);
+        setMyAns(null); setOppHasAnswered(false); setRevealAns(null);
+        setInnerPhase('question');
+      }
+      if (msg.type === 'tick') {
+        const { qIdx: tqi, timeLeft: tl } = msg as { qIdx: number; timeLeft: number };
+        setQIdx(tqi); setTimeLeft(tl);
+      }
+      if (msg.type === 'opp_answered') setOppHasAnswered(true);
+      if (msg.type === 'reveal') {
+        const m = msg as { hostAns: number|null; guestAns: number|null; hostPts: number; guestPts: number; hostScore: number; guestScore: number; hostStreak: number; guestStreak: number; hostCorrect: number; guestCorrect: number; totalSoFar: number };
+        setMyScore(m.guestScore); setOppScore(m.hostScore);
+        setMyStreak(m.guestStreak); setOppStreak(m.hostStreak);
+        setMyCorrect(m.guestCorrect); setOppCorrect(m.hostCorrect);
+        setRoundTotal(m.totalSoFar);
+        setEarnedPts([m.guestPts, m.hostPts]);
+        setRevealAns({ hostAns: m.hostAns, guestAns: m.guestAns });
+        setInnerPhase('reveal');
+      }
+      if (msg.type === 'next') {
+        const nextQIdx = msg.nextQIdx as number;
+        setMyAns(null); setOppHasAnswered(false); setRevealAns(null);
+        setQIdx(nextQIdx);
+        setInnerPhase('question');
+        setQuestions(prev => {
+          const q = prev[nextQIdx];
+          if (q) { const mt = DIFF_TIMER[q.d]; setMaxTime(mt); setTimeLeft(mt); }
+          return prev;
+        });
+      }
+      if (msg.type === 'done') setInnerPhase('results');
+      if (msg.type === 'paused') setPaused(true);
+      if (msg.type === 'resumed') setPaused(false);
+    }
+  }, [isHost, doRevealHost, relaySend]);
 
+  useEffect(() => { onMessage(handleMessage); }, [handleMessage, onMessage]);
   useEffect(() => () => stopTimer(), [stopTimer]);
 
-  const handleSetup = useCallback((grades: Grade[], subjects: Subject[], count: number) => {
-    setSelectedGrades(grades);
-    setSelectedSubjects(subjects);
-    setSelectedCount(count);
-    if (isSolo) {
-      const qs = filterQuestions(grades, subjects, count);
-      const init: GameState = {
-        mode: 'question', isSolo: true,
-        players: [{ name: 'You', score: 0, streak: 0, correct: 0, total: 0 }],
-        questions: qs, qIdx: 0, timeLeft: DIFF_TIMER[qs[0].d], maxTime: DIFF_TIMER[qs[0].d],
-        answers: [null], answerTimes: [null],
-      };
-      setGs(startQuestion(init));
-      setScreen('game');
+  const timeLeftForSend = timeLeft;
+  const handleMyAnswer = useCallback((optIdx: number) => {
+    if (myAns !== null || innerPhase !== 'question' || paused) return;
+    setMyAns(optIdx);
+    if (isHost) {
+      hostAnsRef.current = { ans: optIdx, time: timeLeftRef.current };
+      relaySend({ type: 'opp_answered' });
+      if (guestAnsRef.current.ans !== null) doRevealHost();
     } else {
-      setScreen('lobby');
+      relaySend({ type: 'answer', qIdx, optIdx, timeLeft: timeLeftForSend });
     }
-  }, [isSolo, startQuestion]);
-
-  const handleLobby = useCallback((names: string[]) => {
-    const qs = filterQuestions(selectedGrades, selectedSubjects, selectedCount);
-    const players: Player[] = names.map(name => ({ name, score: 0, streak: 0, correct: 0, total: 0 }));
-    const init: GameState = {
-      mode: 'question', isSolo: false,
-      players, questions: qs, qIdx: 0,
-      timeLeft: DIFF_TIMER[qs[0].d], maxTime: DIFF_TIMER[qs[0].d],
-      answers: players.map(() => null), answerTimes: players.map(() => null),
-    };
-    setGs(startQuestion(init));
-    setScreen('game');
-  }, [selectedGrades, selectedSubjects, selectedCount, startQuestion]);
-
-  const handleAnswer = useCallback((playerIdx: number, optIdx: number) => {
-    setGs(prev => {
-      if (!prev || prev.mode !== 'question' || prev.answers[playerIdx] !== null) return prev;
-      const newAnswers = [...prev.answers];
-      const newTimes = [...prev.answerTimes];
-      newAnswers[playerIdx] = optIdx;
-      newTimes[playerIdx] = prev.timeLeft;
-      return { ...prev, answers: newAnswers, answerTimes: newTimes };
-    });
-  }, []);
+  }, [myAns, innerPhase, paused, isHost, doRevealHost, relaySend, qIdx, timeLeftForSend]);
 
   const handleNext = useCallback(() => {
-    setGs(prev => {
-      if (!prev) return prev;
-      const nextIdx = prev.qIdx + 1;
-      if (nextIdx >= prev.questions.length) return { ...prev, mode: 'results' };
-      return startQuestion({ ...prev, qIdx: nextIdx });
-    });
-  }, [startQuestion]);
+    const nextIdx = qIdx + 1;
+    if (nextIdx >= questions.length) { relaySend({ type: 'done' }); setInnerPhase('results'); }
+    else { relaySend({ type: 'next', nextQIdx: nextIdx }); startHostQuestion(questions, nextIdx); }
+  }, [qIdx, questions, startHostQuestion, relaySend]);
 
-  const handleRematch = useCallback(() => setScreen('setup'), []);
-  const handleMenu = useCallback(() => { stopTimer(); setGs(null); setPaused(false); setScreen('menu'); }, [stopTimer]);
-  const togglePause = useCallback(() => setPaused(p => !p), []);
+  const togglePause = useCallback(() => {
+    setPaused(prev => { const next = !prev; pausedRef.current = next; relaySend({ type: next ? 'paused' : 'resumed' }); return next; });
+  }, [relaySend]);
 
-  // ── MENU ──
-  if (screen === 'menu') {
-    return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', fontFamily: "'Segoe UI', sans-serif", position: 'relative' }}>
-        <Link href="/"><span style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '5px 12px', color: 'rgba(255,255,255,0.6)', fontSize: 13, cursor: 'pointer' }}>← Menu</span></Link>
-        <div style={{ fontSize: 64, marginBottom: 8 }}>🧠</div>
-        <h1 style={{ color: '#f0c040', fontSize: 32, margin: '0 0 4px', textAlign: 'center', letterSpacing: 1 }}>BrainRace</h1>
-        <p style={{ color: '#888', marginBottom: 32, textAlign: 'center', fontSize: 14 }}>Multiplayer Academic Trivia · Grades 5–8<br/>Science · History · Geography · Math</p>
+  const handleHostStart = useCallback((grades: Grade[], subjects: Subject[], count: number) => {
+    const qs = filterQuestions(grades, subjects, count);
+    const name = myName.trim() || 'Host';
+    setQuestions(qs);
+    myScoreRef.current = { score: 0, streak: 0, correct: 0, total: 0 };
+    oppScoreRef.current = { score: 0, streak: 0, correct: 0, total: 0 };
+    relaySend({ type: 'start', questions: qs, hostName: name });
+    startHostQuestion(qs, 0);
+  }, [myName, startHostQuestion, relaySend]);
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 360 }}>
-          <button onClick={() => { setIsSolo(true); setScreen('setup'); }}
-            style={{ padding: '18px 0', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,#1e3a8a,#3b82f6)', color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer', boxShadow: '0 4px 20px rgba(59,130,246,0.5)' }}>
-            🎓 Solo Practice
-          </button>
-          <button onClick={() => { setIsSolo(false); setScreen('setup'); }}
-            style={{ padding: '18px 0', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,#065f46,#22c55e)', color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer', boxShadow: '0 4px 20px rgba(34,197,94,0.5)' }}>
-            👥 Local Multiplayer (2–4)
-          </button>
-        </div>
+  const myDisplayName = myName.trim() || (isHost ? 'Host' : 'Guest');
+  const oppDisplayName = oppName.trim() || (isHost ? 'Guest' : 'Host');
 
-        <div style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 400 }}>
-          {SUBJECTS.map(s => (
-            <span key={s} style={{ padding: '4px 12px', borderRadius: 20, background: SUBJECT_BG[s], border: `1px solid ${SUBJECT_COLOR[s]}40`, fontSize: 12, color: SUBJECT_COLOR[s], fontWeight: 700 }}>{s}</span>
-          ))}
-          <span style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', fontSize: 12, color: '#888' }}>200+ Questions</span>
-          <span style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', fontSize: 12, color: '#888' }}>Grades 5–8</span>
-        </div>
-      </div>
-    );
+  // Build a GameState compatible with the display components
+  // host=player0, guest=player1
+  const hostPlayer: Player = { name: isHost ? myDisplayName : oppDisplayName, score: isHost ? myScore : oppScore, streak: isHost ? myStreak : oppStreak, correct: isHost ? myCorrect : oppCorrect, total: roundTotal };
+  const guestPlayer: Player = { name: isHost ? oppDisplayName : myDisplayName, score: isHost ? oppScore : myScore, streak: isHost ? oppStreak : myStreak, correct: isHost ? oppCorrect : myCorrect, total: roundTotal };
+
+  // answers: -1 = "has answered, unknown choice" (locked row without highlighting)
+  let dispHostAns: number | null;
+  let dispGuestAns: number | null;
+  if (innerPhase === 'reveal' && revealAns) {
+    dispHostAns = revealAns.hostAns; dispGuestAns = revealAns.guestAns;
+  } else {
+    if (isHost) { dispHostAns = myAns; dispGuestAns = oppHasAnswered ? -1 : null; }
+    else        { dispHostAns = oppHasAnswered ? -1 : null; dispGuestAns = myAns; }
   }
 
-  // ── SETUP ──
-  if (screen === 'setup') {
-    return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', fontFamily: "'Segoe UI', sans-serif" }}>
+  const gs: GameState = {
+    mode: innerPhase === 'question' ? 'question' : innerPhase === 'reveal' ? 'reveal' : 'results',
+    isSolo: false,
+    players: [hostPlayer, guestPlayer],
+    questions, qIdx, timeLeft, maxTime,
+    answers: [dispHostAns, dispGuestAns],
+    answerTimes: [null, null],
+  };
+
+  const bgStyle: React.CSSProperties = { minHeight: '100vh', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', fontFamily: "'Segoe UI', sans-serif" };
+
+  // ── PRE-GAME ──
+  if (innerPhase === 'pre') {
+    if (isHost) return (
+      <div style={bgStyle}>
         <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(255,215,0,0.15)' }}>
-          <button onClick={() => setScreen('menu')} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '5px 12px', color: '#aaa', fontSize: 13, cursor: 'pointer' }}>← Back</button>
-          <div style={{ flex: 1, textAlign: 'center', fontWeight: 800, color: '#f0c040', letterSpacing: 1 }}>
-            {isSolo ? '🎓 Solo Practice' : '👥 Multiplayer'} — Setup
-          </div>
+          <button onClick={onMenu} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '5px 12px', color: '#aaa', fontSize: 13, cursor: 'pointer' }}>← Back</button>
+          <div style={{ flex: 1, textAlign: 'center', fontWeight: 800, color: '#f0c040', letterSpacing: 1 }}>🧠 Host Setup</div>
         </div>
-        <SetupScreen onStart={handleSetup} isSolo={isSolo} />
+        <div style={{ padding: '16px 16px 0' }}>
+          <div style={{ fontSize: 12, color: '#888', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Your Name</div>
+          <input value={myName} onChange={e => setMyName(e.target.value)} placeholder="Host" maxLength={16}
+            style={{ width: '100%', boxSizing: 'border-box', marginBottom: 16, padding: '10px 12px', background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(240,192,64,0.3)', borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 600, outline: 'none' }} />
+        </div>
+        <SetupScreen onStart={handleHostStart} />
       </div>
     );
-  }
-
-  // ── LOBBY ──
-  if (screen === 'lobby') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', fontFamily: "'Segoe UI', sans-serif" }}>
-        <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(255,215,0,0.15)' }}>
-          <button onClick={() => setScreen('setup')} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '5px 12px', color: '#aaa', fontSize: 13, cursor: 'pointer' }}>← Back</button>
-          <div style={{ flex: 1, textAlign: 'center', fontWeight: 800, color: '#f0c040', letterSpacing: 1 }}>Player Setup</div>
+      <div style={{ ...bgStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 20 }}>
+        <div style={{ fontSize: 56 }}>🧠</div>
+        <p style={{ color: '#f0c040', fontWeight: 800, fontSize: 18, margin: 0 }}>Opponent is setting up…</p>
+        <div style={{ width: '100%', maxWidth: 300 }}>
+          <div style={{ fontSize: 12, color: '#888', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Your Name</div>
+          <input value={myName} onChange={e => { const v = e.target.value; setMyName(v); relaySend({ type: 'name', name: v }); }}
+            placeholder="Guest" maxLength={16}
+            style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(59,130,246,0.3)', borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 600, outline: 'none' }} />
         </div>
-        <LobbyScreen onStart={handleLobby} />
+        <p style={{ color: '#555', fontSize: 14, margin: 0 }}>Waiting for host to start the game…</p>
+        <button onClick={onMenu} style={{ background: 'none', border: 'none', color: '#555', fontSize: 14, cursor: 'pointer' }}>← Leave</button>
       </div>
     );
   }
 
-  // ── GAME ──
-  if (!gs) return null;
+  // ── RESULTS ──
+  if (innerPhase === 'results') return (
+    <div style={{ ...bgStyle, maxHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 14px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(255,215,0,0.15)', flexShrink: 0 }}>
+        <div style={{ flex: 1, textAlign: 'center', fontWeight: 800, color: '#f0c040' }}>🧠 BrainRace · Results</div>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        <ResultsScreen gs={{ ...gs, mode: 'results' }} onMenu={onMenu} onRematch={onMenu} />
+      </div>
+    </div>
+  );
 
+  // ── IN-GAME ──
   return (
-    <div style={{ minHeight: '100vh', maxHeight: '100vh', overflow: 'hidden', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', display: 'flex', flexDirection: 'column', fontFamily: "'Segoe UI', sans-serif" }}>
+    <div style={{ ...bgStyle, maxHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '6px 12px', background: 'rgba(0,0,0,0.6)', borderBottom: '1px solid rgba(255,215,0,0.15)', flexShrink: 0 }}>
-        <button onClick={handleMenu} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, padding: '4px 10px', color: '#aaa', fontSize: 12, cursor: 'pointer' }}>✕</button>
+        <button onClick={onMenu} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, padding: '4px 10px', color: '#aaa', fontSize: 12, cursor: 'pointer' }}>✕</button>
         <div style={{ flex: 1, textAlign: 'center' }}>
           <span style={{ fontSize: 14, fontWeight: 800, color: '#f0c040' }}>🧠 BrainRace</span>
-          {gs.mode === 'question' || gs.mode === 'reveal'
-            ? <span style={{ marginLeft: 8, fontSize: 11, color: '#555' }}>Q{gs.qIdx + 1}/{gs.questions.length}</span>
-            : null}
+          <span style={{ marginLeft: 8, fontSize: 11, color: '#555' }}>Q{qIdx + 1}/{questions.length}</span>
         </div>
-        {gs.mode === 'question' ? (
+        {gs.mode === 'question' && isHost ? (
           <button onClick={togglePause} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, padding: '4px 10px', color: '#aaa', fontSize: 14, cursor: 'pointer', width: 56 }}>{paused ? '▶' : '⏸'}</button>
         ) : <div style={{ width: 56 }} />}
       </div>
 
       {/* Score bar */}
-      {(gs.mode === 'question' || gs.mode === 'reveal') && <ScoreBar gs={gs} />}
+      <ScoreBar gs={gs} />
 
       {/* Content */}
       <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
-        {gs.mode === 'question' && <QuestionScreen gs={gs} onAnswer={handleAnswer} />}
-        {gs.mode === 'reveal' && <RevealScreen gs={gs} onNext={handleNext} earned={earnedPts} />}
-        {gs.mode === 'results' && <ResultsScreen gs={gs} onMenu={handleMenu} onRematch={handleRematch} />}
-        {paused && gs.mode === 'question' && (
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(5,5,24,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        {gs.mode === 'question' && (
+          <QuestionScreen gs={gs} onAnswer={(pi, oi) => {
+            if (isHost && pi === 0) handleMyAnswer(oi);
+            if (!isHost && pi === 1) handleMyAnswer(oi);
+          }} />
+        )}
+        {gs.mode === 'reveal' && (
+          <RevealScreen gs={gs} onNext={isHost ? handleNext : () => {}} earned={earnedPts} isWaiting={!isHost} />
+        )}
+        {(paused) && gs.mode === 'question' && (
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(5,5,24,0.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
             <div style={{ fontSize: 48 }}>⏸</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#f0c040' }}>Paused</div>
-            <button onClick={togglePause} style={{ padding: '12px 36px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#1e3a8a,#3b82f6)', color: '#fff', fontWeight: 800, fontSize: 16, cursor: 'pointer' }}>▶ Resume</button>
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#f0c040' }}>{isHost ? 'Paused' : 'Host paused the game'}</div>
+            {isHost && <button onClick={togglePause} style={{ padding: '12px 36px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#1e3a8a,#3b82f6)', color: '#fff', fontWeight: 800, fontSize: 16, cursor: 'pointer' }}>▶ Resume</button>}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+export default function BrainRace() {
+  const [screen, setScreen] = useState<'menu' | 'lobby' | 'game'>(() => getUrlRoomCode() ? 'lobby' : 'menu');
+  const [isHost, setIsHost] = useState(false);
+  const [gameKey, setGameKey] = useState(0);
+  const [error, setError] = useState('');
+  const onlineMsgHandlerRef = useRef<((d: unknown) => void) | null>(null);
+
+  const { status, roomCode, role: _role, createRoom, joinRoom, send, disconnect } = useRelaySocket('brain-race', {
+    onRoomCreated:    () => {},
+    onRoomJoined:     () => { setIsHost(false); setGameKey(k => k + 1); setScreen('game'); },
+    onOpponentJoined: () => { setIsHost(true);  setGameKey(k => k + 1); setScreen('game'); },
+    onMessage:        (data) => { onlineMsgHandlerRef.current?.(data); },
+    onOpponentLeft:   () => { setError('Opponent disconnected.'); disconnect(); setScreen('menu'); },
+    onError:          (msg) => setError(msg),
+  });
+
+  const registerHandler = useCallback((h: (d: unknown) => void) => { onlineMsgHandlerRef.current = h; }, []);
+  const goMenu = useCallback(() => { disconnect(); setScreen('menu'); }, [disconnect]);
+
+  // ── MENU ──
+  if (screen === 'menu') return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', fontFamily: "'Segoe UI', sans-serif", position: 'relative' }}>
+      <Link href="/"><span style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '5px 12px', color: 'rgba(255,255,255,0.6)', fontSize: 13, cursor: 'pointer' }}>← Menu</span></Link>
+      <div style={{ fontSize: 64, marginBottom: 8 }}>🧠</div>
+      <h1 style={{ color: '#f0c040', fontSize: 32, margin: '0 0 4px', textAlign: 'center', letterSpacing: 1 }}>BrainRace</h1>
+      <p style={{ color: '#888', marginBottom: 32, textAlign: 'center', fontSize: 14 }}>Online Multiplayer Trivia · Grades 5–8<br/>Science · History · Geography · Math</p>
+      <button onClick={() => { setError(''); setScreen('lobby'); }}
+        style={{ padding: '18px 32px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg,#7c2d12,#ea580c)', color: '#fff', fontWeight: 800, fontSize: 18, cursor: 'pointer', boxShadow: '0 4px 20px rgba(234,88,12,0.5)' }}>
+        🌐 Play Online
+      </button>
+      {error && <p style={{ color: '#ef4444', marginTop: 16, fontSize: 14 }}>{error}</p>}
+      <div style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 400 }}>
+        {SUBJECTS.map(s => (
+          <span key={s} style={{ padding: '4px 12px', borderRadius: 20, background: SUBJECT_BG[s], border: `1px solid ${SUBJECT_COLOR[s]}40`, fontSize: 12, color: SUBJECT_COLOR[s], fontWeight: 700 }}>{s}</span>
+        ))}
+        <span style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', fontSize: 12, color: '#888' }}>200+ Questions</span>
+        <span style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', fontSize: 12, color: '#888' }}>Grades 5–8</span>
+      </div>
+    </div>
+  );
+
+  // ── ONLINE LOBBY ──
+  if (screen === 'lobby') return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#050518,#0a0a20)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Segoe UI', sans-serif" }}>
+      <OnlineLobby
+        status={status} roomCode={roomCode} error={error}
+        initialCode={getUrlRoomCode()}
+        onHost={() => { setError(''); createRoom(); }}
+        onJoin={(code) => { setError(''); joinRoom(code); }}
+        onBack={() => { disconnect(); setScreen('menu'); }}
+      />
+    </div>
+  );
+
+  // ── GAME ──
+  return (
+    <OnlineBrainGame
+      key={gameKey}
+      isHost={isHost}
+      relaySend={send}
+      onMenu={goMenu}
+      onMessage={registerHandler}
+    />
   );
 }
