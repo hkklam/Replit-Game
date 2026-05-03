@@ -231,10 +231,6 @@ function stepCar(
   const steer = (left ? -1 : 0) + (right ? 1 : 0);
   car.lat += steer * STEER_LAT * Math.max(0.25, car.spd / MAX_SPD);
 
-  // Centrifugal drift on curves
-  const dh = segCurvature(pts, total, car.prog);
-  car.lat += dh * car.spd * CENTRI;
-
   // Speed penalty on rumble / off-road
   if (Math.abs(car.lat) > ROAD_W) car.spd *= OFF_MULT;
 
@@ -277,7 +273,7 @@ function drawTopCar(
   ctx.translate(wx, wy);
   // Rotate sprite so the car's nose points along h.
   // Sprite's "nose" is local -y (top of rectangle), so rotation = h + π/2.
-  ctx.rotate(h + Math.PI / 2 + steerLean * 0.09);
+  ctx.rotate(h + Math.PI / 2 + steerLean * 0.22);
 
   // Shadow
   ctx.globalAlpha = 0.28;
