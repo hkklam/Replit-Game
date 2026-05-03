@@ -5,24 +5,39 @@ import { QRCode, buildInviteUrl, getUrlRoomCode } from "../components/QRCode";
 
 // ─── CANVAS / LAYOUT ─────────────────────────────────────────────────────────
 const COLS = 10, ROWS = 20;
-const CELL = 20;          // player cell px
-const MINI = 12;          // opponent cell px
-const VIS  = 17;          // visible rows shown for opponents (top rows clipped)
 
-const CW = 740, CH = 480;
+interface LayoutVars {
+  CW: number; CH: number;
+  CELL: number; MINI: number; VIS: number;
+  LP: number; BX: number; BY: number;
+  BW: number; BH: number;
+  OX0: number; OBW: number; OBH: number; OW: number;
+}
 
-// Player board area
-const LP   = 90;                // left-panel width
-const BX   = LP;                // board x start
-const BY   = 38;                // board y start
-const BW   = COLS * CELL;       // 200
-const BH   = ROWS * CELL;       // 400
+// Mutable layout — recomputed each game-start based on player count
+const L: LayoutVars = {
+  CW: 790, CH: 460, CELL: 20, MINI: 12, VIS: 17,
+  LP: 90, BX: 90, BY: 38, BW: 200, BH: 400,
+  OX0: 318, OBW: 120, OBH: 204, OW: 154,
+};
 
-// Opponent section
-const OX0  = BX + BW + 28;     // 318
-const OBW  = COLS * MINI;       // 120
-const OBH  = VIS * MINI;        // 204
-const OW   = (CW - OX0) / 3;   // each opponent slot width ≈ 140
+// Bigger cells for fewer opponents, fills the screen better
+function computeLayout(numBots: number): { cw: number; ch: number } {
+  L.CELL = numBots === 1 ? 28 : numBots === 2 ? 24 : 20;
+  L.MINI = numBots === 1 ? 18 : numBots === 2 ? 15 : 12;
+  L.VIS  = 17;
+  L.LP   = 90; L.BX = L.LP; L.BY = 38;
+  L.BW   = COLS * L.CELL;
+  L.BH   = ROWS * L.CELL;
+  L.CH   = L.BH + L.BY + 22;
+  L.OX0  = L.BX + L.BW + 28;
+  L.OBW  = COLS * L.MINI;
+  L.OBH  = L.VIS * L.MINI;
+  const slotW = L.OBW + 34;
+  L.OW   = slotW;
+  L.CW   = L.OX0 + numBots * slotW + 10;
+  return { cw: L.CW, ch: L.CH };
+}
 
 // ─── TIMING ───────────────────────────────────────────────────────────────────
 const LOCK_DELAY  = 500;
@@ -226,7 +241,7 @@ function finishClear(gs: GS, getNext: ()=>string) {
 function spawnParticles(rowIdx:number,board:string[][],particles:Particle[]){
   for(let c=0;c<COLS;c++){
     const color=DEFS[board[rowIdx][c]]?.color||"#aaa";
-    const px=BX+c*CELL+CELL/2,py=BY+rowIdx*CELL+CELL/2;
+    const px=L.BX+c*L.CELL+L.CELL/2,py=L.BY+rowIdx*L.CELL+L.CELL/2;
     for(let k=0;k<5;k++) particles.push({x:px,y:py,vx:(Math.random()-.5)*7,vy:(Math.random()-.85)*8,life:1,color});
   }
 }
@@ -338,18 +353,18 @@ function renderPlayerBoard(ctx: CanvasRenderingContext2D, gs: GS, isLocal: boole
 
   // ── Background ───────────────────────────────────────────────────────────────
   ctx.fillStyle="#08080f";
-  ctx.fillRect(0,0,CW,CH);
+  ctx.fillRect(0,0,L.CW,L.CH);
 
   // Grid lines
   ctx.strokeStyle="rgba(255,255,255,0.035)";ctx.lineWidth=0.5;
-  for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(BX+c*CELL,BY);ctx.lineTo(BX+c*CELL,BY+BH);ctx.stroke();}
-  for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(BX,BY+r*CELL);ctx.lineTo(BX+BW,BY+r*CELL);ctx.stroke();}
+  for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(L.BX+c*L.CELL,L.BY);ctx.lineTo(L.BX+c*L.CELL,L.BY+L.BH);ctx.stroke();}
+  for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(L.BX,L.BY+r*L.CELL);ctx.lineTo(L.BX+L.BW,L.BY+r*L.CELL);ctx.stroke();}
 
   // Board border glow (player color)
   ctx.save();
   ctx.shadowColor=color;ctx.shadowBlur=18;
   ctx.strokeStyle=color+"66";ctx.lineWidth=1.5;
-  ctx.strokeRect(BX-0.5,BY-0.5,BW+1,BH+1);
+  ctx.strokeRect(L.BX-0.5,L.BY-0.5,L.BW+1,L.BH+1);
   ctx.restore();
 
   // ── Board cells ──────────────────────────────────────────────────────────────
@@ -358,13 +373,13 @@ function renderPlayerBoard(ctx: CanvasRenderingContext2D, gs: GS, isLocal: boole
     for(let c=0;c<COLS;c++){
       const t=board[r][c];
       if(!t) continue;
-      const px=BX+c*CELL,py=BY+r*CELL;
+      const px=L.BX+c*L.CELL,py=L.BY+r*L.CELL;
       if(clearRows.includes(r)){
         ctx.globalAlpha=flashAlpha;
-        ctx.fillStyle="#fff";ctx.fillRect(px+1,py+1,CELL-2,CELL-2);
+        ctx.fillStyle="#fff";ctx.fillRect(px+1,py+1,L.CELL-2,L.CELL-2);
         ctx.globalAlpha=1;
       } else {
-        drawBlock(ctx,px,py,CELL,t);
+        drawBlock(ctx,px,py,L.CELL,t);
       }
     }
   }
@@ -377,7 +392,7 @@ function renderPlayerBoard(ctx: CanvasRenderingContext2D, gs: GS, isLocal: boole
       ctx.globalAlpha=0.16;ctx.strokeStyle=d.color;ctx.lineWidth=1.5;
       for(const [r,c] of cells(cur.matrix,gr,cur.col)){
         if(r<0) continue;
-        ctx.strokeRect(BX+c*CELL+2,BY+r*CELL+2,CELL-4,CELL-4);
+        ctx.strokeRect(L.BX+c*L.CELL+2,L.BY+r*L.CELL+2,L.CELL-4,L.CELL-4);
       }
       ctx.globalAlpha=1;
     }
@@ -389,7 +404,7 @@ function renderPlayerBoard(ctx: CanvasRenderingContext2D, gs: GS, isLocal: boole
     ctx.save();ctx.shadowColor=d.color;ctx.shadowBlur=14;
     for(const [r,c] of cells(cur.matrix,cur.row,cur.col)){
       if(r<0) continue;
-      drawBlock(ctx,BX+c*CELL,BY+r*CELL,CELL,cur.type);
+      drawBlock(ctx,L.BX+c*L.CELL,L.BY+r*L.CELL,L.CELL,cur.type);
     }
     ctx.restore();
   }
@@ -403,16 +418,16 @@ function renderPlayerBoard(ctx: CanvasRenderingContext2D, gs: GS, isLocal: boole
 
   // ── Garbage indicator (right of board) ────────────────────────────────────────
   if(garbagePending>0){
-    const gw=8,gx=BX+BW+6;
+    const gw=8,gx=L.BX+L.BW+6;
     const maxG=10,filled=Math.min(garbagePending,maxG);
-    const gStep=(BH-4)/maxG;
+    const gStep=(L.BH-4)/maxG;
     for(let i=0;i<filled;i++){
       const alpha=0.6+0.4*(i/maxG);
       ctx.fillStyle=`rgba(255,${80-i*6},0,${alpha})`;
-      ctx.fillRect(gx,BY+BH-4-(i+1)*gStep,gw,gStep-1);
+      ctx.fillRect(gx,L.BY+L.BH-4-(i+1)*gStep,gw,gStep-1);
     }
     ctx.strokeStyle="rgba(255,80,0,0.6)";ctx.lineWidth=1;
-    ctx.strokeRect(gx,BY,gw,BH);
+    ctx.strokeRect(gx,L.BY,gw,L.BH);
   }
 
   // ── LEFT PANEL ────────────────────────────────────────────────────────────────
@@ -448,10 +463,10 @@ function renderPlayerBoard(ctx: CanvasRenderingContext2D, gs: GS, isLocal: boole
 
   // ── Dead overlay ──────────────────────────────────────────────────────────────
   if(phase==="dead"){
-    ctx.fillStyle="rgba(0,0,0,0.75)";ctx.fillRect(BX,BY,BW,BH);
+    ctx.fillStyle="rgba(0,0,0,0.75)";ctx.fillRect(L.BX,L.BY,L.BW,L.BH);
     ctx.textAlign="center";
     ctx.fillStyle="#ff4757";ctx.font="bold 26px 'Segoe UI',sans-serif";
-    ctx.fillText("DEFEATED",BX+BW/2,BY+BH/2);
+    ctx.fillText("DEFEATED",L.BX+L.BW/2,L.BY+L.BH/2);
     ctx.textAlign="left";
   }
   void isLocal;
@@ -476,34 +491,34 @@ function renderOpponent(
   board: string[][], score:number, lines:number, alive:boolean,
   name:string, oColor:string, slotIdx:number, pending=0,
 ) {
-  const ox=OX0+slotIdx*OW+(OW-OBW)/2;
+  const ox=L.OX0+slotIdx*L.OW+(L.OW-L.OBW)/2;
   const oy=90;
 
   // Name
   ctx.font="bold 11px 'Segoe UI',sans-serif";
   ctx.textAlign="center";
   ctx.fillStyle=alive?oColor:"rgba(255,255,255,0.3)";
-  ctx.fillText(name,ox+OBW/2,oy-6);
+  ctx.fillText(name,ox+L.OBW/2,oy-6);
 
   // Board background
   ctx.fillStyle="rgba(255,255,255,0.04)";
-  ctx.fillRect(ox,oy,OBW,OBH);
+  ctx.fillRect(ox,oy,L.OBW,L.OBH);
 
   // Glow border
   ctx.save();
   ctx.shadowColor=alive?oColor:"#333";ctx.shadowBlur=10;
   ctx.strokeStyle=(alive?oColor:"#333")+"55";ctx.lineWidth=1.2;
-  ctx.strokeRect(ox-0.5,oy-0.5,OBW+1,OBH+1);
+  ctx.strokeRect(ox-0.5,oy-0.5,L.OBW+1,L.OBH+1);
   ctx.restore();
 
   // Draw visible rows (bottom VIS rows of board)
-  const rowOffset=ROWS-VIS;
-  for(let r=0;r<VIS;r++){
+  const rowOffset=ROWS-L.VIS;
+  for(let r=0;r<L.VIS;r++){
     const br=r+rowOffset;
     for(let c=0;c<COLS;c++){
       const t=board[br]?.[c];
       if(!t) continue;
-      drawBlock(ctx,ox+c*MINI,oy+r*MINI,MINI,t);
+      drawBlock(ctx,ox+c*L.MINI,oy+r*L.MINI,L.MINI,t);
     }
   }
 
@@ -512,19 +527,19 @@ function renderOpponent(
     const gw=5;
     for(let i=0;i<Math.min(pending,8);i++){
       ctx.fillStyle=`rgba(255,${90-i*10},0,0.8)`;
-      ctx.fillRect(ox-gw-2,oy+OBH-(i+1)*(OBH/8),gw,OBH/8-1);
+      ctx.fillRect(ox-gw-2,oy+L.OBH-(i+1)*(L.OBH/8),gw,L.OBH/8-1);
     }
   }
 
   // Stats
   ctx.font="10px 'Segoe UI',sans-serif";
   ctx.fillStyle="rgba(255,255,255,0.4)";
-  ctx.fillText(`${score} pts · ${lines}L`,ox+OBW/2,oy+OBH+14);
+  ctx.fillText(`${score} pts · ${lines}L`,ox+L.OBW/2,oy+L.OBH+14);
 
   if(!alive){
-    ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(ox,oy,OBW,OBH);
+    ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(ox,oy,L.OBW,L.OBH);
     ctx.font="bold 13px 'Segoe UI',sans-serif";ctx.fillStyle="#ff4757";
-    ctx.fillText("DEAD",ox+OBW/2,oy+OBH/2+5);
+    ctx.fillText("DEAD",ox+L.OBW/2,oy+L.OBH/2+5);
   }
   ctx.textAlign="left";
 }
@@ -802,6 +817,8 @@ export default function TetrisRoyale() {
 
   const startSoloGame = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
+    const sz=computeLayout(numBots);
+    setCanvasSize(sz);
     const bots:BotState[]=[];
     for(let i=0;i<numBots;i++) bots.push(makeBot(i,botDiff));
     gameRef.current={
@@ -818,6 +835,7 @@ export default function TetrisRoyale() {
 
   const startOnlineGame = useCallback((myRole:"host"|"guest") => {
     cancelAnimationFrame(rafRef.current);
+    setCanvasSize(computeLayout(3));
     // Always 2 AI bots in online mode
     const bots:BotState[]=[makeBot(0,botDiff),makeBot(1,botDiff)];
     gameRef.current={
@@ -956,25 +974,26 @@ export default function TetrisRoyale() {
     if(isOnline&&g.onlineOpponent){
       opps.unshift({board:g.onlineOpponent.board,score:g.onlineOpponent.score,lines:g.onlineOpponent.lines,alive:g.onlineOpponent.alive,name:"OPPONENT",color:"#22d3ee",pending:0});
     }
-    while(opps.length<3) opps.push({board:emptyBoard(),score:0,lines:0,alive:false,name:"—",color:"#444",pending:0});
+    const oppCount=isOnline?3:g.bots.length;
+    while(opps.length<oppCount) opps.push({board:emptyBoard(),score:0,lines:0,alive:false,name:"—",color:"#444",pending:0});
 
-    for(let i=0;i<3;i++){
+    for(let i=0;i<oppCount;i++){
       const o=opps[i];
       renderOpponent(ctx,o.board,o.score,o.lines,o.alive,o.name,o.color,i,o.pending);
     }
 
     // Divider
-    ctx.fillStyle="rgba(255,255,255,0.06)";ctx.fillRect(OX0-6,0,2,CH);
+    ctx.fillStyle="rgba(255,255,255,0.06)";ctx.fillRect(L.OX0-6,0,2,L.CH);
 
     // Top bar (game title + player label)
-    ctx.fillStyle="rgba(0,0,0,0.55)";ctx.fillRect(0,0,CW,36);
+    ctx.fillStyle="rgba(0,0,0,0.55)";ctx.fillRect(0,0,L.CW,36);
     ctx.font="bold 13px 'Segoe UI',sans-serif";ctx.textAlign="left";
-    ctx.fillStyle=g.player.color;ctx.fillText(`⬛ ${g.player.name}`,BX,22);
+    ctx.fillStyle=g.player.color;ctx.fillText(`⬛ ${g.player.name}`,L.BX,22);
     ctx.font="bold 11px 'Segoe UI',sans-serif";
-    ctx.fillStyle="rgba(255,255,255,0.28)";ctx.fillText("TETRIS ROYALE",CW/2-50,22);
+    ctx.fillStyle="rgba(255,255,255,0.28)";ctx.fillText("TETRIS ROYALE",L.CW/2-50,22);
     ctx.textAlign="right";
     ctx.fillStyle="rgba(255,255,255,0.18)";ctx.font="9px 'Segoe UI',sans-serif";
-    ctx.fillText(isOnline?`Room ${roomCode}`:"vs AI",CW-8,22);
+    ctx.fillText(isOnline?`Room ${roomCode}`:"vs AI",L.CW-8,22);
     ctx.textAlign="left";
 
     rafRef.current=requestAnimationFrame(loop);
@@ -1027,12 +1046,15 @@ export default function TetrisRoyale() {
     return()=>cancelAnimationFrame(rafRef.current);
   },[screen,loop]);
 
+  // ── Canvas size state (updated per game-start based on numBots) ──────────────
+  const [canvasSize,setCanvasSize]=useState({cw:L.CW,ch:L.CH});
+
   // ── Responsive canvas scale ──────────────────────────────────────────────────
   const [scale,setScale]=useState(1);
   useEffect(()=>{
-    const upd=()=>setScale(Math.min(1,(window.innerWidth-16)/CW,(window.innerHeight-80)/CH));
+    const upd=()=>setScale(Math.min(1,(window.innerWidth-16)/canvasSize.cw,(window.innerHeight-80)/canvasSize.ch));
     upd();window.addEventListener("resize",upd);return()=>window.removeEventListener("resize",upd);
-  },[]);
+  },[canvasSize.cw,canvasSize.ch]);
 
   // ─── SCREENS ──────────────────────────────────────────────────────────────────
   const S: React.CSSProperties={minHeight:"100vh",background:"radial-gradient(ellipse at 50% 0%, #0d0030 0%, #050012 60%, #000008 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:"#fff",fontFamily:"'Segoe UI',sans-serif",padding:24,userSelect:"none"};
@@ -1136,7 +1158,7 @@ export default function TetrisRoyale() {
   return (
     <div style={{minHeight:"100vh",background:"#02020a",display:"flex",alignItems:"center",justifyContent:"center",padding:8,position:"relative"}}>
       <Link href="/"><span style={{position:"absolute",top:12,left:16,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 14px",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",zIndex:10}}>← Menu</span></Link>
-      <canvas ref={cvRef} width={CW} height={CH}
+      <canvas ref={cvRef} width={canvasSize.cw} height={canvasSize.ch}
         style={{transform:`scale(${scale})`,transformOrigin:"top center",display:"block",imageRendering:"pixelated"}} />
       {paused && (
         <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.7)",gap:16,zIndex:20}}>
