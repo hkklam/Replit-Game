@@ -33,6 +33,7 @@ interface CarState {
   prog: number; lat: number; spd: number;
   lap: number; bestLap: number; lapStart: number;
   color: string; label: string;
+  camH: number;  // smoothed camera heading (lerped toward car heading each frame)
 }
 interface MapBounds { x0: number; y0: number; x1: number; y1: number; }
 interface BuiltTrack { pts: TrackPt[]; total: number; mb: MapBounds; }
@@ -170,8 +171,17 @@ function segCurvature(pts: TrackPt[], total: number, prog: number): number {
   return pts[Math.min(idx + 1, pts.length - 1)].h - pts[idx].h;
 }
 
+// Lerp between two angles (handles wrap-around)
+function lerpAngle(from: number, to: number, t: number): number {
+  let d = to - from;
+  while (d > Math.PI)  d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return from + d * t;
+}
+
 function makeCar(prog: number, lat: number, color: string, label: string): CarState {
-  return { prog, lat, spd: 0, lap: 0, bestLap: Infinity, lapStart: 0, color, label };
+  // All tracks start with heading -π/2 (pointing up in world space)
+  return { prog, lat, spd: 0, lap: 0, bestLap: Infinity, lapStart: 0, color, label, camH: -Math.PI / 2 };
 }
 
 function stepCar(
@@ -216,10 +226,12 @@ function drawTopCar(
   ctx: CanvasRenderingContext2D,
   wx: number, wy: number, h: number,
   color: string, label: string,
+  steerLean = 0,
 ) {
   ctx.save();
   ctx.translate(wx, wy);
-  ctx.rotate(h + Math.PI / 2);
+  // h is already relative to camera (world heading - camH), steerLean adds a subtle body roll
+  ctx.rotate(h + Math.PI / 2 + steerLean * 0.09);
 
   ctx.globalAlpha = 0.28;
   ctx.fillStyle = "#000";
@@ -252,10 +264,12 @@ function renderScene(
   ctx: CanvasRenderingContext2D, gs: GameState,
   player: CarState, otherCars: CarState[],
   yOff: number, vH: number, position: number,
+  steerLean = 0,
 ) {
   const { pts, total, mb } = gs;
   const wp = carWP(pts, total, player.prog, player.lat);
-  const camAngle = -(wp.h + Math.PI / 2);
+  // Use the smoothed camH so the world rotates gradually — the car visually tilts on curves
+  const camAngle = -(player.camH + Math.PI / 2);
 
   ctx.save();
   ctx.beginPath(); ctx.rect(0, yOff, CW, vH); ctx.clip();
@@ -345,9 +359,12 @@ function renderScene(
   }
 
   // Cars (others behind, player on top)
+  // Each car's heading is in world space; canvas is already rotated by -camH, so
+  // the on-screen angle is naturally (car.h - player.camH), giving genuine tilt on curves.
   for (const car of [...otherCars, player]) {
     const cwp = carWP(pts, total, car.prog, car.lat);
-    drawTopCar(ctx, cwp.wx, cwp.wy, cwp.h, car.color, car.label);
+    const lean = car === player ? steerLean : 0;
+    drawTopCar(ctx, cwp.wx, cwp.wy, cwp.h, car.color, car.label, lean);
   }
 
   ctx.restore(); // back to screen space
@@ -474,9 +491,9 @@ export default function Racing() {
     const pos = (p: CarState) =>
       1 + allCars.filter(c => c !== p && (c.lap * gs.total + c.prog) > (p.lap * gs.total + p.prog)).length;
 
-    renderScene(ctx, gs, gs.player, [...gs.ais, ...(gs.player2 ? [gs.player2] : [])], 0, vH, pos(gs.player));
+    renderScene(ctx, gs, gs.player, [...gs.ais, ...(gs.player2 ? [gs.player2] : [])], 0, vH, pos(gs.player), gs.s1);
     if (is2p && gs.player2) {
-      renderScene(ctx, gs, gs.player2, [gs.player, ...gs.ais], vH, vH, pos(gs.player2));
+      renderScene(ctx, gs, gs.player2, [gs.player, ...gs.ais], vH, vH, pos(gs.player2), gs.s2);
       ctx.fillStyle = "#000"; ctx.fillRect(0, vH - 1, CW, 3);
     }
 
@@ -529,8 +546,15 @@ export default function Racing() {
     );
     if (lt1 !== null) setLapLog1(prev => [...prev, lt1]);
 
+    // Smoothly lerp camera heading toward car's actual heading each frame.
+    // The lag means the track rotates gradually on curves — the car tilts naturally.
+    const wp1 = carWP(gs.pts, gs.total, gs.player.prog, gs.player.lat);
+    gs.player.camH = lerpAngle(gs.player.camH, wp1.h, 0.10);
+
     if (gs.mode === "2p" && gs.player2) {
       stepCar(gs.player2, gs.pts, gs.total, k.has("w"), k.has("s"), k.has("a"), k.has("d"));
+      const wp2 = carWP(gs.pts, gs.total, gs.player2.prog, gs.player2.lat);
+      gs.player2.camH = lerpAngle(gs.player2.camH, wp2.h, 0.10);
     }
 
     for (const ai of gs.ais) {
