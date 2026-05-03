@@ -1,0 +1,1201 @@
+id,category,difficulty,points,question,answer,acceptableAnswers,sourceNote
+WV_001,Wordplay & Vocabulary,easy,100,This term means a word with a similar meaning.,synonym,synonym,Dictionary/grammar reference
+WV_002,Wordplay & Vocabulary,easy-medium,200,This term means a word with the opposite meaning.,antonym,antonym,Dictionary/grammar reference
+WV_003,Wordplay & Vocabulary,medium,300,This term means a word that sounds like another word.,homophone,homophone,Dictionary/grammar reference
+WV_004,Wordplay & Vocabulary,medium-hard,400,This term means a word part added to the beginning.,prefix,prefix,Dictionary/grammar reference
+WV_005,Wordplay & Vocabulary,hard,500,This term means a word part added to the end.,suffix,suffix,Dictionary/grammar reference
+WV_006,Wordplay & Vocabulary,easy,100,This term means the basic word part carrying meaning.,root word,root word,Dictionary/grammar reference
+WV_007,Wordplay & Vocabulary,easy-medium,200,"This term means a person, place, thing, or idea.",noun,noun,Dictionary/grammar reference
+WV_008,Wordplay & Vocabulary,medium,300,This term means an action or state-of-being word.,verb,verb,Dictionary/grammar reference
+WV_009,Wordplay & Vocabulary,medium-hard,400,This term means a word that describes a noun.,adjective,adjective,Dictionary/grammar reference
+WV_010,Wordplay & Vocabulary,hard,500,"This term means a word that modifies a verb, adjective, or another adverb.",adverb,adverb,Dictionary/grammar reference
+WV_011,Wordplay & Vocabulary,easy,100,This term means a word that replaces a noun.,pronoun,pronoun,Dictionary/grammar reference
+WV_012,Wordplay & Vocabulary,easy-medium,200,"This term means a word showing relationship such as in, on, or under.",preposition,preposition,Dictionary/grammar reference
+WV_013,Wordplay & Vocabulary,medium,300,This term means a word that connects words or clauses.,conjunction,conjunction,Dictionary/grammar reference
+WV_014,Wordplay & Vocabulary,medium-hard,400,This term means a short exclamation such as wow.,interjection,interjection,Dictionary/grammar reference
+WV_015,Wordplay & Vocabulary,hard,500,This term means repetition of beginning sounds.,alliteration,alliteration,Dictionary/grammar reference
+WV_016,Wordplay & Vocabulary,easy,100,This term means matching ending sounds.,rhyme,rhyme,Dictionary/grammar reference
+WV_017,Wordplay & Vocabulary,easy-medium,200,This term means a comparison that says one thing is another.,metaphor,metaphor,Dictionary/grammar reference
+WV_018,Wordplay & Vocabulary,medium,300,This term means a comparison using like or as.,simile,simile,Dictionary/grammar reference
+WV_019,Wordplay & Vocabulary,medium-hard,400,This term means a phrase whose meaning is not literal.,idiom,idiom,Dictionary/grammar reference
+WV_020,Wordplay & Vocabulary,hard,500,This term means intentional exaggeration.,hyperbole,hyperbole,Dictionary/grammar reference
+WV_021,Wordplay & Vocabulary,easy,100,This term means a word that imitates a sound.,onomatopoeia,onomatopoeia,Dictionary/grammar reference
+WV_022,Wordplay & Vocabulary,easy-medium,200,This term means a word or phrase that reads the same backward.,palindrome,palindrome,Dictionary/grammar reference
+WV_023,Wordplay & Vocabulary,medium,300,This term means a word formed from initials.,acronym,acronym,Dictionary/grammar reference
+WV_024,Wordplay & Vocabulary,medium-hard,400,This term means a shortened form of a word or phrase.,abbreviation,abbreviation,Dictionary/grammar reference
+WV_025,Wordplay & Vocabulary,hard,500,This term means a word made from two smaller words.,compound word,compound word,Dictionary/grammar reference
+WV_026,Wordplay & Vocabulary,easy,100,The opposite of ancient.,modern,modern,Dictionary reference
+WV_027,Wordplay & Vocabulary,easy-medium,200,The opposite of generous.,stingy,stingy,Dictionary reference
+WV_028,Wordplay & Vocabulary,medium,300,The opposite of fragile.,durable,durable,Dictionary reference
+WV_029,Wordplay & Vocabulary,medium-hard,400,The opposite of expand.,contract,contract,Dictionary reference
+WV_030,Wordplay & Vocabulary,hard,500,The opposite of victory.,defeat,defeat,Dictionary reference
+WV_031,Wordplay & Vocabulary,easy,100,A synonym for quick.,fast,fast,Dictionary reference
+WV_032,Wordplay & Vocabulary,easy-medium,200,A synonym for happy.,joyful,joyful,Dictionary reference
+WV_033,Wordplay & Vocabulary,medium,300,A synonym for tiny.,small,small,Dictionary reference
+WV_034,Wordplay & Vocabulary,medium-hard,400,A synonym for begin.,start,start,Dictionary reference
+WV_035,Wordplay & Vocabulary,hard,500,A synonym for brave.,courageous,courageous,Dictionary reference
+WV_036,Wordplay & Vocabulary,easy,100,"The words to, too, two are examples of these.",homophones,homophones,Dictionary reference
+WV_037,Wordplay & Vocabulary,easy-medium,200,"The words there, their, they're are examples of these.",homophones,homophones,Dictionary reference
+WV_038,Wordplay & Vocabulary,medium,300,The words flower and flour are examples of these.,homophones,homophones,Dictionary reference
+WV_039,Wordplay & Vocabulary,medium-hard,400,The words knight and night are examples of these.,homophones,homophones,Dictionary reference
+WV_040,Wordplay & Vocabulary,hard,500,The words sea and see are examples of these.,homophones,homophones,Dictionary reference
+WV_041,Wordplay & Vocabulary,easy,100,This word reads the same backward and forward: LEVEL.,palindrome,palindrome,Wordplay reference
+WV_042,Wordplay & Vocabulary,easy-medium,200,This word reads the same backward and forward: RADAR.,palindrome,palindrome,Wordplay reference
+WV_043,Wordplay & Vocabulary,medium,300,This word reads the same backward and forward: CIVIC.,palindrome,palindrome,Wordplay reference
+WV_044,Wordplay & Vocabulary,medium-hard,400,This word reads the same backward and forward: KAYAK.,palindrome,palindrome,Wordplay reference
+WV_045,Wordplay & Vocabulary,hard,500,This word reads the same backward and forward: MADAM.,palindrome,palindrome,Wordplay reference
+WV_046,Wordplay & Vocabulary,easy,100,This word reads the same backward and forward: REFER.,palindrome,palindrome,Wordplay reference
+WV_047,Wordplay & Vocabulary,easy-medium,200,This word reads the same backward and forward: ROTOR.,palindrome,palindrome,Wordplay reference
+WV_048,Wordplay & Vocabulary,medium,300,This word reads the same backward and forward: TENET.,palindrome,palindrome,Wordplay reference
+WV_049,Wordplay & Vocabulary,medium-hard,400,This word reads the same backward and forward: MOM.,palindrome,palindrome,Wordplay reference
+WV_050,Wordplay & Vocabulary,hard,500,This word reads the same backward and forward: WOW.,palindrome,palindrome,Wordplay reference
+WV_051,Wordplay & Vocabulary,easy,100,"Adding the prefix ""un"" to ""happy"" creates this word.",unhappy,unhappy,Dictionary reference
+WV_052,Wordplay & Vocabulary,easy-medium,200,"Adding the prefix ""im"" to ""possible"" creates this word.",impossible,impossible,Dictionary reference
+WV_053,Wordplay & Vocabulary,medium,300,"Adding the prefix ""il"" to ""legal"" creates this word.",illegal,illegal,Dictionary reference
+WV_054,Wordplay & Vocabulary,medium-hard,400,"Adding the prefix ""ir"" to ""regular"" creates this word.",irregular,irregular,Dictionary reference
+WV_055,Wordplay & Vocabulary,hard,500,"Adding the prefix ""re"" to ""build"" creates this word.",rebuild,rebuild,Dictionary reference
+WV_056,Wordplay & Vocabulary,easy,100,"Adding the prefix ""pre"" to ""heat"" creates this word.",preheat,preheat,Dictionary reference
+WV_057,Wordplay & Vocabulary,easy-medium,200,"Adding the prefix ""preview"" to ""view"" creates this word.",preview,preview,Dictionary reference
+WV_058,Wordplay & Vocabulary,medium,300,"Adding the prefix ""dis"" to ""appear"" creates this word.",disappear,disappear,Dictionary reference
+WV_059,Wordplay & Vocabulary,medium-hard,400,"Adding the prefix ""mis"" to ""understand"" creates this word.",misunderstand,misunderstand,Dictionary reference
+WV_060,Wordplay & Vocabulary,hard,500,"Adding the prefix ""pre"" to ""paid"" creates this word.",prepaid,prepaid,Dictionary reference
+WV_061,Wordplay & Vocabulary,easy,100,"This idiom means ""start a friendly conversation"".",break the ice,break the ice,Idiom reference
+WV_062,Wordplay & Vocabulary,easy-medium,200,"This idiom means ""study"".",hit the books,hit the books,Idiom reference
+WV_063,Wordplay & Vocabulary,medium,300,"This idiom means ""something easy"".",piece of cake,piece of cake,Idiom reference
+WV_064,Wordplay & Vocabulary,medium-hard,400,"This idiom means ""reveal a secret"".",spill the beans,spill the beans,Idiom reference
+WV_065,Wordplay & Vocabulary,hard,500,"This idiom means ""feeling sick"".",under the weather,under the weather,Idiom reference
+WV_066,Wordplay & Vocabulary,easy,100,"This idiom means ""is very expensive"".",costs an arm and a leg,costs an arm and a leg,Idiom reference
+WV_067,Wordplay & Vocabulary,easy-medium,200,"This idiom means ""rarely"".",once in a blue moon,once in a blue moon,Idiom reference
+WV_068,Wordplay & Vocabulary,medium,300,"This idiom means ""it is your turn to act"".",the ball is in your court,the ball is in your court,Idiom reference
+WV_069,Wordplay & Vocabulary,medium-hard,400,"This idiom means ""stop yourself from speaking"".",bite your tongue,bite your tongue,Idiom reference
+WV_070,Wordplay & Vocabulary,hard,500,"This idiom means ""very happy"".",on cloud nine,on cloud nine,Idiom reference
+WV_071,Wordplay & Vocabulary,easy,100,A sentence that asks something ends with this punctuation mark.,question mark,question mark,Grammar reference
+WV_072,Wordplay & Vocabulary,easy-medium,200,A sentence showing strong feeling often ends with this mark.,exclamation point,exclamation point,Grammar reference
+WV_073,Wordplay & Vocabulary,medium,300,This punctuation mark separates items in a list.,comma,comma,Grammar reference
+WV_074,Wordplay & Vocabulary,medium-hard,400,This punctuation mark can join two related independent clauses.,semicolon,semicolon,Grammar reference
+WV_075,Wordplay & Vocabulary,hard,500,This punctuation mark shows possession in words like Ava's.,apostrophe,apostrophe,Grammar reference
+WV_076,Wordplay & Vocabulary,easy,100,This is the plural of child.,children,children,Grammar reference
+WV_077,Wordplay & Vocabulary,easy-medium,200,This is the plural of mouse.,mice,mice,Grammar reference
+WV_078,Wordplay & Vocabulary,medium,300,This is the past tense of run.,ran,ran,Grammar reference
+WV_079,Wordplay & Vocabulary,medium-hard,400,This is the past tense of write.,wrote,wrote,Grammar reference
+WV_080,Wordplay & Vocabulary,hard,500,This is the comparative form of good.,better,better,Grammar reference
+WV_081,Wordplay & Vocabulary,easy,100,This is the superlative form of good.,best,best,Grammar reference
+WV_082,Wordplay & Vocabulary,easy-medium,200,This is the comparative form of bad.,worse,worse,Grammar reference
+WV_083,Wordplay & Vocabulary,medium,300,This is the superlative form of bad.,worst,worst,Grammar reference
+WV_084,Wordplay & Vocabulary,medium-hard,400,A group of lines in a poem is called this.,stanza,stanza,Grammar reference
+WV_085,Wordplay & Vocabulary,hard,500,A word created by blending smoke and fog is this.,smog,smog,Grammar reference
+WV_086,Wordplay & Vocabulary,easy,100,A word created by blending breakfast and lunch is this.,brunch,brunch,Grammar reference
+WV_087,Wordplay & Vocabulary,easy-medium,200,A word created from web and log is this.,blog,blog,Grammar reference
+WV_088,Wordplay & Vocabulary,medium,300,The study of word origins is called this.,etymology,etymology,Grammar reference
+WV_089,Wordplay & Vocabulary,medium-hard,400,A word with more than one meaning is called this.,polyseme,polyseme,Grammar reference
+WV_090,Wordplay & Vocabulary,hard,500,A very long sentence joined by many conjunctions is often called this type of sentence.,run-on sentence,run-on sentence,Grammar reference
+WV_091,Wordplay & Vocabulary,easy,100,The main noun or pronoun a sentence is about is the subject; the action or description is this.,predicate,predicate,Grammar reference
+WV_092,Wordplay & Vocabulary,easy-medium,200,The direct object receives the action of this part of speech.,verb,verb,Grammar reference
+WV_093,Wordplay & Vocabulary,medium,300,"The words a, an, and the are called these.",articles,articles,Grammar reference
+WV_094,Wordplay & Vocabulary,medium-hard,400,"The word ""and"" is this part of speech.",conjunction,conjunction,Grammar reference
+WV_095,Wordplay & Vocabulary,hard,500,"The word ""quickly"" is this part of speech.",adverb,adverb,Grammar reference
+WV_096,Wordplay & Vocabulary,easy,100,"The word ""blue"" in ""blue car"" is this part of speech.",adjective,adjective,Grammar reference
+WV_097,Wordplay & Vocabulary,easy-medium,200,"The word ""they"" is this part of speech.",pronoun,pronoun,Grammar reference
+WV_098,Wordplay & Vocabulary,medium,300,"The word ""during"" is this part of speech.",preposition,preposition,Grammar reference
+WV_099,Wordplay & Vocabulary,medium-hard,400,"The word ""wow"" is this part of speech.",interjection,interjection,Grammar reference
+WV_100,Wordplay & Vocabulary,hard,500,A word that names a specific person or place is this type of noun.,proper noun,proper noun,Grammar reference
+MI_001,Music & Instruments,easy,100,This instrument belongs mainly to the string family.,violin,violin,Music education reference
+MI_002,Music & Instruments,easy-medium,200,This instrument belongs mainly to the string family.,cello,cello,Music education reference
+MI_003,Music & Instruments,medium,300,This instrument belongs mainly to the string family.,guitar,guitar,Music education reference
+MI_004,Music & Instruments,medium-hard,400,This instrument belongs mainly to the string family.,harp,harp,Music education reference
+MI_005,Music & Instruments,hard,500,This instrument belongs mainly to the brass family.,trumpet,trumpet,Music education reference
+MI_006,Music & Instruments,easy,100,This instrument belongs mainly to the brass family.,trombone,trombone,Music education reference
+MI_007,Music & Instruments,easy-medium,200,This instrument belongs mainly to the brass family.,tuba,tuba,Music education reference
+MI_008,Music & Instruments,medium,300,This instrument belongs mainly to the brass family.,French horn,French horn,Music education reference
+MI_009,Music & Instruments,medium-hard,400,This instrument belongs mainly to the woodwind family.,flute,flute,Music education reference
+MI_010,Music & Instruments,hard,500,This instrument belongs mainly to the woodwind family.,clarinet,clarinet,Music education reference
+MI_011,Music & Instruments,easy,100,This instrument belongs mainly to the woodwind family.,oboe,oboe,Music education reference
+MI_012,Music & Instruments,easy-medium,200,This instrument belongs mainly to the woodwind family.,bassoon,bassoon,Music education reference
+MI_013,Music & Instruments,medium,300,This instrument belongs mainly to the woodwind family.,saxophone,saxophone,Music education reference
+MI_014,Music & Instruments,medium-hard,400,This instrument belongs mainly to the percussion family.,snare drum,snare drum,Music education reference
+MI_015,Music & Instruments,hard,500,This instrument belongs mainly to the percussion family.,timpani,timpani,Music education reference
+MI_016,Music & Instruments,easy,100,This instrument belongs mainly to the percussion family.,xylophone,xylophone,Music education reference
+MI_017,Music & Instruments,easy-medium,200,This instrument belongs mainly to the keyboard family.,piano,piano,Music education reference
+MI_018,Music & Instruments,medium,300,This instrument belongs mainly to the keyboard family.,organ,organ,Music education reference
+MI_019,Music & Instruments,medium-hard,400,This instrument belongs mainly to the keyboard/free-reed family.,accordion,accordion,Music education reference
+MI_020,Music & Instruments,hard,500,This instrument belongs mainly to the free-reed family.,harmonica,harmonica,Music education reference
+MI_021,Music & Instruments,easy,100,This musical term means speed of music.,tempo,tempo,Music theory reference
+MI_022,Music & Instruments,easy-medium,200,This musical term means pattern of beats.,rhythm,rhythm,Music theory reference
+MI_023,Music & Instruments,medium,300,This musical term means main tune.,melody,melody,Music theory reference
+MI_024,Music & Instruments,medium-hard,400,This musical term means notes sounding together.,harmony,harmony,Music theory reference
+MI_025,Music & Instruments,hard,500,This musical term means loudness and softness.,dynamics,dynamics,Music theory reference
+MI_026,Music & Instruments,easy,100,This musical term means highness or lowness of sound.,pitch,pitch,Music theory reference
+MI_027,Music & Instruments,easy-medium,200,This musical term means gradually getting louder.,crescendo,crescendo,Music theory reference
+MI_028,Music & Instruments,medium,300,This musical term means gradually getting softer.,decrescendo,decrescendo,Music theory reference
+MI_029,Music & Instruments,medium-hard,400,This musical term means loud.,forte,forte,Music theory reference
+MI_030,Music & Instruments,hard,500,This musical term means soft.,piano,piano,Music theory reference
+MI_031,Music & Instruments,easy,100,This musical term means fast and lively.,allegro,allegro,Music theory reference
+MI_032,Music & Instruments,easy-medium,200,This musical term means slow.,adagio,adagio,Music theory reference
+MI_033,Music & Instruments,medium,300,This musical term means walking pace.,andante,andante,Music theory reference
+MI_034,Music & Instruments,medium-hard,400,This musical term means short and detached.,staccato,staccato,Music theory reference
+MI_035,Music & Instruments,hard,500,This musical term means smooth and connected.,legato,legato,Music theory reference
+MI_036,Music & Instruments,easy,100,This musical term means a group of beats.,measure,measure,Music theory reference
+MI_037,Music & Instruments,easy-medium,200,This musical term means line separating measures.,bar line,bar line,Music theory reference
+MI_038,Music & Instruments,medium,300,This musical term means symbol showing pitch range.,clef,clef,Music theory reference
+MI_039,Music & Instruments,medium-hard,400,This musical term means clef often used for higher notes.,treble clef,treble clef,Music theory reference
+MI_040,Music & Instruments,hard,500,This musical term means clef often used for lower notes.,bass clef,bass clef,Music theory reference
+MI_041,Music & Instruments,easy,100,This composer wrote the Fifth Symphony that begins with a famous four-note motif.,Ludwig van Beethoven,Ludwig van Beethoven,Music history reference
+MI_042,Music & Instruments,easy-medium,200,This composer wrote The Four Seasons.,Antonio Vivaldi,Antonio Vivaldi,Music history reference
+MI_043,Music & Instruments,medium,300,This composer wrote the opera The Magic Flute.,Wolfgang Amadeus Mozart,Wolfgang Amadeus Mozart,Music history reference
+MI_044,Music & Instruments,medium-hard,400,This composer wrote many fugues and the Brandenburg Concertos.,Johann Sebastian Bach,Johann Sebastian Bach,Music history reference
+MI_045,Music & Instruments,hard,500,This composer wrote Swan Lake.,Pyotr Ilyich Tchaikovsky,Pyotr Ilyich Tchaikovsky,Music history reference
+MI_046,Music & Instruments,easy,100,This composer wrote The Blue Danube.,Johann Strauss II,Johann Strauss II,Music history reference
+MI_047,Music & Instruments,easy-medium,200,This composer wrote Clair de Lune.,Claude Debussy,Claude Debussy,Music history reference
+MI_048,Music & Instruments,medium,300,This composer wrote The Planets.,Gustav Holst,Gustav Holst,Music history reference
+MI_049,Music & Instruments,medium-hard,400,This composer wrote Rhapsody in Blue.,George Gershwin,George Gershwin,Music history reference
+MI_050,Music & Instruments,hard,500,This composer wrote The Rite of Spring.,Igor Stravinsky,Igor Stravinsky,Music history reference
+MI_051,Music & Instruments,easy,100,A group of singers performing together is called this.,choir,choir,Music education reference
+MI_052,Music & Instruments,easy-medium,200,A large group of instrumental musicians is called this.,orchestra,orchestra,Music education reference
+MI_053,Music & Instruments,medium,300,The person leading an orchestra is the this.,conductor,conductor,Music education reference
+MI_054,Music & Instruments,medium-hard,400,A song for two performers is called this.,duet,duet,Music education reference
+MI_055,Music & Instruments,hard,500,A song for three performers is called this.,trio,trio,Music education reference
+MI_056,Music & Instruments,easy,100,A song for four performers is called this.,quartet,quartet,Music education reference
+MI_057,Music & Instruments,easy-medium,200,The lowest common female singing voice is this.,alto,alto,Music education reference
+MI_058,Music & Instruments,medium,300,The highest common female singing voice is this.,soprano,soprano,Music education reference
+MI_059,Music & Instruments,medium-hard,400,The highest common male singing voice is this.,tenor,tenor,Music education reference
+MI_060,Music & Instruments,hard,500,The lowest common male singing voice is this.,bass,bass,Music education reference
+MI_061,Music & Instruments,easy,100,This Italian word means opera text.,libretto,libretto,Music education reference
+MI_062,Music & Instruments,easy-medium,200,This type of song is a national symbol of a country.,anthem,anthem,Music education reference
+MI_063,Music & Instruments,medium,300,This is the standard number of strings on a violin.,four,four,Music education reference
+MI_064,Music & Instruments,medium-hard,400,This is the standard number of strings on a guitar.,six,six,Music education reference
+MI_065,Music & Instruments,hard,500,This instrument is sometimes called the king of instruments in churches.,organ,organ,Music education reference
+MI_066,Music & Instruments,easy,100,This instrument is played with a bow and held under the chin.,violin,violin,Music education reference
+MI_067,Music & Instruments,easy-medium,200,This large string instrument is played upright between the knees.,cello,cello,Music education reference
+MI_068,Music & Instruments,medium,300,This brass instrument uses a slide.,trombone,trombone,Music education reference
+MI_069,Music & Instruments,medium-hard,400,This woodwind uses a double reed and often tunes the orchestra.,oboe,oboe,Music education reference
+MI_070,Music & Instruments,hard,500,This percussion instrument has metal bars and is struck with mallets.,xylophone,xylophone,Music education reference
+MI_071,Music & Instruments,easy,100,This music style is known for improvisation and swing feel.,jazz,jazz,Music genre reference
+MI_072,Music & Instruments,easy-medium,200,This music style is known for 12-bar progressions and blue notes.,blues,blues,Music genre reference
+MI_073,Music & Instruments,medium,300,This music style is known for offbeat rhythm associated with Jamaica.,reggae,reggae,Music genre reference
+MI_074,Music & Instruments,medium-hard,400,"This music style is known for rapping, DJing, and beat-driven tracks.",hip hop,hip hop,Music genre reference
+MI_075,Music & Instruments,hard,500,This music style is known for storytelling songs with roots in folk traditions.,country,country,Music genre reference
+MI_076,Music & Instruments,easy,100,This music style is known for formal concert music tradition.,classical,classical,Music genre reference
+MI_077,Music & Instruments,easy-medium,200,This music style is known for dramatic singing with orchestra.,opera,opera,Music genre reference
+MI_078,Music & Instruments,medium,300,This music style is known for electric guitar-driven popular music.,rock,rock,Music genre reference
+MI_079,Music & Instruments,medium-hard,400,This music style is known for dance music with a strong four-on-the-floor beat.,disco,disco,Music genre reference
+MI_080,Music & Instruments,hard,500,This music style is known for Latin dance music with Afro-Caribbean roots.,salsa,salsa,Music genre reference
+MI_081,Music & Instruments,easy,100,This music style is known for fast acoustic string-band style.,bluegrass,bluegrass,Music genre reference
+MI_082,Music & Instruments,easy-medium,200,This music style is known for religious music with strong vocal tradition.,gospel,gospel,Music genre reference
+MI_083,Music & Instruments,medium,300,This music style is known for traditional or acoustic storytelling music.,folk,folk,Music genre reference
+MI_084,Music & Instruments,medium-hard,400,This music style is known for dance music made heavily with synthesizers and computers.,electronic dance music,electronic dance music,Music genre reference
+MI_085,Music & Instruments,hard,500,"This music style is known for fast, raw rock style.",punk rock,punk rock,Music genre reference
+MI_086,Music & Instruments,easy,100,The five-line system used to write music is called this.,staff,staff,Music theory reference
+MI_087,Music & Instruments,easy-medium,200,This symbol raises a note by a half step.,sharp,sharp,Music theory reference
+MI_088,Music & Instruments,medium,300,This symbol lowers a note by a half step.,flat,flat,Music theory reference
+MI_089,Music & Instruments,medium-hard,400,This symbol cancels a sharp or flat.,natural,natural,Music theory reference
+MI_090,Music & Instruments,hard,500,"In common time, this is the top number of the time signature.",4,4,Music theory reference
+MI_091,Music & Instruments,easy,100,A scale with eight notes from one note to the next same-named note is this.,octave,octave,Music theory reference
+MI_092,Music & Instruments,easy-medium,200,The distance between two musical pitches is called this.,interval,interval,Music theory reference
+MI_093,Music & Instruments,medium,300,Three or more notes sounded together form this.,chord,chord,Music theory reference
+MI_094,Music & Instruments,medium-hard,400,A repeated musical phrase is often called this.,riff,riff,Music theory reference
+MI_095,Music & Instruments,hard,500,The words of a song are called these.,lyrics,lyrics,Music theory reference
+MI_096,Music & Instruments,easy,100,The section of a song that repeats and usually has the main hook is this.,chorus,chorus,Music theory reference
+MI_097,Music & Instruments,easy-medium,200,The section of a song with changing words between choruses is this.,verse,verse,Music theory reference
+MI_098,Music & Instruments,medium,300,A short repeated musical idea is called this.,motif,motif,Music theory reference
+MI_099,Music & Instruments,medium-hard,400,Music performed without instruments is called this.,a cappella,a cappella,Music theory reference
+MI_100,Music & Instruments,hard,500,This device helps musicians keep a steady beat.,metronome,metronome,Music theory reference
+AA_001,Art & Architecture,easy,100,This art or architecture term means artwork showing a person.,portrait,portrait,Art education reference
+AA_002,Art & Architecture,easy-medium,200,This art or architecture term means artwork showing scenery.,landscape,landscape,Art education reference
+AA_003,Art & Architecture,medium,300,This art or architecture term means artwork showing arranged objects.,still life,still life,Art education reference
+AA_004,Art & Architecture,medium-hard,400,This art or architecture term means large artwork painted on a wall.,mural,mural,Art education reference
+AA_005,Art & Architecture,hard,500,This art or architecture term means three-dimensional artwork.,sculpture,sculpture,Art education reference
+AA_006,Art & Architecture,easy,100,This art or architecture term means image made from small pieces.,mosaic,mosaic,Art education reference
+AA_007,Art & Architecture,easy-medium,200,This art or architecture term means painting on wet plaster.,fresco,fresco,Art education reference
+AA_008,Art & Architecture,medium,300,This art or architecture term means decorative handwriting.,calligraphy,calligraphy,Art education reference
+AA_009,Art & Architecture,medium-hard,400,This art or architecture term means technique for showing depth.,perspective,perspective,Art education reference
+AA_010,Art & Architecture,hard,500,This art or architecture term means point where parallel lines appear to meet.,vanishing point,vanishing point,Art education reference
+AA_011,Art & Architecture,easy,100,This art or architecture term means board or range of colors.,palette,palette,Art education reference
+AA_012,Art & Architecture,easy-medium,200,This art or architecture term means fabric surface for painting.,canvas,canvas,Art education reference
+AA_013,Art & Architecture,medium,300,This art or architecture term means stand that holds a canvas.,easel,easel,Art education reference
+AA_014,Art & Architecture,medium-hard,400,This art or architecture term means black drawing material.,charcoal,charcoal,Art education reference
+AA_015,Art & Architecture,hard,500,This art or architecture term means paint mixed with water.,watercolor,watercolor,Art education reference
+AA_016,Art & Architecture,easy,100,This art or architecture term means paint using oil binder.,oil paint,oil paint,Art education reference
+AA_017,Art & Architecture,easy-medium,200,This art or architecture term means material shaped for pottery.,clay,clay,Art education reference
+AA_018,Art & Architecture,medium,300,This art or architecture term means oven used to fire ceramics.,kiln,kiln,Art education reference
+AA_019,Art & Architecture,medium-hard,400,This art or architecture term means technical drawing for a building.,blueprint,blueprint,Art education reference
+AA_020,Art & Architecture,hard,500,This art or architecture term means front face of a building.,facade,facade,Art education reference
+AA_021,Art & Architecture,easy,100,This artist painted the Mona Lisa.,Leonardo da Vinci,Leonardo da Vinci,Art history reference
+AA_022,Art & Architecture,easy-medium,200,This artist painted The Starry Night.,Vincent van Gogh,Vincent van Gogh,Art history reference
+AA_023,Art & Architecture,medium,300,This artist painted the ceiling of the Sistine Chapel.,Michelangelo,Michelangelo,Art history reference
+AA_024,Art & Architecture,medium-hard,400,This artist was known for melting clocks in The Persistence of Memory.,Salvador Dali,Salvador Dali,Art history reference
+AA_025,Art & Architecture,hard,500,This artist co-founded Cubism with Georges Braque.,Pablo Picasso,Pablo Picasso,Art history reference
+AA_026,Art & Architecture,easy,100,This Mexican artist painted many self-portraits.,Frida Kahlo,Frida Kahlo,Art history reference
+AA_027,Art & Architecture,easy-medium,200,This artist painted water lilies in many works.,Claude Monet,Claude Monet,Art history reference
+AA_028,Art & Architecture,medium,300,This artist painted Campbell's Soup Cans.,Andy Warhol,Andy Warhol,Art history reference
+AA_029,Art & Architecture,medium-hard,400,This artist sculpted The Thinker.,Auguste Rodin,Auguste Rodin,Art history reference
+AA_030,Art & Architecture,hard,500,This American architect designed Fallingwater.,Frank Lloyd Wright,Frank Lloyd Wright,Art history reference
+AA_031,Art & Architecture,easy,100,This art movement or style is known for visible brushstrokes and changing light.,Impressionism,Impressionism,Art history reference
+AA_032,Art & Architecture,easy-medium,200,This art movement or style is known for fragmented geometric forms.,Cubism,Cubism,Art history reference
+AA_033,Art & Architecture,medium,300,This art movement or style is known for dreamlike and unexpected images.,Surrealism,Surrealism,Art history reference
+AA_034,Art & Architecture,medium-hard,400,This art movement or style is known for popular consumer culture imagery.,Pop Art,Pop Art,Art history reference
+AA_035,Art & Architecture,hard,500,This art movement or style is known for revived classical ideas and realistic perspective.,Renaissance,Renaissance,Art history reference
+AA_036,Art & Architecture,easy,100,"This art movement or style is known for drama, movement, and rich detail.",Baroque,Baroque,Art history reference
+AA_037,Art & Architecture,easy-medium,200,This art movement or style is known for pointed arches and tall cathedrals.,Gothic,Gothic,Art history reference
+AA_038,Art & Architecture,medium,300,This art movement or style is known for geometric glamour of the early 20th century.,Art Deco,Art Deco,Art history reference
+AA_039,Art & Architecture,medium-hard,400,This art movement or style is known for simplicity and reduced forms.,Minimalism,Minimalism,Art history reference
+AA_040,Art & Architecture,hard,500,This art movement or style is known for large expressive nonrepresentational painting.,Abstract Expressionism,Abstract Expressionism,Art history reference
+AA_041,Art & Architecture,easy,100,This building or landmark is located in Paris.,Eiffel Tower,Eiffel Tower,Architecture/landmark reference
+AA_042,Art & Architecture,easy-medium,200,This building or landmark is located in Sydney.,Sydney Opera House,Sydney Opera House,Architecture/landmark reference
+AA_043,Art & Architecture,medium,300,This building or landmark is located in Agra.,Taj Mahal,Taj Mahal,Architecture/landmark reference
+AA_044,Art & Architecture,medium-hard,400,This building or landmark is located in Rome.,Colosseum,Colosseum,Architecture/landmark reference
+AA_045,Art & Architecture,hard,500,This building or landmark is located in Athens.,Parthenon,Parthenon,Architecture/landmark reference
+AA_046,Art & Architecture,easy,100,This building or landmark is located in Barcelona.,Sagrada Familia,Sagrada Familia,Architecture/landmark reference
+AA_047,Art & Architecture,easy-medium,200,This building or landmark is located in Dubai.,Burj Khalifa,Burj Khalifa,Architecture/landmark reference
+AA_048,Art & Architecture,medium,300,This building or landmark is located in Bilbao.,Guggenheim Museum Bilbao,Guggenheim Museum Bilbao,Architecture/landmark reference
+AA_049,Art & Architecture,medium-hard,400,This building or landmark is located in Pennsylvania.,Fallingwater,Fallingwater,Architecture/landmark reference
+AA_050,Art & Architecture,hard,500,This building or landmark is located in New York City.,Empire State Building,Empire State Building,Architecture/landmark reference
+AA_051,Art & Architecture,easy,100,This building or landmark is located in Paris.,Notre-Dame Cathedral,Notre-Dame Cathedral,Architecture/landmark reference
+AA_052,Art & Architecture,easy-medium,200,This building or landmark is located in Paris.,Louvre Pyramid,Louvre Pyramid,Architecture/landmark reference
+AA_053,Art & Architecture,medium,300,This building or landmark is located in Pisa.,Leaning Tower of Pisa,Leaning Tower of Pisa,Architecture/landmark reference
+AA_054,Art & Architecture,medium-hard,400,This building or landmark is located in Kuala Lumpur.,Petronas Towers,Petronas Towers,Architecture/landmark reference
+AA_055,Art & Architecture,hard,500,This building or landmark is located in Toronto.,CN Tower,CN Tower,Architecture/landmark reference
+AA_056,Art & Architecture,easy,100,This architectural feature is a curved structure spanning an opening.,arch,arch,Art/architecture reference
+AA_057,Art & Architecture,easy-medium,200,This vertical support is often round and can hold up a roof.,column,column,Art/architecture reference
+AA_058,Art & Architecture,medium,300,This triangular upper part of a classical temple front is called this.,pediment,pediment,Art/architecture reference
+AA_059,Art & Architecture,medium-hard,400,This rounded roof form is called this.,dome,dome,Art/architecture reference
+AA_060,Art & Architecture,hard,500,This tall narrow tower on a mosque is called this.,minaret,minaret,Art/architecture reference
+AA_061,Art & Architecture,easy,100,This is the central aisle area in many churches.,nave,nave,Art/architecture reference
+AA_062,Art & Architecture,easy-medium,200,"This is a courtyard surrounded by covered walks, often in monasteries.",cloister,cloister,Art/architecture reference
+AA_063,Art & Architecture,medium,300,This is a small model of a planned building.,maquette,maquette,Art/architecture reference
+AA_064,Art & Architecture,medium-hard,400,This is the person who designs buildings.,architect,architect,Art/architecture reference
+AA_065,Art & Architecture,hard,500,This is a drawing that shows a building from above.,floor plan,floor plan,Art/architecture reference
+AA_066,Art & Architecture,easy,100,This type of bridge is supported by cables from tall towers.,suspension bridge,suspension bridge,Art/architecture reference
+AA_067,Art & Architecture,easy-medium,200,This type of window uses colored pieces of glass.,stained glass,stained glass,Art/architecture reference
+AA_068,Art & Architecture,medium,300,This is a decorative band around a wall near the ceiling.,frieze,frieze,Art/architecture reference
+AA_069,Art & Architecture,medium-hard,400,This is the stone at the top center of an arch.,keystone,keystone,Art/architecture reference
+AA_070,Art & Architecture,hard,500,This is an outdoor paved area next to a building.,patio,patio,Art/architecture reference
+AA_071,Art & Architecture,easy,100,This is a garden feature with water spraying upward.,fountain,fountain,Art/architecture reference
+AA_072,Art & Architecture,easy-medium,200,This is the art of designing outdoor spaces and gardens.,landscape architecture,landscape architecture,Art/architecture reference
+AA_073,Art & Architecture,medium,300,This is the Japanese art of paper folding.,origami,origami,Art/architecture reference
+AA_074,Art & Architecture,medium-hard,400,This is the art of beautiful writing.,calligraphy,calligraphy,Art/architecture reference
+AA_075,Art & Architecture,hard,500,This is a woven wall hanging often showing pictures or patterns.,tapestry,tapestry,Art/architecture reference
+AA_076,Art & Architecture,easy,100,This color can be described as red and yellow.,orange,orange,Color theory reference
+AA_077,Art & Architecture,easy-medium,200,This color can be described as blue and yellow.,green,green,Color theory reference
+AA_078,Art & Architecture,medium,300,This color can be described as red and blue.,purple,purple,Color theory reference
+AA_079,Art & Architecture,medium-hard,400,This color can be described as red and white.,pink,pink,Color theory reference
+AA_080,Art & Architecture,hard,500,This color can be described as black and white.,gray,gray,Color theory reference
+AA_081,Art & Architecture,easy,100,This color can be described as often made by mixing complementary colors.,brown,brown,Color theory reference
+AA_082,Art & Architecture,easy-medium,200,This color can be described as blue and green.,turquoise,turquoise,Color theory reference
+AA_083,Art & Architecture,medium,300,This color can be described as dark red.,maroon,maroon,Color theory reference
+AA_084,Art & Architecture,medium-hard,400,This color can be described as dark blue.,navy,navy,Color theory reference
+AA_085,Art & Architecture,hard,500,This color can be described as pale sandy brown.,beige,beige,Color theory reference
+AA_086,Art & Architecture,easy,100,"The primary colors of light are red, green, and this color.",blue,blue,Art reference
+AA_087,Art & Architecture,easy-medium,200,"The primary colors often taught for paint are red, yellow, and this color.",blue,blue,Art reference
+AA_088,Art & Architecture,medium,300,A color opposite another on the color wheel is called this.,complementary color,complementary color,Art reference
+AA_089,Art & Architecture,medium-hard,400,A single-color artwork uses this kind of color scheme.,monochromatic,monochromatic,Art reference
+AA_090,Art & Architecture,hard,500,A quick rough drawing is called this.,sketch,sketch,Art reference
+AA_091,Art & Architecture,easy,100,A painting of the artist by the artist is this.,self-portrait,self-portrait,Art reference
+AA_092,Art & Architecture,easy-medium,200,A public artwork meant to remember a person or event is this.,monument,monument,Art reference
+AA_093,Art & Architecture,medium,300,A museum worker who selects and organizes exhibits is this.,curator,curator,Art reference
+AA_094,Art & Architecture,medium-hard,400,A person who restores damaged artworks is this.,conservator,conservator,Art reference
+AA_095,Art & Architecture,hard,500,A repeated decorative design is called this.,pattern,pattern,Art reference
+AA_096,Art & Architecture,easy,100,Review clue: This art or architecture term means artwork showing a person.,portrait,portrait,Art education reference
+AA_097,Art & Architecture,easy-medium,200,Review clue: This art or architecture term means artwork showing scenery.,landscape,landscape,Art education reference
+AA_098,Art & Architecture,medium,300,Review clue: This art or architecture term means artwork showing arranged objects.,still life,still life,Art education reference
+AA_099,Art & Architecture,medium-hard,400,Review clue: This art or architecture term means large artwork painted on a wall.,mural,mural,Art education reference
+AA_100,Art & Architecture,hard,500,Review clue: This art or architecture term means three-dimensional artwork.,sculpture,sculpture,Art education reference
+FD_001,Food & Drink,easy,100,This food is strongly associated with Japan.,sushi,sushi,Culinary reference
+FD_002,Food & Drink,easy-medium,200,This food is strongly associated with Mexico.,tacos,tacos,Culinary reference
+FD_003,Food & Drink,medium,300,This food is strongly associated with Spain.,paella,paella,Culinary reference
+FD_004,Food & Drink,medium-hard,400,This food is strongly associated with Italy.,pizza,pizza,Culinary reference
+FD_005,Food & Drink,hard,500,This food is strongly associated with France.,croissant,croissant,Culinary reference
+FD_006,Food & Drink,easy,100,This food is strongly associated with Korea.,kimchi,kimchi,Culinary reference
+FD_007,Food & Drink,easy-medium,200,This food is strongly associated with Thailand.,pad thai,pad thai,Culinary reference
+FD_008,Food & Drink,medium,300,This food is strongly associated with Middle East.,hummus,hummus,Culinary reference
+FD_009,Food & Drink,medium-hard,400,This food is strongly associated with Canada.,poutine,poutine,Culinary reference
+FD_010,Food & Drink,hard,500,This food is strongly associated with United Kingdom.,fish and chips,fish and chips,Culinary reference
+FD_011,Food & Drink,easy,100,This food is strongly associated with Poland.,pierogi,pierogi,Culinary reference
+FD_012,Food & Drink,easy-medium,200,This food is strongly associated with Middle East.,falafel,falafel,Culinary reference
+FD_013,Food & Drink,medium,300,This food is strongly associated with Japan.,ramen,ramen,Culinary reference
+FD_014,Food & Drink,medium-hard,400,This food is strongly associated with Vietnam.,pho,pho,Culinary reference
+FD_015,Food & Drink,hard,500,This food is strongly associated with India.,curry,curry,Culinary reference
+FD_016,Food & Drink,easy,100,This food is strongly associated with Italy.,gelato,gelato,Culinary reference
+FD_017,Food & Drink,easy-medium,200,This food is strongly associated with Turkey/Greece region.,baklava,baklava,Culinary reference
+FD_018,Food & Drink,medium,300,This food is strongly associated with China.,dim sum,dim sum,Culinary reference
+FD_019,Food & Drink,medium-hard,400,This food is strongly associated with Peru.,ceviche,ceviche,Culinary reference
+FD_020,Food & Drink,hard,500,This food is strongly associated with Germany.,bratwurst,bratwurst,Culinary reference
+FD_021,Food & Drink,easy,100,This cooking term means to cook in bubbling hot water.,boil,boil,Cooking reference
+FD_022,Food & Drink,easy-medium,200,This cooking term means to cook gently below a boil.,simmer,simmer,Cooking reference
+FD_023,Food & Drink,medium,300,This cooking term means to cook quickly in a little fat.,saute,saute,Cooking reference
+FD_024,Food & Drink,medium-hard,400,This cooking term means to cook with dry heat in an oven.,bake,bake,Cooking reference
+FD_025,Food & Drink,hard,500,"This cooking term means to cook with dry heat, often uncovered.",roast,roast,Cooking reference
+FD_026,Food & Drink,easy,100,This cooking term means to cook over direct heat.,grill,grill,Cooking reference
+FD_027,Food & Drink,easy-medium,200,This cooking term means to cook with hot vapor.,steam,steam,Cooking reference
+FD_028,Food & Drink,medium,300,This cooking term means to cook slowly with a small amount of liquid.,braise,braise,Cooking reference
+FD_029,Food & Drink,medium-hard,400,This cooking term means to soak in seasoned liquid.,marinate,marinate,Cooking reference
+FD_030,Food & Drink,hard,500,This cooking term means to work dough by folding and pressing.,knead,knead,Cooking reference
+FD_031,Food & Drink,easy,100,This cooking term means to beat rapidly to add air or mix.,whisk,whisk,Cooking reference
+FD_032,Food & Drink,easy-medium,200,This cooking term means to cut into small cubes.,dice,dice,Cooking reference
+FD_033,Food & Drink,medium,300,This cooking term means to cut into thin matchsticks.,julienne,julienne,Cooking reference
+FD_034,Food & Drink,medium-hard,400,This cooking term means to cut very finely.,mince,mince,Cooking reference
+FD_035,Food & Drink,hard,500,This cooking term means to outer colored peel of citrus.,zest,zest,Cooking reference
+FD_036,Food & Drink,easy,100,This grain is the main ingredient in traditional risotto.,Arborio rice,Arborio rice,Food reference
+FD_037,Food & Drink,easy-medium,200,This grain is used to make oatmeal.,oats,oats,Food reference
+FD_038,Food & Drink,medium,300,This grain is ground to make most bread flour.,wheat,wheat,Food reference
+FD_039,Food & Drink,medium-hard,400,This grain is the main ingredient in many tortillas.,corn,corn,Food reference
+FD_040,Food & Drink,hard,500,This seed-like food is a complete protein often used like a grain.,quinoa,quinoa,Food reference
+FD_041,Food & Drink,easy,100,This bean is used to make tofu.,soybean,soybean,Food reference
+FD_042,Food & Drink,easy-medium,200,This bean is central to hummus.,chickpea,chickpea,Food reference
+FD_043,Food & Drink,medium,300,This nut is used to make marzipan.,almond,almond,Food reference
+FD_044,Food & Drink,medium-hard,400,This fruit is dried to make raisins.,grape,grape,Food reference
+FD_045,Food & Drink,hard,500,This fruit is dried to make prunes.,plum,plum,Food reference
+FD_046,Food & Drink,easy,100,This spice or herb is sweet brown spice often used in rolls.,cinnamon,cinnamon,Culinary reference
+FD_047,Food & Drink,easy-medium,200,This spice or herb is earthy spice common in chili and tacos.,cumin,cumin,Culinary reference
+FD_048,Food & Drink,medium,300,This spice or herb is yellow spice used in many curries.,turmeric,turmeric,Culinary reference
+FD_049,Food & Drink,medium-hard,400,This spice or herb is expensive spice from crocus flowers.,saffron,saffron,Culinary reference
+FD_050,Food & Drink,hard,500,This spice or herb is red spice made from peppers.,paprika,paprika,Culinary reference
+FD_051,Food & Drink,easy,100,This spice or herb is herb common on pizza.,oregano,oregano,Culinary reference
+FD_052,Food & Drink,easy-medium,200,This spice or herb is herb used in pesto.,basil,basil,Culinary reference
+FD_053,Food & Drink,medium,300,This spice or herb is leafy herb also called coriander leaves.,cilantro,cilantro,Culinary reference
+FD_054,Food & Drink,medium-hard,400,This spice or herb is spicy root used fresh or dried.,ginger,ginger,Culinary reference
+FD_055,Food & Drink,hard,500,This spice or herb is pungent bulb used around the world.,garlic,garlic,Culinary reference
+FD_056,Food & Drink,easy,100,This spice or herb is flavoring from orchid pods.,vanilla,vanilla,Culinary reference
+FD_057,Food & Drink,easy-medium,200,This spice or herb is warm spice grated into desserts.,nutmeg,nutmeg,Culinary reference
+FD_058,Food & Drink,medium,300,This spice or herb is strong spice shaped like a small nail.,clove,clove,Culinary reference
+FD_059,Food & Drink,medium-hard,400,This spice or herb is pine-like herb used with roasted foods.,rosemary,rosemary,Culinary reference
+FD_060,Food & Drink,hard,500,This spice or herb is small-leaf herb often used in soups.,thyme,thyme,Culinary reference
+FD_061,Food & Drink,easy,100,This drink is made by steeping leaves from Camellia sinensis.,tea,tea,Beverage reference
+FD_062,Food & Drink,easy-medium,200,This drink is brewed from roasted beans.,coffee,coffee,Beverage reference
+FD_063,Food & Drink,medium,300,This drink is made by fermenting grape juice.,wine,wine,Beverage reference
+FD_064,Food & Drink,medium-hard,400,This drink is made by fermenting grains and hops.,beer,beer,Beverage reference
+FD_065,Food & Drink,hard,500,This Mexican spirit is made from agave.,tequila,tequila,Beverage reference
+FD_066,Food & Drink,easy,100,This Japanese alcoholic drink is brewed from rice.,sake,sake,Beverage reference
+FD_067,Food & Drink,easy-medium,200,This hot drink is made from cacao powder or chocolate.,hot chocolate,hot chocolate,Beverage reference
+FD_068,Food & Drink,medium,300,This citrus fruit is used to make lemonade.,lemon,lemon,Beverage reference
+FD_069,Food & Drink,medium-hard,400,"This drink combines yogurt, fruit, and often ice.",smoothie,smoothie,Beverage reference
+FD_070,Food & Drink,hard,500,This carbonated drink is often called pop or soda.,soft drink,soft drink,Beverage reference
+FD_071,Food & Drink,easy,100,This taste is associated with sugar.,sweet,sweet,Food reference
+FD_072,Food & Drink,easy-medium,200,This taste is associated with lemons.,sour,sour,Food reference
+FD_073,Food & Drink,medium,300,This taste is associated with salt.,salty,salty,Food reference
+FD_074,Food & Drink,medium-hard,400,This taste is associated with coffee or dark greens.,bitter,bitter,Food reference
+FD_075,Food & Drink,hard,500,This savory taste is often linked with glutamate.,umami,umami,Food reference
+FD_076,Food & Drink,easy,100,This meal is usually eaten in the morning.,breakfast,breakfast,Food reference
+FD_077,Food & Drink,easy-medium,200,This meal is usually eaten around midday.,lunch,lunch,Food reference
+FD_078,Food & Drink,medium,300,This meal is usually eaten in the evening.,dinner,dinner,Food reference
+FD_079,Food & Drink,medium-hard,400,This is a small dish served before a main course.,appetizer,appetizer,Food reference
+FD_080,Food & Drink,hard,500,This sweet course often ends a meal.,dessert,dessert,Food reference
+FD_081,Food & Drink,easy,100,This is the menu section for drinks.,beverages,beverages,Food reference
+FD_082,Food & Drink,easy-medium,200,This is food prepared without meat or fish.,vegetarian,vegetarian,Food reference
+FD_083,Food & Drink,medium,300,This diet excludes all animal products.,vegan,vegan,Food reference
+FD_084,Food & Drink,medium-hard,400,This label means food is prepared according to Jewish dietary rules.,kosher,kosher,Food reference
+FD_085,Food & Drink,hard,500,This label means permissible under Islamic dietary rules.,halal,halal,Food reference
+FD_086,Food & Drink,easy,100,This kitchen tool is used to drain pasta.,colander,colander,Food reference
+FD_087,Food & Drink,easy-medium,200,This tool removes the outer skin of vegetables.,peeler,peeler,Food reference
+FD_088,Food & Drink,medium,300,This tool is used to shred cheese or vegetables.,grater,grater,Food reference
+FD_089,Food & Drink,medium-hard,400,This pan has sloped sides and is used for quick frying.,skillet,skillet,Food reference
+FD_090,Food & Drink,hard,500,This appliance keeps food cold.,refrigerator,refrigerator,Food reference
+FD_091,Food & Drink,easy,100,This appliance freezes food.,freezer,freezer,Food reference
+FD_092,Food & Drink,easy-medium,200,This appliance heats food quickly using microwaves.,microwave oven,microwave oven,Food reference
+FD_093,Food & Drink,medium,300,This sweet spread is made from fruit and sugar.,jam,jam,Food reference
+FD_094,Food & Drink,medium-hard,400,This spread is similar to jam but is strained smooth.,jelly,jelly,Food reference
+FD_095,Food & Drink,hard,500,This thick soup is often made from shellfish.,bisque,bisque,Food reference
+FD_096,Food & Drink,easy,100,"This Italian sauce is made from basil, pine nuts, garlic, cheese, and oil.",pesto,pesto,Food reference
+FD_097,Food & Drink,easy-medium,200,This sauce is commonly served with sushi and is salty and dark.,soy sauce,soy sauce,Food reference
+FD_098,Food & Drink,medium,300,This sauce is a Mexican avocado dip.,guacamole,guacamole,Food reference
+FD_099,Food & Drink,medium-hard,400,This bread is flat and often used for wraps.,tortilla,tortilla,Food reference
+FD_100,Food & Drink,hard,500,This Middle Eastern flatbread can open into a pocket.,pita,pita,Food reference
+TI_001,Technology & Inventions,easy,100,This technology term means physical computer parts.,hardware,hardware,Computing reference
+TI_002,Technology & Inventions,easy-medium,200,This technology term means programs and apps.,software,software,Computing reference
+TI_003,Technology & Inventions,medium,300,This technology term means software that manages a computer.,operating system,operating system,Computing reference
+TI_004,Technology & Inventions,medium-hard,400,This technology term means app used to view websites.,browser,browser,Computing reference
+TI_005,Technology & Inventions,hard,500,This technology term means device that directs network traffic.,router,router,Computing reference
+TI_006,Technology & Inventions,easy,100,This technology term means computer providing data or services.,server,server,Computing reference
+TI_007,Technology & Inventions,easy-medium,200,This technology term means using remote servers over the internet.,cloud computing,cloud computing,Computing reference
+TI_008,Technology & Inventions,medium,300,This technology term means organized collection of data.,database,database,Computing reference
+TI_009,Technology & Inventions,medium-hard,400,This technology term means step-by-step procedure for solving a problem.,algorithm,algorithm,Computing reference
+TI_010,Technology & Inventions,hard,500,This technology term means scrambling data to protect it.,encryption,encryption,Computing reference
+TI_011,Technology & Inventions,easy,100,This technology term means secret code used to log in.,password,password,Computing reference
+TI_012,Technology & Inventions,easy-medium,200,This technology term means login using a second proof.,two-factor authentication,two-factor authentication,Computing reference
+TI_013,Technology & Inventions,medium,300,This technology term means harmful software.,malware,malware,Computing reference
+TI_014,Technology & Inventions,medium-hard,400,This technology term means tricking people into giving private information.,phishing,phishing,Computing reference
+TI_015,Technology & Inventions,hard,500,This technology term means security system that filters network traffic.,firewall,firewall,Computing reference
+TI_016,Technology & Inventions,easy,100,This technology term means web address.,URL,URL,Computing reference
+TI_017,Technology & Inventions,easy-medium,200,This technology term means markup language for web pages.,HTML,HTML,Computing reference
+TI_018,Technology & Inventions,medium,300,This technology term means style language for web pages.,CSS,CSS,Computing reference
+TI_019,Technology & Inventions,medium-hard,400,This technology term means programming language common in web browsers.,JavaScript,JavaScript,Computing reference
+TI_020,Technology & Inventions,hard,500,This technology term means interface that lets programs communicate.,API,API,Computing reference
+TI_021,Technology & Inventions,easy,100,This company created the iPhone.,Apple,Apple,Technology company reference
+TI_022,Technology & Inventions,easy-medium,200,This company created Windows.,Microsoft,Microsoft,Technology company reference
+TI_023,Technology & Inventions,medium,300,This company created Android and runs Search.,Google,Google,Technology company reference
+TI_024,Technology & Inventions,medium-hard,400,This company created the PlayStation.,Sony,Sony,Technology company reference
+TI_025,Technology & Inventions,hard,500,This company created the Switch game console.,Nintendo,Nintendo,Technology company reference
+TI_026,Technology & Inventions,easy,100,This company is known for the Model 3 electric car.,Tesla,Tesla,Technology company reference
+TI_027,Technology & Inventions,easy-medium,200,This company created the Kindle e-reader.,Amazon,Amazon,Technology company reference
+TI_028,Technology & Inventions,medium,300,This company is associated with the Galaxy smartphone line.,Samsung,Samsung,Technology company reference
+TI_029,Technology & Inventions,medium-hard,400,This company created the GeForce GPU brand.,Nvidia,Nvidia,Technology company reference
+TI_030,Technology & Inventions,hard,500,This company created the Ryzen CPU brand.,AMD,AMD,Technology company reference
+TI_031,Technology & Inventions,easy,100,This inventor is widely credited with the practical telephone.,Alexander Graham Bell,Alexander Graham Bell,Invention/history of technology reference
+TI_032,Technology & Inventions,easy-medium,200,This inventor improved the practical incandescent light bulb.,Thomas Edison,Thomas Edison,Invention/history of technology reference
+TI_033,Technology & Inventions,medium,300,This inventor is associated with alternating-current electrical systems.,Nikola Tesla,Nikola Tesla,Invention/history of technology reference
+TI_034,Technology & Inventions,medium-hard,400,This pair are credited with the first powered airplane flight.,The Wright brothers,The Wright brothers,Invention/history of technology reference
+TI_035,Technology & Inventions,hard,500,This inventor patented an early mechanical reaper.,Cyrus McCormick,Cyrus McCormick,Invention/history of technology reference
+TI_036,Technology & Inventions,easy,100,This inventor developed a successful safety elevator.,Elisha Otis,Elisha Otis,Invention/history of technology reference
+TI_037,Technology & Inventions,easy-medium,200,This inventor is linked with the cotton gin.,Eli Whitney,Eli Whitney,Invention/history of technology reference
+TI_038,Technology & Inventions,medium,300,This scientist developed a polio vaccine used by injection.,Jonas Salk,Jonas Salk,Invention/history of technology reference
+TI_039,Technology & Inventions,medium-hard,400,This computer scientist is called the father of the World Wide Web.,Tim Berners-Lee,Tim Berners-Lee,Invention/history of technology reference
+TI_040,Technology & Inventions,hard,500,This engineer co-created the C programming language.,Dennis Ritchie,Dennis Ritchie,Invention/history of technology reference
+TI_041,Technology & Inventions,easy,100,CPU stands for this.,Central Processing Unit,Central Processing Unit,Technology acronym reference
+TI_042,Technology & Inventions,easy-medium,200,GPU stands for this.,Graphics Processing Unit,Graphics Processing Unit,Technology acronym reference
+TI_043,Technology & Inventions,medium,300,RAM stands for this.,Random Access Memory,Random Access Memory,Technology acronym reference
+TI_044,Technology & Inventions,medium-hard,400,SSD stands for this.,Solid State Drive,Solid State Drive,Technology acronym reference
+TI_045,Technology & Inventions,hard,500,USB stands for this.,Universal Serial Bus,Universal Serial Bus,Technology acronym reference
+TI_046,Technology & Inventions,easy,100,Wi-Fi commonly refers to this kind of networking.,Wireless networking,Wireless networking,Technology acronym reference
+TI_047,Technology & Inventions,easy-medium,200,GPS stands for this.,Global Positioning System,Global Positioning System,Technology acronym reference
+TI_048,Technology & Inventions,medium,300,AI stands for this.,Artificial Intelligence,Artificial Intelligence,Technology acronym reference
+TI_049,Technology & Inventions,medium-hard,400,VR stands for this.,Virtual Reality,Virtual Reality,Technology acronym reference
+TI_050,Technology & Inventions,hard,500,AR stands for this.,Augmented Reality,Augmented Reality,Technology acronym reference
+TI_051,Technology & Inventions,easy,100,A computer number system using only 0 and 1 is this.,binary,binary,Computing reference
+TI_052,Technology & Inventions,easy-medium,200,A single 0 or 1 in computing is this.,bit,bit,Computing reference
+TI_053,Technology & Inventions,medium,300,Eight bits usually make this.,byte,byte,Computing reference
+TI_054,Technology & Inventions,medium-hard,400,A thousand or 1024 bytes is commonly called this.,kilobyte,kilobyte,Computing reference
+TI_055,Technology & Inventions,hard,500,A million or about 1024 squared bytes is this.,megabyte,megabyte,Computing reference
+TI_056,Technology & Inventions,easy,100,A billion or about 1024 cubed bytes is this.,gigabyte,gigabyte,Computing reference
+TI_057,Technology & Inventions,easy-medium,200,A trillion or about 1024 to the fourth bytes is this.,terabyte,terabyte,Computing reference
+TI_058,Technology & Inventions,medium,300,This port is commonly used for wired internet networking.,Ethernet,Ethernet,Computing reference
+TI_059,Technology & Inventions,medium-hard,400,This wireless technology connects short-range devices like headphones.,Bluetooth,Bluetooth,Computing reference
+TI_060,Technology & Inventions,hard,500,This image code can be scanned by a phone camera to open a link.,QR code,QR code,Computing reference
+TI_061,Technology & Inventions,easy,100,The keyboard shortcut Ctrl+C usually does this.,copy,copy,Computing reference
+TI_062,Technology & Inventions,easy-medium,200,The keyboard shortcut Ctrl+V usually does this.,paste,paste,Computing reference
+TI_063,Technology & Inventions,medium,300,The keyboard shortcut Ctrl+Z usually does this.,undo,undo,Computing reference
+TI_064,Technology & Inventions,medium-hard,400,The keyboard shortcut Ctrl+S usually does this.,save,save,Computing reference
+TI_065,Technology & Inventions,hard,500,The keyboard shortcut Ctrl+P usually does this.,print,print,Computing reference
+TI_066,Technology & Inventions,easy,100,A file ending in .jpg is usually this type of file.,image,image,Computing reference
+TI_067,Technology & Inventions,easy-medium,200,A file ending in .mp3 is usually this type of file.,audio,audio,Computing reference
+TI_068,Technology & Inventions,medium,300,A file ending in .pdf is usually this type of file.,document,document,Computing reference
+TI_069,Technology & Inventions,medium-hard,400,A file ending in .zip is usually this type of file.,compressed archive,compressed archive,Computing reference
+TI_070,Technology & Inventions,hard,500,A file ending in .csv usually stores this.,comma-separated values,comma-separated values,Computing reference
+TI_071,Technology & Inventions,easy,100,This device converts digital data into printed paper.,printer,printer,Technology reference
+TI_072,Technology & Inventions,easy-medium,200,This device captures images into a computer.,scanner,scanner,Technology reference
+TI_073,Technology & Inventions,medium,300,This device projects an image onto a screen.,projector,projector,Technology reference
+TI_074,Technology & Inventions,medium-hard,400,This device lets you point and click.,mouse,mouse,Technology reference
+TI_075,Technology & Inventions,hard,500,This device is used to type.,keyboard,keyboard,Technology reference
+TI_076,Technology & Inventions,easy,100,This device records video.,camera,camera,Technology reference
+TI_077,Technology & Inventions,easy-medium,200,This device provides backup power during outages.,UPS,UPS,Technology reference
+TI_078,Technology & Inventions,medium,300,This device stores files externally and often connects by USB.,external hard drive,external hard drive,Technology reference
+TI_079,Technology & Inventions,medium-hard,400,This device converts sound into electrical or digital signals.,microphone,microphone,Technology reference
+TI_080,Technology & Inventions,hard,500,This device outputs sound.,speaker,speaker,Technology reference
+TI_081,Technology & Inventions,easy,100,This renewable technology converts sunlight to electricity.,solar panel,solar panel,Technology reference
+TI_082,Technology & Inventions,easy-medium,200,This vehicle technology stores energy in batteries instead of gasoline.,electric vehicle,electric vehicle,Technology reference
+TI_083,Technology & Inventions,medium,300,This 3D manufacturing process builds objects layer by layer.,3D printing,3D printing,Technology reference
+TI_084,Technology & Inventions,medium-hard,400,This technology identifies objects using radio-frequency tags.,RFID,RFID,Technology reference
+TI_085,Technology & Inventions,hard,500,This household device controls temperature automatically.,thermostat,thermostat,Technology reference
+TI_086,Technology & Inventions,easy,100,This household machine cleans clothing.,washing machine,washing machine,Technology reference
+TI_087,Technology & Inventions,easy-medium,200,This machine dries clothing.,dryer,dryer,Technology reference
+TI_088,Technology & Inventions,medium,300,This invention keeps food cold at home.,refrigerator,refrigerator,Technology reference
+TI_089,Technology & Inventions,medium-hard,400,This invention uses radio waves to heat food quickly.,microwave oven,microwave oven,Technology reference
+TI_090,Technology & Inventions,hard,500,This invention lets people take moving pictures.,motion picture camera,motion picture camera,Technology reference
+TI_091,Technology & Inventions,easy,100,Review clue: This technology term means physical computer parts.,hardware,hardware,Computing reference
+TI_092,Technology & Inventions,easy-medium,200,Review clue: This technology term means programs and apps.,software,software,Computing reference
+TI_093,Technology & Inventions,medium,300,Review clue: This technology term means software that manages a computer.,operating system,operating system,Computing reference
+TI_094,Technology & Inventions,medium-hard,400,Review clue: This technology term means app used to view websites.,browser,browser,Computing reference
+TI_095,Technology & Inventions,hard,500,Review clue: This technology term means device that directs network traffic.,router,router,Computing reference
+TI_096,Technology & Inventions,easy,100,Review clue: This technology term means computer providing data or services.,server,server,Computing reference
+TI_097,Technology & Inventions,easy-medium,200,Review clue: This technology term means using remote servers over the internet.,cloud computing,cloud computing,Computing reference
+TI_098,Technology & Inventions,medium,300,Review clue: This technology term means organized collection of data.,database,database,Computing reference
+TI_099,Technology & Inventions,medium-hard,400,Review clue: This technology term means step-by-step procedure for solving a problem.,algorithm,algorithm,Computing reference
+TI_100,Technology & Inventions,hard,500,Review clue: This technology term means scrambling data to protect it.,encryption,encryption,Computing reference
+ML_001,Math & Logic,easy,100,The result of addition is called this.,sum,sum,Math reference
+ML_002,Math & Logic,easy-medium,200,The result of subtraction is called this.,difference,difference,Math reference
+ML_003,Math & Logic,medium,300,The result of multiplication is called this.,product,product,Math reference
+ML_004,Math & Logic,medium-hard,400,The result of division is called this.,quotient,quotient,Math reference
+ML_005,Math & Logic,hard,500,The top number of a fraction is this.,numerator,numerator,Math reference
+ML_006,Math & Logic,easy,100,The bottom number of a fraction is this.,denominator,denominator,Math reference
+ML_007,Math & Logic,easy-medium,200,A number divisible by 2 is called this.,even,even,Math reference
+ML_008,Math & Logic,medium,300,A number not divisible by 2 is called this.,odd,odd,Math reference
+ML_009,Math & Logic,medium-hard,400,A number with exactly two positive factors is this.,prime number,prime number,Math reference
+ML_010,Math & Logic,hard,500,A number with more than two positive factors is this.,composite number,composite number,Math reference
+ML_011,Math & Logic,easy,100,The perimeter of a square with side 5 is this.,20,20,Math reference
+ML_012,Math & Logic,easy-medium,200,The area of a square with side 6 is this.,36,36,Math reference
+ML_013,Math & Logic,medium,300,The area of a rectangle 4 by 9 is this.,36,36,Math reference
+ML_014,Math & Logic,medium-hard,400,The perimeter of a rectangle 3 by 8 is this.,22,22,Math reference
+ML_015,Math & Logic,hard,500,The area of a triangle with base 10 and height 4 is this.,20,20,Math reference
+ML_016,Math & Logic,easy,100,The circumference of a circle is diameter times this constant.,pi,pi,Math reference
+ML_017,Math & Logic,easy-medium,200,The radius is this fraction of the diameter.,one half,one half,Math reference
+ML_018,Math & Logic,medium,300,A right angle has this many degrees.,90,90,Math reference
+ML_019,Math & Logic,medium-hard,400,A straight angle has this many degrees.,180,180,Math reference
+ML_020,Math & Logic,hard,500,A full circle has this many degrees.,360,360,Math reference
+ML_021,Math & Logic,easy,100,2 squared equals this.,4,4,Arithmetic reference
+ML_022,Math & Logic,easy-medium,200,3 squared equals this.,9,9,Arithmetic reference
+ML_023,Math & Logic,medium,300,4 squared equals this.,16,16,Arithmetic reference
+ML_024,Math & Logic,medium-hard,400,5 squared equals this.,25,25,Arithmetic reference
+ML_025,Math & Logic,hard,500,6 squared equals this.,36,36,Arithmetic reference
+ML_026,Math & Logic,easy,100,7 squared equals this.,49,49,Arithmetic reference
+ML_027,Math & Logic,easy-medium,200,8 squared equals this.,64,64,Arithmetic reference
+ML_028,Math & Logic,medium,300,9 squared equals this.,81,81,Arithmetic reference
+ML_029,Math & Logic,medium-hard,400,10 squared equals this.,100,100,Arithmetic reference
+ML_030,Math & Logic,hard,500,11 squared equals this.,121,121,Arithmetic reference
+ML_031,Math & Logic,easy,100,12 squared equals this.,144,144,Arithmetic reference
+ML_032,Math & Logic,easy-medium,200,13 squared equals this.,169,169,Arithmetic reference
+ML_033,Math & Logic,medium,300,14 squared equals this.,196,196,Arithmetic reference
+ML_034,Math & Logic,medium-hard,400,15 squared equals this.,225,225,Arithmetic reference
+ML_035,Math & Logic,hard,500,2 cubed equals this.,8,8,Arithmetic reference
+ML_036,Math & Logic,easy,100,3 cubed equals this.,27,27,Arithmetic reference
+ML_037,Math & Logic,easy-medium,200,4 cubed equals this.,64,64,Arithmetic reference
+ML_038,Math & Logic,medium,300,5 cubed equals this.,125,125,Arithmetic reference
+ML_039,Math & Logic,medium-hard,400,6 cubed equals this.,216,216,Arithmetic reference
+ML_040,Math & Logic,hard,500,7 cubed equals this.,343,343,Arithmetic reference
+ML_041,Math & Logic,easy,100,8 cubed equals this.,512,512,Arithmetic reference
+ML_042,Math & Logic,easy-medium,200,9 cubed equals this.,729,729,Arithmetic reference
+ML_043,Math & Logic,medium,300,10 cubed equals this.,1000,1000,Arithmetic reference
+ML_044,Math & Logic,medium-hard,400,"The next number in the pattern 2, 4, 6, 8 is this.",10,10,Logic/pattern reference
+ML_045,Math & Logic,hard,500,"The next number in the pattern 5, 10, 15, 20 is this.",25,25,Logic/pattern reference
+ML_046,Math & Logic,easy,100,"The next number in the pattern 1, 2, 4, 8 is this.",16,16,Logic/pattern reference
+ML_047,Math & Logic,easy-medium,200,"The next number in the pattern 3, 6, 12, 24 is this.",48,48,Logic/pattern reference
+ML_048,Math & Logic,medium,300,"The next number in the pattern 1, 4, 9, 16 is this.",25,25,Logic/pattern reference
+ML_049,Math & Logic,medium-hard,400,"The next number in the pattern 10, 9, 7, 4 is this.",0,0,Logic/pattern reference
+ML_050,Math & Logic,hard,500,"The next number in the pattern 100, 50, 25 is this.",12.5,12.5,Logic/pattern reference
+ML_051,Math & Logic,easy,100,"The next number in the pattern 1, 1, 2, 3, 5 is this.",8,8,Logic/pattern reference
+ML_052,Math & Logic,easy-medium,200,"The next number in the pattern 2, 3, 5, 7 is this.",11,11,Logic/pattern reference
+ML_053,Math & Logic,medium,300,"The next number in the pattern 64, 32, 16, 8 is this.",4,4,Logic/pattern reference
+ML_054,Math & Logic,medium-hard,400,This shape has three sides.,triangle,triangle,Geometry reference
+ML_055,Math & Logic,hard,500,This shape has four equal sides and four right angles.,square,square,Geometry reference
+ML_056,Math & Logic,easy,100,This shape has four sides with opposite sides parallel.,parallelogram,parallelogram,Geometry reference
+ML_057,Math & Logic,easy-medium,200,This shape has exactly one pair of parallel sides in common North American usage.,trapezoid,trapezoid,Geometry reference
+ML_058,Math & Logic,medium,300,This shape has five sides.,pentagon,pentagon,Geometry reference
+ML_059,Math & Logic,medium-hard,400,This shape has six sides.,hexagon,hexagon,Geometry reference
+ML_060,Math & Logic,hard,500,This shape has eight sides.,octagon,octagon,Geometry reference
+ML_061,Math & Logic,easy,100,A three-dimensional shape with six square faces is this.,cube,cube,Geometry reference
+ML_062,Math & Logic,easy-medium,200,A three-dimensional shape shaped like a ball is this.,sphere,sphere,Geometry reference
+ML_063,Math & Logic,medium,300,A three-dimensional shape with circular base and point is this.,cone,cone,Geometry reference
+ML_064,Math & Logic,medium-hard,400,10 percent of 200 is this.,20,20,Arithmetic reference
+ML_065,Math & Logic,hard,500,25 percent of 80 is this.,20,20,Arithmetic reference
+ML_066,Math & Logic,easy,100,50 percent of 90 is this.,45,45,Arithmetic reference
+ML_067,Math & Logic,easy-medium,200,75 percent of 40 is this.,30,30,Arithmetic reference
+ML_068,Math & Logic,medium,300,20 percent of 60 is this.,12,12,Arithmetic reference
+ML_069,Math & Logic,medium-hard,400,One quarter written as a decimal is this.,0.25,0.25,Arithmetic reference
+ML_070,Math & Logic,hard,500,One half written as a decimal is this.,0.5,0.5,Arithmetic reference
+ML_071,Math & Logic,easy,100,Three quarters written as a decimal is this.,0.75,0.75,Arithmetic reference
+ML_072,Math & Logic,easy-medium,200,One tenth written as a decimal is this.,0.1,0.1,Arithmetic reference
+ML_073,Math & Logic,medium,300,One fifth written as a decimal is this.,0.2,0.2,Arithmetic reference
+ML_074,Math & Logic,medium-hard,400,"In algebra, a letter standing for an unknown number is called this.",variable,variable,Algebra reference
+ML_075,Math & Logic,hard,500,An equation states that two expressions are this.,equal,equal,Algebra reference
+ML_076,Math & Logic,easy,100,The answer to an equation is often called this.,solution,solution,Algebra reference
+ML_077,Math & Logic,easy-medium,200,The number multiplied by a variable is this.,coefficient,coefficient,Algebra reference
+ML_078,Math & Logic,medium,300,"In y = mx + b, m represents this.",slope,slope,Algebra reference
+ML_079,Math & Logic,medium-hard,400,"In y = mx + b, b represents this.",y-intercept,y-intercept,Algebra reference
+ML_080,Math & Logic,hard,500,The x-axis is usually this direction on a graph.,horizontal,horizontal,Algebra reference
+ML_081,Math & Logic,easy,100,The y-axis is usually this direction on a graph.,vertical,vertical,Algebra reference
+ML_082,Math & Logic,easy-medium,200,"The point (0,0) is called this.",origin,origin,Algebra reference
+ML_083,Math & Logic,medium,300,A graph shaped like a U from a quadratic equation is this.,parabola,parabola,Algebra reference
+ML_084,Math & Logic,medium-hard,400,A logical statement that is always true is called this.,tautology,tautology,Math/statistics reference
+ML_085,Math & Logic,hard,500,A statement that cannot be both true and false at the same time follows this law.,law of noncontradiction,law of noncontradiction,Math/statistics reference
+ML_086,Math & Logic,easy,100,The word AND in logic usually means both statements must be this.,true,true,Math/statistics reference
+ML_087,Math & Logic,easy-medium,200,The word OR in inclusive logic means at least one statement is this.,true,true,Math/statistics reference
+ML_088,Math & Logic,medium,300,A conclusion reached from evidence and reasoning is this.,inference,inference,Math/statistics reference
+ML_089,Math & Logic,medium-hard,400,A statement accepted as true without proof in a system is this.,axiom,axiom,Math/statistics reference
+ML_090,Math & Logic,hard,500,A proven mathematical statement is this.,theorem,theorem,Math/statistics reference
+ML_091,Math & Logic,easy,100,A guess based on patterns but not yet proven is this.,conjecture,conjecture,Math/statistics reference
+ML_092,Math & Logic,easy-medium,200,A counterexample is used to show a statement is this.,false,false,Math/statistics reference
+ML_093,Math & Logic,medium,300,A diagram using overlapping circles to show sets is this.,Venn diagram,Venn diagram,Math/statistics reference
+ML_094,Math & Logic,medium-hard,400,The chance of an event happening is called this.,probability,probability,Math/statistics reference
+ML_095,Math & Logic,hard,500,An outcome that cannot happen has probability this.,0,0,Math/statistics reference
+ML_096,Math & Logic,easy,100,An outcome that is certain has probability this.,1,1,Math/statistics reference
+ML_097,Math & Logic,easy-medium,200,The average found by adding values and dividing by count is this.,mean,mean,Math/statistics reference
+ML_098,Math & Logic,medium,300,The middle value in an ordered list is this.,median,median,Math/statistics reference
+ML_099,Math & Logic,medium-hard,400,The most frequent value is this.,mode,mode,Math/statistics reference
+ML_100,Math & Logic,hard,500,The difference between the largest and smallest values is this.,range,range,Math/statistics reference
+BM_001,Business & Money,easy,100,This business or money term means money a business brings in from sales.,revenue,revenue,Finance/accounting reference
+BM_002,Business & Money,easy-medium,200,This business or money term means money left after expenses.,profit,profit,Finance/accounting reference
+BM_003,Business & Money,medium,300,This business or money term means money spent to operate.,expense,expense,Finance/accounting reference
+BM_004,Business & Money,medium-hard,400,This business or money term means something valuable owned.,asset,asset,Finance/accounting reference
+BM_005,Business & Money,hard,500,This business or money term means a debt or obligation.,liability,liability,Finance/accounting reference
+BM_006,Business & Money,easy,100,This business or money term means ownership value after liabilities.,equity,equity,Finance/accounting reference
+BM_007,Business & Money,easy-medium,200,This business or money term means bill requesting payment.,invoice,invoice,Finance/accounting reference
+BM_008,Business & Money,medium,300,This business or money term means proof of payment.,receipt,receipt,Finance/accounting reference
+BM_009,Business & Money,medium-hard,400,This business or money term means plan for income and spending.,budget,budget,Finance/accounting reference
+BM_010,Business & Money,hard,500,This business or money term means movement of money in and out.,cash flow,cash flow,Finance/accounting reference
+BM_011,Business & Money,easy,100,This business or money term means cost of borrowing money or return on savings.,interest,interest,Finance/accounting reference
+BM_012,Business & Money,easy-medium,200,This business or money term means original amount borrowed or invested.,principal,principal,Finance/accounting reference
+BM_013,Business & Money,medium,300,This business or money term means company profit paid to shareholders.,dividend,dividend,Finance/accounting reference
+BM_014,Business & Money,medium-hard,400,This business or money term means ownership share in a company.,stock,stock,Finance/accounting reference
+BM_015,Business & Money,hard,500,This business or money term means loan made to an issuer by investors.,bond,bond,Finance/accounting reference
+BM_016,Business & Money,easy,100,This business or money term means general rise in prices.,inflation,inflation,Finance/accounting reference
+BM_017,Business & Money,easy-medium,200,This business or money term means general fall in prices.,deflation,deflation,Finance/accounting reference
+BM_018,Business & Money,medium,300,This business or money term means tax on imported goods.,tariff,tariff,Finance/accounting reference
+BM_019,Business & Money,medium-hard,400,This business or money term means mandatory payment to government.,tax,tax,Finance/accounting reference
+BM_020,Business & Money,hard,500,This business or money term means formal check of records.,audit,audit,Finance/accounting reference
+BM_021,Business & Money,easy,100,A person who starts a business is called this.,entrepreneur,entrepreneur,Business reference
+BM_022,Business & Money,easy-medium,200,A new business seeking rapid growth is often called this.,startup,startup,Business reference
+BM_023,Business & Money,medium,300,The document outlining a company's goals and strategy is this.,business plan,business plan,Business reference
+BM_024,Business & Money,medium-hard,400,The short persuasive speech about a business idea is this.,elevator pitch,elevator pitch,Business reference
+BM_025,Business & Money,hard,500,The group of customers a business aims to serve is this.,target market,target market,Business reference
+BM_026,Business & Money,easy,100,A company's recognizable name or image is its this.,brand,brand,Business reference
+BM_027,Business & Money,easy-medium,200,The public face phrase associated with a brand is often called this.,tagline,tagline,Business reference
+BM_028,Business & Money,medium,300,"A simple early product used to test an idea is an MVP, meaning this.",Minimum Viable Product,Minimum Viable Product,Business reference
+BM_029,Business & Money,medium-hard,400,The process of finding potential customers is called this.,lead generation,lead generation,Business reference
+BM_030,Business & Money,hard,500,A likely customer or opportunity is called this.,lead,lead,Business reference
+BM_031,Business & Money,easy,100,ROI stands for this.,Return on Investment,Return on Investment,Business acronym reference
+BM_032,Business & Money,easy-medium,200,CEO stands for this.,Chief Executive Officer,Chief Executive Officer,Business acronym reference
+BM_033,Business & Money,medium,300,CFO stands for this.,Chief Financial Officer,Chief Financial Officer,Business acronym reference
+BM_034,Business & Money,medium-hard,400,COO stands for this.,Chief Operating Officer,Chief Operating Officer,Business acronym reference
+BM_035,Business & Money,hard,500,HR stands for this.,Human Resources,Human Resources,Business acronym reference
+BM_036,Business & Money,easy,100,B2B means business selling to this type of customer.,businesses,businesses,Business acronym reference
+BM_037,Business & Money,easy-medium,200,B2C means business selling to this type of customer.,consumers,consumers,Business acronym reference
+BM_038,Business & Money,medium,300,CRM stands for this.,Customer Relationship Management,Customer Relationship Management,Business acronym reference
+BM_039,Business & Money,medium-hard,400,KPI stands for this.,Key Performance Indicator,Key Performance Indicator,Business acronym reference
+BM_040,Business & Money,hard,500,PO stands for this in purchasing.,Purchase Order,Purchase Order,Business acronym reference
+BM_041,Business & Money,easy,100,This financial statement shows revenue and expenses over a period.,income statement,income statement,Accounting reference
+BM_042,Business & Money,easy-medium,200,"This financial statement shows assets, liabilities, and equity at a point in time.",balance sheet,balance sheet,Accounting reference
+BM_043,Business & Money,medium,300,This statement tracks money moving in and out of a business.,cash flow statement,cash flow statement,Accounting reference
+BM_044,Business & Money,medium-hard,400,The point where revenue equals total costs is called this.,break-even point,break-even point,Accounting reference
+BM_045,Business & Money,hard,500,The extra revenue after cost of goods sold is this margin.,gross margin,gross margin,Accounting reference
+BM_046,Business & Money,easy,100,Money spent to acquire or improve long-term assets is this.,capital expenditure,capital expenditure,Accounting reference
+BM_047,Business & Money,easy-medium,200,Day-to-day spending is often called this.,operating expense,operating expense,Accounting reference
+BM_048,Business & Money,medium,300,Goods a business has for sale are called this.,inventory,inventory,Accounting reference
+BM_049,Business & Money,medium-hard,400,Money customers owe a company is this.,accounts receivable,accounts receivable,Accounting reference
+BM_050,Business & Money,hard,500,Money a company owes suppliers is this.,accounts payable,accounts payable,Accounting reference
+BM_051,Business & Money,easy,100,The currency of Canada is this.,Canadian dollar,Canadian dollar,Currency reference
+BM_052,Business & Money,easy-medium,200,The currency of the United States is this.,US dollar,US dollar,Currency reference
+BM_053,Business & Money,medium,300,The currency used by many European Union countries is this.,euro,euro,Currency reference
+BM_054,Business & Money,medium-hard,400,The currency of Japan is this.,yen,yen,Currency reference
+BM_055,Business & Money,hard,500,The currency of the United Kingdom is this.,pound sterling,pound sterling,Currency reference
+BM_056,Business & Money,easy,100,The currency of China is this.,yuan,yuan,Currency reference
+BM_057,Business & Money,easy-medium,200,The currency of Mexico is this.,peso,peso,Currency reference
+BM_058,Business & Money,medium,300,The currency of India is this.,rupee,rupee,Currency reference
+BM_059,Business & Money,medium-hard,400,The currency of Switzerland is this.,Swiss franc,Swiss franc,Currency reference
+BM_060,Business & Money,hard,500,The currency of South Korea is this.,won,won,Currency reference
+BM_061,Business & Money,easy,100,A market with rising prices is often called this animal.,bull market,bull market,Personal finance reference
+BM_062,Business & Money,easy-medium,200,A market with falling prices is often called this animal.,bear market,bear market,Personal finance reference
+BM_063,Business & Money,medium,300,Spreading investments across different assets is called this.,diversification,diversification,Personal finance reference
+BM_064,Business & Money,medium-hard,400,A fund tracking an index is often called this.,index fund,index fund,Personal finance reference
+BM_065,Business & Money,hard,500,ETF stands for this.,Exchange-Traded Fund,Exchange-Traded Fund,Personal finance reference
+BM_066,Business & Money,easy,100,A mortgage is a loan usually used to buy this.,real estate,real estate,Personal finance reference
+BM_067,Business & Money,easy-medium,200,Insurance payment made regularly is called this.,premium,premium,Personal finance reference
+BM_068,Business & Money,medium,300,The amount paid before insurance coverage starts is this.,deductible,deductible,Personal finance reference
+BM_069,Business & Money,medium-hard,400,A person who rents property from a landlord is this.,tenant,tenant,Personal finance reference
+BM_070,Business & Money,hard,500,A person or company that owns rented property is this.,landlord,landlord,Personal finance reference
+BM_071,Business & Money,easy,100,A written agreement enforceable by law is this.,contract,contract,Business/legal reference
+BM_072,Business & Money,easy-medium,200,An exclusive legal right to an invention is this.,patent,patent,Business/legal reference
+BM_073,Business & Money,medium,300,A legal protection for brand names and logos is this.,trademark,trademark,Business/legal reference
+BM_074,Business & Money,medium-hard,400,A legal protection for creative works is this.,copyright,copyright,Business/legal reference
+BM_075,Business & Money,hard,500,A company owned by shareholders is this.,corporation,corporation,Business/legal reference
+BM_076,Business & Money,easy,100,A business owned by one person is this.,sole proprietorship,sole proprietorship,Business/legal reference
+BM_077,Business & Money,easy-medium,200,A business owned by partners is this.,partnership,partnership,Business/legal reference
+BM_078,Business & Money,medium,300,A company's board mainly represents this group.,shareholders,shareholders,Business/legal reference
+BM_079,Business & Money,medium-hard,400,A written promise to keep information secret is this.,non-disclosure agreement,non-disclosure agreement,Business/legal reference
+BM_080,Business & Money,hard,500,A business selling the right to operate under its brand is this.,franchise,franchise,Business/legal reference
+BM_081,Business & Money,easy,100,The process of promoting products is called this.,marketing,marketing,Business operations reference
+BM_082,Business & Money,easy-medium,200,Selling goods directly through a website is this.,e-commerce,e-commerce,Business operations reference
+BM_083,Business & Money,medium,300,A recurring payment business model is this.,subscription,subscription,Business operations reference
+BM_084,Business & Money,medium-hard,400,The cost to acquire one customer is often abbreviated this.,CAC,CAC,Business operations reference
+BM_085,Business & Money,hard,500,Lifetime value of a customer is often abbreviated this.,LTV,LTV,Business operations reference
+BM_086,Business & Money,easy,100,A visual chart of project tasks in columns is often called this.,Kanban board,Kanban board,Business operations reference
+BM_087,Business & Money,easy-medium,200,A person who manages customer sales relationships is often in this department.,sales,sales,Business operations reference
+BM_088,Business & Money,medium,300,A business that sells goods in small quantities to the public is this.,retailer,retailer,Business operations reference
+BM_089,Business & Money,medium-hard,400,A business that sells in large quantities to stores is this.,wholesaler,wholesaler,Business operations reference
+BM_090,Business & Money,hard,500,The path from raw materials to customer delivery is this.,supply chain,supply chain,Business operations reference
+BM_091,Business & Money,easy,100,Review clue: This business or money term means money a business brings in from sales.,revenue,revenue,Finance/accounting reference
+BM_092,Business & Money,easy-medium,200,Review clue: This business or money term means money left after expenses.,profit,profit,Finance/accounting reference
+BM_093,Business & Money,medium,300,Review clue: This business or money term means money spent to operate.,expense,expense,Finance/accounting reference
+BM_094,Business & Money,medium-hard,400,Review clue: This business or money term means something valuable owned.,asset,asset,Finance/accounting reference
+BM_095,Business & Money,hard,500,Review clue: This business or money term means a debt or obligation.,liability,liability,Finance/accounting reference
+BM_096,Business & Money,easy,100,Review clue: This business or money term means ownership value after liabilities.,equity,equity,Finance/accounting reference
+BM_097,Business & Money,easy-medium,200,Review clue: This business or money term means bill requesting payment.,invoice,invoice,Finance/accounting reference
+BM_098,Business & Money,medium,300,Review clue: This business or money term means proof of payment.,receipt,receipt,Finance/accounting reference
+BM_099,Business & Money,medium-hard,400,Review clue: This business or money term means plan for income and spending.,budget,budget,Finance/accounting reference
+BM_100,Business & Money,hard,500,Review clue: This business or money term means movement of money in and out.,cash flow,cash flow,Finance/accounting reference
+HT_001,Holidays & Traditions,easy,100,This holiday or observance is a January 1 celebration.,New Year's Day,New Year's Day,Holiday reference
+HT_002,Holidays & Traditions,easy-medium,200,This holiday or observance is a February holiday associated with hearts.,Valentine's Day,Valentine's Day,Holiday reference
+HT_003,Holidays & Traditions,medium,300,This holiday or observance is a March holiday associated with Ireland and shamrocks.,St. Patrick's Day,St. Patrick's Day,Holiday reference
+HT_004,Holidays & Traditions,medium-hard,400,This holiday or observance is a day for harmless pranks.,April Fools' Day,April Fools' Day,Holiday reference
+HT_005,Holidays & Traditions,hard,500,This holiday or observance is a April day focused on environmental protection.,Earth Day,Earth Day,Holiday reference
+HT_006,Holidays & Traditions,easy,100,This holiday or observance is a October holiday with costumes and trick-or-treating.,Halloween,Halloween,Holiday reference
+HT_007,Holidays & Traditions,easy-medium,200,This holiday or observance is a November 11 memorial day in Canada and other Commonwealth countries.,Remembrance Day,Remembrance Day,Holiday reference
+HT_008,Holidays & Traditions,medium,300,This holiday or observance is a November 11 U.S. holiday honoring veterans.,Veterans Day,Veterans Day,Holiday reference
+HT_009,Holidays & Traditions,medium-hard,400,This holiday or observance is a harvest-themed holiday of gratitude.,Thanksgiving,Thanksgiving,Holiday reference
+HT_010,Holidays & Traditions,hard,500,This holiday or observance is a December 25 Christian and cultural holiday.,Christmas,Christmas,Holiday reference
+HT_011,Holidays & Traditions,easy,100,This holiday or observance is a December 26 holiday in Canada and the UK.,Boxing Day,Boxing Day,Holiday reference
+HT_012,Holidays & Traditions,easy-medium,200,This holiday or observance is a Jewish festival of lights.,Hanukkah,Hanukkah,Holiday reference
+HT_013,Holidays & Traditions,medium,300,This holiday or observance is a Hindu festival of lights.,Diwali,Diwali,Holiday reference
+HT_014,Holidays & Traditions,medium-hard,400,This holiday or observance is a Muslim holiday ending Ramadan.,Eid al-Fitr,Eid al-Fitr,Holiday reference
+HT_015,Holidays & Traditions,hard,500,This holiday or observance is a Muslim holiday of sacrifice.,Eid al-Adha,Eid al-Adha,Holiday reference
+HT_016,Holidays & Traditions,easy,100,This holiday or observance is a new year based on lunisolar calendars.,Lunar New Year,Lunar New Year,Holiday reference
+HT_017,Holidays & Traditions,easy-medium,200,This holiday or observance is a July 1 Canadian national day.,Canada Day,Canada Day,Holiday reference
+HT_018,Holidays & Traditions,medium,300,This holiday or observance is a July 4 U.S. national day.,Independence Day,Independence Day,Holiday reference
+HT_019,Holidays & Traditions,medium-hard,400,This holiday or observance is a July 14 French national day.,Bastille Day,Bastille Day,Holiday reference
+HT_020,Holidays & Traditions,hard,500,This holiday or observance is a May 5 commemoration of Mexican victory at Puebla.,Cinco de Mayo,Cinco de Mayo,Holiday reference
+HT_021,Holidays & Traditions,easy,100,The plant often hung for Christmas kisses is this.,mistletoe,mistletoe,Cultural tradition reference
+HT_022,Holidays & Traditions,easy-medium,200,The red-nosed reindeer in a famous Christmas song is this.,Rudolph,Rudolph,Cultural tradition reference
+HT_023,Holidays & Traditions,medium,300,The candle holder used during Hanukkah is this.,menorah,menorah,Cultural tradition reference
+HT_024,Holidays & Traditions,medium-hard,400,The spinning top used in Hanukkah games is this.,dreidel,dreidel,Cultural tradition reference
+HT_025,Holidays & Traditions,hard,500,The decorated eggs and bunny are associated with this holiday.,Easter,Easter,Cultural tradition reference
+HT_026,Holidays & Traditions,easy,100,The carved pumpkin lantern is commonly called this.,jack-o-lantern,jack-o-lantern,Cultural tradition reference
+HT_027,Holidays & Traditions,easy-medium,200,The Mexican holiday honoring deceased loved ones is this.,Day of the Dead,Day of the Dead,Cultural tradition reference
+HT_028,Holidays & Traditions,medium,300,The Chinese zodiac animal cycle contains this many animals.,12,12,Cultural tradition reference
+HT_029,Holidays & Traditions,medium-hard,400,The dragon dance is often associated with this holiday period.,Lunar New Year,Lunar New Year,Cultural tradition reference
+HT_030,Holidays & Traditions,hard,500,Red envelopes with money are often given during this celebration.,Lunar New Year,Lunar New Year,Cultural tradition reference
+HT_031,Holidays & Traditions,easy,100,This celebration is strongly associated with Canada.,Canada Day,Canada Day,Cultural reference
+HT_032,Holidays & Traditions,easy-medium,200,This celebration is strongly associated with United States.,Independence Day,Independence Day,Cultural reference
+HT_033,Holidays & Traditions,medium,300,This celebration is strongly associated with France.,Bastille Day,Bastille Day,Cultural reference
+HT_034,Holidays & Traditions,medium-hard,400,This celebration is strongly associated with Mexico.,Cinco de Mayo,Cinco de Mayo,Cultural reference
+HT_035,Holidays & Traditions,hard,500,This celebration is strongly associated with India.,Republic Day,Republic Day,Cultural reference
+HT_036,Holidays & Traditions,easy,100,This celebration is strongly associated with Australia.,Australia Day,Australia Day,Cultural reference
+HT_037,Holidays & Traditions,easy-medium,200,This celebration is strongly associated with Ireland.,St. Patrick's Day,St. Patrick's Day,Cultural reference
+HT_038,Holidays & Traditions,medium,300,This celebration is strongly associated with Brazil.,Carnival,Carnival,Cultural reference
+HT_039,Holidays & Traditions,medium-hard,400,This celebration is strongly associated with Germany.,Oktoberfest,Oktoberfest,Cultural reference
+HT_040,Holidays & Traditions,hard,500,This celebration is strongly associated with Japan.,Golden Week,Golden Week,Cultural reference
+HT_041,Holidays & Traditions,easy,100,A large public procession for a holiday is called this.,parade,parade,Traditions reference
+HT_042,Holidays & Traditions,easy-medium,200,A meal held outdoors with packed food is this.,picnic,picnic,Traditions reference
+HT_043,Holidays & Traditions,medium,300,A formal meal with many guests is this.,banquet,banquet,Traditions reference
+HT_044,Holidays & Traditions,medium-hard,400,A festive outdoor market or amusement event is this.,fair,fair,Traditions reference
+HT_045,Holidays & Traditions,hard,500,A period of celebration before Lent in some countries is this.,Carnival,Carnival,Traditions reference
+HT_046,Holidays & Traditions,easy,100,A Jewish coming-of-age ceremony for boys is this.,bar mitzvah,bar mitzvah,Traditions reference
+HT_047,Holidays & Traditions,easy-medium,200,A Jewish coming-of-age ceremony for girls is this.,bat mitzvah,bat mitzvah,Traditions reference
+HT_048,Holidays & Traditions,medium,300,A Christian ceremony using water as a sign of faith is this.,baptism,baptism,Traditions reference
+HT_049,Holidays & Traditions,medium-hard,400,A formal dance for high school students is this.,prom,prom,Traditions reference
+HT_050,Holidays & Traditions,hard,500,A celebration before a wedding is often called this.,shower,shower,Traditions reference
+HT_051,Holidays & Traditions,easy,100,This month is associated with New Year's Day.,January,January,Calendar reference
+HT_052,Holidays & Traditions,easy-medium,200,This month is associated with Valentine's Day.,February,February,Calendar reference
+HT_053,Holidays & Traditions,medium,300,This month is associated with St. Patrick's Day.,March,March,Calendar reference
+HT_054,Holidays & Traditions,medium-hard,400,This month is associated with Earth Day.,April,April,Calendar reference
+HT_055,Holidays & Traditions,hard,500,This month is associated with Mother's Day in many countries.,May,May,Calendar reference
+HT_056,Holidays & Traditions,easy,100,This month is associated with Father's Day in many countries.,June,June,Calendar reference
+HT_057,Holidays & Traditions,easy-medium,200,This month is associated with Canada Day and U.S. Independence Day.,July,July,Calendar reference
+HT_058,Holidays & Traditions,medium,300,This month is associated with many summer festivals.,August,August,Calendar reference
+HT_059,Holidays & Traditions,medium-hard,400,This month is associated with Labor Day in Canada and the U.S..,September,September,Calendar reference
+HT_060,Holidays & Traditions,hard,500,This month is associated with Halloween.,October,October,Calendar reference
+HT_061,Holidays & Traditions,easy,100,This month is associated with Remembrance Day and Thanksgiving in the U.S..,November,November,Calendar reference
+HT_062,Holidays & Traditions,easy-medium,200,This month is associated with Christmas and Hanukkah often occur around this month.,December,December,Calendar reference
+HT_063,Holidays & Traditions,medium,300,The first day of the week in many North American calendars is this.,Sunday,Sunday,Calendar reference
+HT_064,Holidays & Traditions,medium-hard,400,The day after Friday is this.,Saturday,Saturday,Calendar reference
+HT_065,Holidays & Traditions,hard,500,A year with 366 days is called this.,leap year,leap year,Calendar reference
+HT_066,Holidays & Traditions,easy,100,February has this many days in a non-leap year.,28,28,Calendar reference
+HT_067,Holidays & Traditions,easy-medium,200,A decade contains this many years.,10,10,Calendar reference
+HT_068,Holidays & Traditions,medium,300,A century contains this many years.,100,100,Calendar reference
+HT_069,Holidays & Traditions,medium-hard,400,A millennium contains this many years.,1000,1000,Calendar reference
+HT_070,Holidays & Traditions,hard,500,The season after winter is this.,spring,spring,Calendar reference
+HT_071,Holidays & Traditions,easy,100,The season after spring is this.,summer,summer,Calendar reference
+HT_072,Holidays & Traditions,easy-medium,200,The season after summer is this.,fall,fall,Calendar reference
+HT_073,Holidays & Traditions,medium,300,"In many cultures, a birthday cake often has these on top.",candles,candles,Traditions reference
+HT_074,Holidays & Traditions,medium-hard,400,A wedding ceremony often ends with this phrase: you may kiss the what.,bride,bride,Traditions reference
+HT_075,Holidays & Traditions,hard,500,A graduation ceremony often includes receiving this document.,diploma,diploma,Traditions reference
+HT_076,Holidays & Traditions,easy,100,The square academic hat worn at graduation is this.,mortarboard,mortarboard,Traditions reference
+HT_077,Holidays & Traditions,easy-medium,200,A housewarming celebrates moving into a new this.,home,home,Traditions reference
+HT_078,Holidays & Traditions,medium,300,A baby shower celebrates an expected this.,baby,baby,Traditions reference
+HT_079,Holidays & Traditions,medium-hard,400,An anniversary celebrates the passage of this.,years,years,Traditions reference
+HT_080,Holidays & Traditions,hard,500,A quinceanera celebrates this birthday for many Latin American girls.,15th birthday,15th birthday,Traditions reference
+HT_081,Holidays & Traditions,easy,100,A sweet sixteen celebrates this birthday.,16th birthday,16th birthday,Traditions reference
+HT_082,Holidays & Traditions,easy-medium,200,A golden anniversary usually means this many years.,50,50,Traditions reference
+HT_083,Holidays & Traditions,medium,300,The Olympic Games opening often includes this symbolic flame.,Olympic flame,Olympic flame,Holiday/religion reference
+HT_084,Holidays & Traditions,medium-hard,400,The New Year countdown often ends with this number.,zero,zero,Holiday/religion reference
+HT_085,Holidays & Traditions,hard,500,A resolution is often made at this holiday.,New Year's Day,New Year's Day,Holiday/religion reference
+HT_086,Holidays & Traditions,easy,100,Trick-or-treating is associated with this holiday.,Halloween,Halloween,Holiday/religion reference
+HT_087,Holidays & Traditions,easy-medium,200,Giving thanks is central to this holiday.,Thanksgiving,Thanksgiving,Holiday/religion reference
+HT_088,Holidays & Traditions,medium,300,"The phrase ""lest we forget"" is associated with this observance.",Remembrance Day,Remembrance Day,Holiday/religion reference
+HT_089,Holidays & Traditions,medium-hard,400,A menorah has this many branches on the Hanukkah version.,nine,nine,Holiday/religion reference
+HT_090,Holidays & Traditions,hard,500,Ramadan is a month of fasting in this religion.,Islam,Islam,Holiday/religion reference
+HT_091,Holidays & Traditions,easy,100,Lent is a season before Easter in this religion.,Christianity,Christianity,Holiday/religion reference
+HT_092,Holidays & Traditions,easy-medium,200,Passover commemorates the Exodus in this religion.,Judaism,Judaism,Holiday/religion reference
+HT_093,Holidays & Traditions,medium,300,Review clue: This holiday or observance is a January 1 celebration.,New Year's Day,New Year's Day,Holiday reference
+HT_094,Holidays & Traditions,medium-hard,400,Review clue: This holiday or observance is a February holiday associated with hearts.,Valentine's Day,Valentine's Day,Holiday reference
+HT_095,Holidays & Traditions,hard,500,Review clue: This holiday or observance is a March holiday associated with Ireland and shamrocks.,St. Patrick's Day,St. Patrick's Day,Holiday reference
+HT_096,Holidays & Traditions,easy,100,Review clue: This holiday or observance is a day for harmless pranks.,April Fools' Day,April Fools' Day,Holiday reference
+HT_097,Holidays & Traditions,easy-medium,200,Review clue: This holiday or observance is a April day focused on environmental protection.,Earth Day,Earth Day,Holiday reference
+HT_098,Holidays & Traditions,medium,300,Review clue: This holiday or observance is a October holiday with costumes and trick-or-treating.,Halloween,Halloween,Holiday reference
+HT_099,Holidays & Traditions,medium-hard,400,Review clue: This holiday or observance is a November 11 memorial day in Canada and other Commonwealth countries.,Remembrance Day,Remembrance Day,Holiday reference
+HT_100,Holidays & Traditions,hard,500,Review clue: This holiday or observance is a November 11 U.S. holiday honoring veterans.,Veterans Day,Veterans Day,Holiday reference
+FP_001,Famous People,easy,100,This famous person was a physicist associated with relativity.,Albert Einstein,Albert Einstein,Biography reference
+FP_002,Famous People,easy-medium,200,This famous person was a scientist who studied radioactivity.,Marie Curie,Marie Curie,Biography reference
+FP_003,Famous People,medium,300,This famous person was a scientist associated with laws of motion.,Isaac Newton,Isaac Newton,Biography reference
+FP_004,Famous People,medium-hard,400,This famous person was a naturalist associated with evolution by natural selection.,Charles Darwin,Charles Darwin,Biography reference
+FP_005,Famous People,hard,500,This famous person was a early computing pioneer.,Ada Lovelace,Ada Lovelace,Biography reference
+FP_006,Famous People,easy,100,This famous person was a computing pioneer and codebreaker.,Alan Turing,Alan Turing,Biography reference
+FP_007,Famous People,easy-medium,200,This famous person was a aviator who crossed the Atlantic solo.,Amelia Earhart,Amelia Earhart,Biography reference
+FP_008,Famous People,medium,300,This famous person was a first person to walk on the Moon.,Neil Armstrong,Neil Armstrong,Biography reference
+FP_009,Famous People,medium-hard,400,This famous person was a leader associated with nonviolent resistance in India.,Mahatma Gandhi,Mahatma Gandhi,Biography reference
+FP_010,Famous People,hard,500,This famous person was a South African anti-apartheid leader.,Nelson Mandela,Nelson Mandela,Biography reference
+FP_011,Famous People,easy,100,This famous person was a civil rights leader with the I Have a Dream speech.,Martin Luther King Jr.,Martin Luther King Jr.,Biography reference
+FP_012,Famous People,easy-medium,200,This famous person was a civil rights figure known for refusing to give up a bus seat.,Rosa Parks,Rosa Parks,Biography reference
+FP_013,Famous People,medium,300,This famous person was a pioneer of modern nursing.,Florence Nightingale,Florence Nightingale,Biography reference
+FP_014,Famous People,medium-hard,400,This famous person was a author and advocate who was deafblind.,Helen Keller,Helen Keller,Biography reference
+FP_015,Famous People,hard,500,This famous person was a education activist and Nobel Peace Prize laureate.,Malala Yousafzai,Malala Yousafzai,Biography reference
+FP_016,Famous People,easy,100,This famous person was a humanitarian associated with work in Kolkata.,Mother Teresa,Mother Teresa,Biography reference
+FP_017,Famous People,easy-medium,200,This famous person was a British prime minister during much of World War II.,Winston Churchill,Winston Churchill,Biography reference
+FP_018,Famous People,medium,300,This famous person was a long-reigning British monarch.,Queen Elizabeth II,Queen Elizabeth II,Biography reference
+FP_019,Famous People,medium-hard,400,This famous person was a U.S. president during the Civil War.,Abraham Lincoln,Abraham Lincoln,Biography reference
+FP_020,Famous People,hard,500,This famous person was a first U.S. president.,George Washington,George Washington,Biography reference
+FP_021,Famous People,easy,100,This person is associated with Mona Lisa.,Leonardo da Vinci,Leonardo da Vinci,Biography/literature/art reference
+FP_022,Famous People,easy-medium,200,This person is associated with The Starry Night.,Vincent van Gogh,Vincent van Gogh,Biography/literature/art reference
+FP_023,Famous People,medium,300,This person is associated with Sistine Chapel ceiling.,Michelangelo,Michelangelo,Biography/literature/art reference
+FP_024,Famous People,medium-hard,400,This person is associated with Cubism.,Pablo Picasso,Pablo Picasso,Biography/literature/art reference
+FP_025,Famous People,hard,500,This person is associated with self-portraits.,Frida Kahlo,Frida Kahlo,Biography/literature/art reference
+FP_026,Famous People,easy,100,This person is associated with Hamlet and Romeo and Juliet.,William Shakespeare,William Shakespeare,Biography/literature/art reference
+FP_027,Famous People,easy-medium,200,This person is associated with Pride and Prejudice.,Jane Austen,Jane Austen,Biography/literature/art reference
+FP_028,Famous People,medium,300,This person is associated with Tom Sawyer and Huckleberry Finn.,Mark Twain,Mark Twain,Biography/literature/art reference
+FP_029,Famous People,medium-hard,400,This person is associated with Hercule Poirot and Miss Marple mysteries.,Agatha Christie,Agatha Christie,Biography/literature/art reference
+FP_030,Famous People,hard,500,This person is associated with Middle-earth fantasy works.,J.R.R. Tolkien,J.R.R. Tolkien,Biography/literature/art reference
+FP_031,Famous People,easy,100,This famous person was a poet and memoirist.,Maya Angelou,Maya Angelou,Biography/reference
+FP_032,Famous People,easy-medium,200,This famous person was a Harlem Renaissance poet.,Langston Hughes,Langston Hughes,Biography/reference
+FP_033,Famous People,medium,300,This famous person was a American poet.,Emily Dickinson,Emily Dickinson,Biography/reference
+FP_034,Famous People,medium-hard,400,This famous person was a Victorian novelist.,Charles Dickens,Charles Dickens,Biography/reference
+FP_035,Famous People,hard,500,This famous person was a Russian novelist.,Leo Tolstoy,Leo Tolstoy,Biography/reference
+FP_036,Famous People,easy,100,This famous person was a Chinese philosopher.,Confucius,Confucius,Biography/reference
+FP_037,Famous People,easy-medium,200,This famous person was a Greek philosopher.,Socrates,Socrates,Biography/reference
+FP_038,Famous People,medium,300,This famous person was a student of Socrates.,Plato,Plato,Biography/reference
+FP_039,Famous People,medium-hard,400,This famous person was a Greek philosopher and tutor of Alexander the Great.,Aristotle,Aristotle,Biography/reference
+FP_040,Famous People,hard,500,This famous person was a author traditionally linked to The Art of War.,Sun Tzu,Sun Tzu,Biography/reference
+FP_041,Famous People,easy,100,This famous person is known as a co-founder of Apple.,Steve Jobs,Steve Jobs,Biography/reference
+FP_042,Famous People,easy-medium,200,This famous person is known as a co-founder of Microsoft.,Bill Gates,Bill Gates,Biography/reference
+FP_043,Famous People,medium,300,This famous person is known as a co-founder of Facebook.,Mark Zuckerberg,Mark Zuckerberg,Biography/reference
+FP_044,Famous People,medium-hard,400,This famous person is known as a entrepreneur linked with Tesla and SpaceX.,Elon Musk,Elon Musk,Biography/reference
+FP_045,Famous People,hard,500,This famous person is known as a founder of Amazon.,Jeff Bezos,Jeff Bezos,Biography/reference
+FP_046,Famous People,easy,100,This famous person is known as a talk show host and media entrepreneur.,Oprah Winfrey,Oprah Winfrey,Biography/reference
+FP_047,Famous People,easy-medium,200,This famous person is known as a animation and theme park pioneer.,Walt Disney,Walt Disney,Biography/reference
+FP_048,Famous People,medium,300,This famous person is known as a automobile manufacturing pioneer.,Henry Ford,Henry Ford,Biography/reference
+FP_049,Famous People,medium-hard,400,This famous person is known as a fashion designer linked with Chanel.,Coco Chanel,Coco Chanel,Biography/reference
+FP_050,Famous People,hard,500,This famous person is known as a scientist linked with pasteurization.,Louis Pasteur,Louis Pasteur,Biography/reference
+FP_051,Famous People,easy,100,This famous athlete is associated with basketball.,Michael Jordan,Michael Jordan,Sports biography reference
+FP_052,Famous People,easy-medium,200,This famous athlete is associated with tennis.,Serena Williams,Serena Williams,Sports biography reference
+FP_053,Famous People,medium,300,This famous athlete is associated with sprinting.,Usain Bolt,Usain Bolt,Sports biography reference
+FP_054,Famous People,medium-hard,400,This famous athlete is associated with hockey.,Wayne Gretzky,Wayne Gretzky,Sports biography reference
+FP_055,Famous People,hard,500,This famous athlete is associated with boxing.,Muhammad Ali,Muhammad Ali,Sports biography reference
+FP_056,Famous People,easy,100,This famous athlete is associated with soccer.,Pele,Pele,Sports biography reference
+FP_057,Famous People,easy-medium,200,This famous athlete is associated with soccer.,Lionel Messi,Lionel Messi,Sports biography reference
+FP_058,Famous People,medium,300,This famous athlete is associated with gymnastics.,Simone Biles,Simone Biles,Sports biography reference
+FP_059,Famous People,medium-hard,400,This famous athlete is associated with baseball.,Babe Ruth,Babe Ruth,Sports biography reference
+FP_060,Famous People,hard,500,This famous athlete is associated with golf.,Tiger Woods,Tiger Woods,Sports biography reference
+FP_061,Famous People,easy,100,This famous person is a composer.,Ludwig van Beethoven,Ludwig van Beethoven,Music biography reference
+FP_062,Famous People,easy-medium,200,This famous person is a composer.,Wolfgang Amadeus Mozart,Wolfgang Amadeus Mozart,Music biography reference
+FP_063,Famous People,medium,300,This famous person is a composer.,Johann Sebastian Bach,Johann Sebastian Bach,Music biography reference
+FP_064,Famous People,medium-hard,400,This famous person is a singer-songwriter.,Taylor Swift,Taylor Swift,Music biography reference
+FP_065,Famous People,hard,500,This famous person is a singer and performer.,Beyonce,Beyonce,Music biography reference
+FP_066,Famous People,easy,100,This famous person is a reggae musician.,Bob Marley,Bob Marley,Music biography reference
+FP_067,Famous People,easy-medium,200,This famous person is a rock and roll singer.,Elvis Presley,Elvis Presley,Music biography reference
+FP_068,Famous People,medium,300,This famous person is a pop singer and dancer.,Michael Jackson,Michael Jackson,Music biography reference
+FP_069,Famous People,medium-hard,400,This famous person is a soul singer.,Aretha Franklin,Aretha Franklin,Music biography reference
+FP_070,Famous People,hard,500,This famous person is a lead singer of Queen.,Freddie Mercury,Freddie Mercury,Music biography reference
+FP_071,Famous People,easy,100,This famous person was a ancient Egyptian queen.,Cleopatra,Cleopatra,Biography/history reference
+FP_072,Famous People,easy-medium,200,This famous person was a Roman leader.,Julius Caesar,Julius Caesar,Biography/history reference
+FP_073,Famous People,medium,300,This famous person was a Macedonian conqueror.,Alexander the Great,Alexander the Great,Biography/history reference
+FP_074,Famous People,medium-hard,400,This famous person was a French heroine of the Hundred Years War.,Joan of Arc,Joan of Arc,Biography/history reference
+FP_075,Famous People,hard,500,This famous person was a Venetian traveler to Asia.,Marco Polo,Marco Polo,Biography/history reference
+FP_076,Famous People,easy,100,This famous person was a voyager whose 1492 voyage reached the Americas.,Christopher Columbus,Christopher Columbus,Biography/history reference
+FP_077,Famous People,easy-medium,200,This famous person was a Underground Railroad conductor.,Harriet Tubman,Harriet Tubman,Biography/history reference
+FP_078,Famous People,medium,300,This famous person was a women's suffrage activist.,Susan B. Anthony,Susan B. Anthony,Biography/history reference
+FP_079,Famous People,medium-hard,400,This famous person was a abolitionist and orator.,Frederick Douglass,Frederick Douglass,Biography/history reference
+FP_080,Famous People,hard,500,This famous person was a diarist of the Holocaust.,Anne Frank,Anne Frank,Biography/history reference
+FP_081,Famous People,easy,100,This famous person is known as a author of Silent Spring.,Rachel Carson,Rachel Carson,Biography/science reference
+FP_082,Famous People,easy-medium,200,This famous person is known as a primatologist known for chimpanzee research.,Jane Goodall,Jane Goodall,Biography/science reference
+FP_083,Famous People,medium,300,This famous person is known as a NASA mathematician featured in Hidden Figures.,Katherine Johnson,Katherine Johnson,Biography/science reference
+FP_084,Famous People,medium-hard,400,This famous person is known as a first American woman in space.,Sally Ride,Sally Ride,Biography/science reference
+FP_085,Famous People,hard,500,This famous person is known as a first Black woman in space.,Mae Jemison,Mae Jemison,Biography/science reference
+FP_086,Famous People,easy,100,This famous person is known as a climate activist.,Greta Thunberg,Greta Thunberg,Biography/science reference
+FP_087,Famous People,easy-medium,200,This famous person is known as a nature documentary presenter.,David Attenborough,David Attenborough,Biography/science reference
+FP_088,Famous People,medium,300,This famous person is known as a ocean explorer and filmmaker.,Jacques Cousteau,Jacques Cousteau,Biography/science reference
+FP_089,Famous People,medium-hard,400,This famous person is known as a astronomer and science communicator.,Carl Sagan,Carl Sagan,Biography/science reference
+FP_090,Famous People,hard,500,This famous person is known as a theoretical physicist and author.,Stephen Hawking,Stephen Hawking,Biography/science reference
+FP_091,Famous People,easy,100,This public figure is known as a 44th U.S. president.,Barack Obama,Barack Obama,Biography/reference
+FP_092,Famous People,easy-medium,200,This public figure is known as a former German chancellor.,Angela Merkel,Angela Merkel,Biography/reference
+FP_093,Famous People,medium,300,This public figure is known as a former prime minister of India.,Indira Gandhi,Indira Gandhi,Biography/reference
+FP_094,Famous People,medium-hard,400,This public figure is known as a former British prime minister.,Margaret Thatcher,Margaret Thatcher,Biography/reference
+FP_095,Famous People,hard,500,This public figure is known as a Canadian prime minister elected in 2015.,Justin Trudeau,Justin Trudeau,Biography/reference
+FP_096,Famous People,easy,100,This public figure is known as a Ukrainian president during Russia's 2022 invasion.,Volodymyr Zelenskyy,Volodymyr Zelenskyy,Biography/reference
+FP_097,Famous People,easy-medium,200,This public figure is known as a pope elected in 2013.,Pope Francis,Pope Francis,Biography/reference
+FP_098,Famous People,medium,300,This public figure is known as a Tibetan Buddhist spiritual leader.,Dalai Lama,Dalai Lama,Biography/reference
+FP_099,Famous People,medium-hard,400,This public figure is known as a South African archbishop and activist.,Desmond Tutu,Desmond Tutu,Biography/reference
+FP_100,Famous People,hard,500,This public figure is known as a former UN secretary-general.,Kofi Annan,Kofi Annan,Biography/reference
+T_001,Transportation,easy,100,This transportation term means road vehicle with its own engine or motor.,automobile,automobile,Transportation reference
+T_002,Transportation,easy-medium,200,This transportation term means two-wheeled pedal vehicle.,bicycle,bicycle,Transportation reference
+T_003,Transportation,medium,300,This transportation term means two-wheeled motor vehicle.,motorcycle,motorcycle,Transportation reference
+T_004,Transportation,medium-hard,400,This transportation term means large road vehicle for many passengers.,bus,bus,Transportation reference
+T_005,Transportation,hard,500,This transportation term means connected rail vehicles.,train,train,Transportation reference
+T_006,Transportation,easy,100,This transportation term means urban underground or rapid rail system.,subway,subway,Transportation reference
+T_007,Transportation,easy-medium,200,This transportation term means street-running rail vehicle.,tram,tram,Transportation reference
+T_008,Transportation,medium,300,This transportation term means boat carrying passengers or vehicles across water.,ferry,ferry,Transportation reference
+T_009,Transportation,medium-hard,400,This transportation term means fixed-wing flying vehicle.,airplane,airplane,Transportation reference
+T_010,Transportation,hard,500,This transportation term means aircraft lifted by rotating blades.,helicopter,helicopter,Transportation reference
+T_011,Transportation,easy,100,This transportation term means small two-wheeled vehicle.,scooter,scooter,Transportation reference
+T_012,Transportation,easy-medium,200,This transportation term means board with wheels ridden standing up.,skateboard,skateboard,Transportation reference
+T_013,Transportation,medium,300,This transportation term means narrow boat often paddled kneeling or sitting.,canoe,canoe,Transportation reference
+T_014,Transportation,medium-hard,400,This transportation term means small narrow boat usually paddled with double blade.,kayak,kayak,Transportation reference
+T_015,Transportation,hard,500,This transportation term means boat powered mainly by wind.,sailboat,sailboat,Transportation reference
+T_016,Transportation,easy,100,This transportation term means large ship carrying goods.,cargo ship,cargo ship,Transportation reference
+T_017,Transportation,easy-medium,200,This transportation term means large passenger vacation ship.,cruise ship,cruise ship,Transportation reference
+T_018,Transportation,medium,300,This transportation term means vehicle propelled by expelled gases.,rocket,rocket,Transportation reference
+T_019,Transportation,medium-hard,400,This transportation term means vertical transport in a building.,elevator,elevator,Transportation reference
+T_020,Transportation,hard,500,This transportation term means moving staircase.,escalator,escalator,Transportation reference
+T_021,Transportation,easy,100,The person who flies an airplane is this.,pilot,pilot,Transportation reference
+T_022,Transportation,easy-medium,200,The person who drives a train is often called this.,engineer,engineer,Transportation reference
+T_023,Transportation,medium,300,The person who steers a ship can be called this.,captain,captain,Transportation reference
+T_024,Transportation,medium-hard,400,The person who drives a bus is this.,bus driver,bus driver,Transportation reference
+T_025,Transportation,hard,500,A place where airplanes take off and land is this.,airport,airport,Transportation reference
+T_026,Transportation,easy,100,A place where trains stop for passengers is this.,train station,train station,Transportation reference
+T_027,Transportation,easy-medium,200,A place where ships load and unload is this.,port,port,Transportation reference
+T_028,Transportation,medium,300,A marked place to cross a street is this.,crosswalk,crosswalk,Transportation reference
+T_029,Transportation,medium-hard,400,A traffic light color meaning stop is this.,red,red,Transportation reference
+T_030,Transportation,hard,500,A traffic light color meaning go is this.,green,green,Transportation reference
+T_031,Transportation,easy,100,This transportation acronym stands for Electric Vehicle.,EV,EV,Transportation acronym reference
+T_032,Transportation,easy-medium,200,This transportation acronym stands for Sport Utility Vehicle.,SUV,SUV,Transportation acronym reference
+T_033,Transportation,medium,300,This transportation acronym stands for Anti-lock Braking System.,ABS,ABS,Transportation acronym reference
+T_034,Transportation,medium-hard,400,This transportation acronym stands for Global Positioning System.,GPS,GPS,Transportation acronym reference
+T_035,Transportation,hard,500,This transportation acronym stands for Miles Per Gallon.,MPG,MPG,Transportation acronym reference
+T_036,Transportation,easy,100,This transportation acronym stands for Vehicle Identification Number.,VIN,VIN,Transportation acronym reference
+T_037,Transportation,easy-medium,200,This transportation acronym stands for Transportation Security Administration.,TSA,TSA,Transportation acronym reference
+T_038,Transportation,medium,300,This transportation acronym stands for Federal Aviation Administration.,FAA,FAA,Transportation acronym reference
+T_039,Transportation,medium-hard,400,This transportation acronym stands for Department of Transportation.,DOT,DOT,Transportation acronym reference
+T_040,Transportation,hard,500,This transportation acronym stands for High-Occupancy Vehicle.,HOV,HOV,Transportation acronym reference
+T_041,Transportation,easy,100,This part connects a car to the road.,tire,tire,Automotive reference
+T_042,Transportation,easy-medium,200,This part slows or stops a vehicle.,brake,brake,Automotive reference
+T_043,Transportation,medium,300,This wheel is used by a driver to steer.,steering wheel,steering wheel,Automotive reference
+T_044,Transportation,medium-hard,400,This part stores fuel in a gasoline vehicle.,fuel tank,fuel tank,Automotive reference
+T_045,Transportation,hard,500,This part stores electricity in an electric vehicle.,battery,battery,Automotive reference
+T_046,Transportation,easy,100,This part changes engine power into wheel motion.,transmission,transmission,Automotive reference
+T_047,Transportation,easy-medium,200,This part reduces exhaust pollution.,catalytic converter,catalytic converter,Automotive reference
+T_048,Transportation,medium,300,This part lights the road ahead.,headlight,headlight,Automotive reference
+T_049,Transportation,medium-hard,400,This part shows speed to the driver.,speedometer,speedometer,Automotive reference
+T_050,Transportation,hard,500,This part keeps the engine from overheating.,radiator,radiator,Automotive reference
+T_051,Transportation,easy,100,The Wright brothers are associated with this transportation breakthrough.,powered flight,powered flight,Transportation/history reference
+T_052,Transportation,easy-medium,200,The Model T was made by this company.,Ford,Ford,Transportation/history reference
+T_053,Transportation,medium,300,The first successful steam locomotive era used this kind of power.,steam,steam,Transportation/history reference
+T_054,Transportation,medium-hard,400,High-speed rail in Japan is commonly called this.,Shinkansen,Shinkansen,Transportation/history reference
+T_055,Transportation,hard,500,A maglev train uses magnetic this to move or float.,levitation,levitation,Transportation/history reference
+T_056,Transportation,easy,100,The Panama Canal connects the Atlantic and this ocean.,Pacific Ocean,Pacific Ocean,Transportation/history reference
+T_057,Transportation,easy-medium,200,The Suez Canal connects the Mediterranean Sea and this sea.,Red Sea,Red Sea,Transportation/history reference
+T_058,Transportation,medium,300,A road with no intersections and controlled access is often called this.,freeway,freeway,Transportation/history reference
+T_059,Transportation,medium-hard,400,A circular road intersection is called this.,roundabout,roundabout,Transportation/history reference
+T_060,Transportation,hard,500,A bridge that opens for ships may be called this.,drawbridge,drawbridge,Transportation/history reference
+T_061,Transportation,easy,100,A vehicle with both gasoline engine and electric motor is this.,hybrid,hybrid,Modern transportation reference
+T_062,Transportation,easy-medium,200,A vehicle powered only by batteries and electric motors is this.,battery electric vehicle,battery electric vehicle,Modern transportation reference
+T_063,Transportation,medium,300,A plug-in hybrid is commonly abbreviated this.,PHEV,PHEV,Modern transportation reference
+T_064,Transportation,medium-hard,400,A public system of buses and trains is called this.,public transit,public transit,Modern transportation reference
+T_065,Transportation,hard,500,Sharing a ride with others in one car is this.,carpooling,carpooling,Modern transportation reference
+T_066,Transportation,easy,100,Renting a car for a very short period from a fleet is often this.,car sharing,car sharing,Modern transportation reference
+T_067,Transportation,easy-medium,200,A lane reserved for buses is this.,bus lane,bus lane,Modern transportation reference
+T_068,Transportation,medium,300,A path reserved for bicycles is this.,bike lane,bike lane,Modern transportation reference
+T_069,Transportation,medium-hard,400,A place to charge an EV is this.,charging station,charging station,Modern transportation reference
+T_070,Transportation,hard,500,A fast EV charger using direct current is often called this.,DC fast charger,DC fast charger,Modern transportation reference
+T_071,Transportation,easy,100,A ship's left side when facing forward is this.,port,port,Transport vocabulary reference
+T_072,Transportation,easy-medium,200,A ship's right side when facing forward is this.,starboard,starboard,Transport vocabulary reference
+T_073,Transportation,medium,300,The front of a ship is this.,bow,bow,Transport vocabulary reference
+T_074,Transportation,medium-hard,400,The back of a ship is this.,stern,stern,Transport vocabulary reference
+T_075,Transportation,hard,500,A boat's steering device can be called this.,rudder,rudder,Transport vocabulary reference
+T_076,Transportation,easy,100,A plane's main body is this.,fuselage,fuselage,Transport vocabulary reference
+T_077,Transportation,easy-medium,200,A plane's wing flaps help increase this during takeoff and landing.,lift,lift,Transport vocabulary reference
+T_078,Transportation,medium,300,A runway is used for takeoff and this.,landing,landing,Transport vocabulary reference
+T_079,Transportation,medium-hard,400,A train track consists of rails and these supporting pieces.,ties,ties,Transport vocabulary reference
+T_080,Transportation,hard,500,A station where passengers change from one line to another is this.,transfer station,transfer station,Transport vocabulary reference
+T_081,Transportation,easy,100,The fastest commercial airliner famous for supersonic travel was this.,Concorde,Concorde,Vehicle reference
+T_082,Transportation,easy-medium,200,A city bike-sharing system often uses these two-wheeled vehicles.,bicycles,bicycles,Vehicle reference
+T_083,Transportation,medium,300,A school bus in North America is commonly this color.,yellow,yellow,Vehicle reference
+T_084,Transportation,medium-hard,400,A taxi medallion is associated with this kind of vehicle service.,taxi,taxi,Vehicle reference
+T_085,Transportation,hard,500,A vehicle used to tow disabled cars is this.,tow truck,tow truck,Vehicle reference
+T_086,Transportation,easy,100,A vehicle carrying sick or injured people is this.,ambulance,ambulance,Vehicle reference
+T_087,Transportation,easy-medium,200,A vehicle fighting fires is this.,fire truck,fire truck,Vehicle reference
+T_088,Transportation,medium,300,A vehicle mixing and delivering concrete is this.,cement mixer,cement mixer,Vehicle reference
+T_089,Transportation,medium-hard,400,A vehicle lifting heavy loads with forks is this.,forklift,forklift,Vehicle reference
+T_090,Transportation,hard,500,A vehicle used to clear snow from roads is this.,snowplow,snowplow,Vehicle reference
+T_091,Transportation,easy,100,Review clue: This transportation term means road vehicle with its own engine or motor.,automobile,automobile,Transportation reference
+T_092,Transportation,easy-medium,200,Review clue: This transportation term means two-wheeled pedal vehicle.,bicycle,bicycle,Transportation reference
+T_093,Transportation,medium,300,Review clue: This transportation term means two-wheeled motor vehicle.,motorcycle,motorcycle,Transportation reference
+T_094,Transportation,medium-hard,400,Review clue: This transportation term means large road vehicle for many passengers.,bus,bus,Transportation reference
+T_095,Transportation,hard,500,Review clue: This transportation term means connected rail vehicles.,train,train,Transportation reference
+T_096,Transportation,easy,100,Review clue: This transportation term means urban underground or rapid rail system.,subway,subway,Transportation reference
+T_097,Transportation,easy-medium,200,Review clue: This transportation term means street-running rail vehicle.,tram,tram,Transportation reference
+T_098,Transportation,medium,300,Review clue: This transportation term means boat carrying passengers or vehicles across water.,ferry,ferry,Transportation reference
+T_099,Transportation,medium-hard,400,Review clue: This transportation term means fixed-wing flying vehicle.,airplane,airplane,Transportation reference
+T_100,Transportation,hard,500,Review clue: This transportation term means aircraft lifted by rotating blades.,helicopter,helicopter,Transportation reference
+THB_001,The Human Body,easy,100,This organ pumps blood.,heart,heart,Human biology reference
+THB_002,The Human Body,easy-medium,200,This organ exchange oxygen and carbon dioxide.,lungs,lungs,Human biology reference
+THB_003,The Human Body,medium,300,This organ controls thought and body signals.,brain,brain,Human biology reference
+THB_004,The Human Body,medium-hard,400,This organ helps digest food.,stomach,stomach,Human biology reference
+THB_005,The Human Body,hard,500,This organ processes nutrients and makes bile.,liver,liver,Human biology reference
+THB_006,The Human Body,easy,100,This organ filter blood and make urine.,kidneys,kidneys,Human biology reference
+THB_007,The Human Body,easy-medium,200,This organ protects the body from outside environment.,skin,skin,Human biology reference
+THB_008,The Human Body,medium,300,This organ detect light for vision.,eyes,eyes,Human biology reference
+THB_009,The Human Body,medium-hard,400,This organ detect sound and help balance.,ears,ears,Human biology reference
+THB_010,The Human Body,hard,500,This organ helps taste and move food.,tongue,tongue,Human biology reference
+THB_011,The Human Body,easy,100,This bone protects the brain.,skull,skull,Anatomy reference
+THB_012,The Human Body,easy-medium,200,This bone protects organs in the chest.,rib,rib,Anatomy reference
+THB_013,The Human Body,medium,300,This bone thigh bone and longest bone.,femur,femur,Anatomy reference
+THB_014,The Human Body,medium-hard,400,This bone larger lower-leg bone.,tibia,tibia,Anatomy reference
+THB_015,The Human Body,hard,500,This bone smaller lower-leg bone.,fibula,fibula,Anatomy reference
+THB_016,The Human Body,easy,100,This bone upper arm bone.,humerus,humerus,Anatomy reference
+THB_017,The Human Body,easy-medium,200,This bone forearm bone on thumb side.,radius,radius,Anatomy reference
+THB_018,The Human Body,medium,300,This bone forearm bone on pinky side.,ulna,ulna,Anatomy reference
+THB_019,The Human Body,medium-hard,400,This bone hip bone structure.,pelvis,pelvis,Anatomy reference
+THB_020,The Human Body,hard,500,This bone bones of the spine.,vertebrae,vertebrae,Anatomy reference
+THB_021,The Human Body,easy,100,This body term means tissue that contracts to create movement.,muscle,muscle,Anatomy reference
+THB_022,The Human Body,easy-medium,200,This body term means tissue connecting muscle to bone.,tendon,tendon,Anatomy reference
+THB_023,The Human Body,medium,300,This body term means tissue connecting bone to bone.,ligament,ligament,Anatomy reference
+THB_024,The Human Body,medium-hard,400,This body term means place where bones meet.,joint,joint,Anatomy reference
+THB_025,The Human Body,hard,500,This body term means smooth flexible tissue cushioning joints.,cartilage,cartilage,Anatomy reference
+THB_026,The Human Body,easy,100,This body term means fiber carrying signals.,nerve,nerve,Anatomy reference
+THB_027,The Human Body,easy-medium,200,This body term means blood vessel carrying blood away from the heart.,artery,artery,Anatomy reference
+THB_028,The Human Body,medium,300,This body term means blood vessel carrying blood toward the heart.,vein,vein,Anatomy reference
+THB_029,The Human Body,medium-hard,400,This body term means tiny blood vessel for exchange.,capillary,capillary,Anatomy reference
+THB_030,The Human Body,hard,500,This body term means body defense against disease.,immune system,immune system,Anatomy reference
+THB_031,The Human Body,easy,100,This sense lets you detect odor.,smell,smell,Human biology reference
+THB_032,The Human Body,easy-medium,200,This sense lets you detect flavor.,taste,taste,Human biology reference
+THB_033,The Human Body,medium,300,This sense lets you detect sound.,hearing,hearing,Human biology reference
+THB_034,The Human Body,medium-hard,400,This sense lets you detect light and images.,sight,sight,Human biology reference
+THB_035,The Human Body,hard,500,"This sense lets you feel pressure, temperature, and pain.",touch,touch,Human biology reference
+THB_036,The Human Body,easy,100,The colored part of the eye is this.,iris,iris,Human biology reference
+THB_037,The Human Body,easy-medium,200,The black opening in the eye is this.,pupil,pupil,Human biology reference
+THB_038,The Human Body,medium,300,The clear front covering of the eye is this.,cornea,cornea,Human biology reference
+THB_039,The Human Body,medium-hard,400,The light-sensitive layer at the back of the eye is this.,retina,retina,Human biology reference
+THB_040,The Human Body,hard,500,"The tiny bones in the middle ear include the hammer, anvil, and this.",stirrup,stirrup,Human biology reference
+THB_041,The Human Body,easy,100,Red blood cells carry this gas.,oxygen,oxygen,Human biology reference
+THB_042,The Human Body,easy-medium,200,White blood cells help fight this.,infection,infection,Human biology reference
+THB_043,The Human Body,medium,300,Platelets help blood do this.,clot,clot,Human biology reference
+THB_044,The Human Body,medium-hard,400,The liquid part of blood is this.,plasma,plasma,Human biology reference
+THB_045,The Human Body,hard,500,The heart's upper chambers are called this.,atria,atria,Human biology reference
+THB_046,The Human Body,easy,100,The heart's lower chambers are called this.,ventricles,ventricles,Human biology reference
+THB_047,The Human Body,easy-medium,200,Blood pressure is commonly measured in millimeters of this.,mercury,mercury,Human biology reference
+THB_048,The Human Body,medium,300,The pulse measures heartbeats per this unit of time.,minute,minute,Human biology reference
+THB_049,The Human Body,medium-hard,400,The main artery leaving the heart is this.,aorta,aorta,Human biology reference
+THB_050,The Human Body,hard,500,The blood type with no A or B antigens is this.,type O,type O,Human biology reference
+THB_051,The Human Body,easy,100,The mouth starts digestion by chewing and mixing food with this.,saliva,saliva,Human biology reference
+THB_052,The Human Body,easy-medium,200,The tube from mouth to stomach is this.,esophagus,esophagus,Human biology reference
+THB_053,The Human Body,medium,300,The small intestine absorbs many of these from digested food.,nutrients,nutrients,Human biology reference
+THB_054,The Human Body,medium-hard,400,The large intestine absorbs much of this.,water,water,Human biology reference
+THB_055,The Human Body,hard,500,The pancreas helps control blood sugar with this hormone.,insulin,insulin,Human biology reference
+THB_056,The Human Body,easy,100,The gallbladder stores this digestive fluid.,bile,bile,Human biology reference
+THB_057,The Human Body,easy-medium,200,The stomach contains this strong acid.,hydrochloric acid,hydrochloric acid,Human biology reference
+THB_058,The Human Body,medium,300,Teeth used for cutting are called this.,incisors,incisors,Human biology reference
+THB_059,The Human Body,medium-hard,400,Pointed teeth are called this.,canines,canines,Human biology reference
+THB_060,The Human Body,hard,500,Back teeth used for grinding are called this.,molars,molars,Human biology reference
+THB_061,The Human Body,easy,100,The largest organ of the body is this.,skin,skin,Human health reference
+THB_062,The Human Body,easy-medium,200,Hair and nails are made mostly of this protein.,keratin,keratin,Human health reference
+THB_063,The Human Body,medium,300,The outer layer of skin is this.,epidermis,epidermis,Human health reference
+THB_064,The Human Body,medium-hard,400,The layer under the epidermis is this.,dermis,dermis,Human health reference
+THB_065,The Human Body,hard,500,Tiny skin openings for sweat are called this.,pores,pores,Human health reference
+THB_066,The Human Body,easy,100,The body cools itself by producing this.,sweat,sweat,Human health reference
+THB_067,The Human Body,easy-medium,200,A pigment that gives skin and hair color is this.,melanin,melanin,Human health reference
+THB_068,The Human Body,medium,300,The body's normal average temperature is about 37 degrees on this scale.,Celsius,Celsius,Human health reference
+THB_069,The Human Body,medium-hard,400,This vitamin helps blood clot and is linked to leafy greens.,vitamin K,vitamin K,Human health reference
+THB_070,The Human Body,hard,500,This vitamin is famous for helping prevent scurvy.,vitamin C,vitamin C,Human health reference
+THB_071,The Human Body,easy,100,The nervous system's main control organ is this.,brain,brain,Human biology reference
+THB_072,The Human Body,easy-medium,200,The spinal cord runs through this body structure.,spine,spine,Human biology reference
+THB_073,The Human Body,medium,300,A reflex is usually this kind of response.,automatic,automatic,Human biology reference
+THB_074,The Human Body,medium-hard,400,The left side of the brain generally controls this side of the body.,right side,right side,Human biology reference
+THB_075,The Human Body,hard,500,The right side of the brain generally controls this side of the body.,left side,left side,Human biology reference
+THB_076,The Human Body,easy,100,The hormone associated with fight-or-flight response is this.,adrenaline,adrenaline,Human biology reference
+THB_077,The Human Body,easy-medium,200,The thyroid gland is located in this body area.,neck,neck,Human biology reference
+THB_078,The Human Body,medium,300,The pituitary gland is often called the master gland of this system.,endocrine system,endocrine system,Human biology reference
+THB_079,The Human Body,medium-hard,400,The reproductive cell from a female is this.,egg,egg,Human biology reference
+THB_080,The Human Body,hard,500,The reproductive cell from a male is this.,sperm,sperm,Human biology reference
+THB_081,The Human Body,easy,100,This mineral is important for bones and teeth.,calcium,calcium,Health reference
+THB_082,The Human Body,easy-medium,200,This mineral in blood helps carry oxygen as part of hemoglobin.,iron,iron,Health reference
+THB_083,The Human Body,medium,300,This nutrient is the body's main quick energy source.,carbohydrate,carbohydrate,Health reference
+THB_084,The Human Body,medium-hard,400,This nutrient helps build and repair tissues.,protein,protein,Health reference
+THB_085,The Human Body,hard,500,This nutrient stores energy and helps absorb some vitamins.,fat,fat,Health reference
+THB_086,The Human Body,easy,100,This is a lack of enough water in the body.,dehydration,dehydration,Health reference
+THB_087,The Human Body,easy-medium,200,This is the medical term for high blood pressure.,hypertension,hypertension,Health reference
+THB_088,The Human Body,medium,300,This is the medical term for low blood sugar.,hypoglycemia,hypoglycemia,Health reference
+THB_089,The Human Body,medium-hard,400,This common measurement compares weight and height.,BMI,BMI,Health reference
+THB_090,The Human Body,hard,500,This is the body's process of maintaining stable internal conditions.,homeostasis,homeostasis,Health reference
+THB_091,The Human Body,easy,100,Review clue: This organ pumps blood.,heart,heart,Human biology reference
+THB_092,The Human Body,easy-medium,200,Review clue: This organ exchange oxygen and carbon dioxide.,lungs,lungs,Human biology reference
+THB_093,The Human Body,medium,300,Review clue: This organ controls thought and body signals.,brain,brain,Human biology reference
+THB_094,The Human Body,medium-hard,400,Review clue: This organ helps digest food.,stomach,stomach,Human biology reference
+THB_095,The Human Body,hard,500,Review clue: This organ processes nutrients and makes bile.,liver,liver,Human biology reference
+THB_096,The Human Body,easy,100,Review clue: This organ filter blood and make urine.,kidneys,kidneys,Human biology reference
+THB_097,The Human Body,easy-medium,200,Review clue: This organ protects the body from outside environment.,skin,skin,Human biology reference
+THB_098,The Human Body,medium,300,Review clue: This organ detect light for vision.,eyes,eyes,Human biology reference
+THB_099,The Human Body,medium-hard,400,Review clue: This organ detect sound and help balance.,ears,ears,Human biology reference
+THB_100,The Human Body,hard,500,Review clue: This organ helps taste and move food.,tongue,tongue,Human biology reference
+MR_001,Mythology & Religion,easy,100,This figure is the Greek king of the gods.,Zeus,Zeus,Mythology reference
+MR_002,Mythology & Religion,easy-medium,200,This figure is the Greek goddess associated with marriage.,Hera,Hera,Mythology reference
+MR_003,Mythology & Religion,medium,300,This figure is the Greek god of the sea.,Poseidon,Poseidon,Mythology reference
+MR_004,Mythology & Religion,medium-hard,400,This figure is the Greek god of the underworld.,Hades,Hades,Mythology reference
+MR_005,Mythology & Religion,hard,500,This figure is the Greek goddess of wisdom.,Athena,Athena,Mythology reference
+MR_006,Mythology & Religion,easy,100,This figure is the Greek god of war.,Ares,Ares,Mythology reference
+MR_007,Mythology & Religion,easy-medium,200,This figure is the Greek goddess of love.,Aphrodite,Aphrodite,Mythology reference
+MR_008,Mythology & Religion,medium,300,This figure is the Greek god associated with music and the sun.,Apollo,Apollo,Mythology reference
+MR_009,Mythology & Religion,medium-hard,400,This figure is the Greek goddess of the hunt.,Artemis,Artemis,Mythology reference
+MR_010,Mythology & Religion,hard,500,This figure is the Greek messenger god.,Hermes,Hermes,Mythology reference
+MR_011,Mythology & Religion,easy,100,This figure is the Roman king of the gods.,Jupiter,Jupiter,Mythology reference
+MR_012,Mythology & Religion,easy-medium,200,This figure is the Roman goddess associated with marriage.,Juno,Juno,Mythology reference
+MR_013,Mythology & Religion,medium,300,This figure is the Roman god of the sea.,Neptune,Neptune,Mythology reference
+MR_014,Mythology & Religion,medium-hard,400,This figure is the Roman god of the underworld.,Pluto,Pluto,Mythology reference
+MR_015,Mythology & Religion,hard,500,This figure is the Roman goddess of wisdom.,Minerva,Minerva,Mythology reference
+MR_016,Mythology & Religion,easy,100,This figure is the Roman god of war.,Mars,Mars,Mythology reference
+MR_017,Mythology & Religion,easy-medium,200,This figure is the Roman goddess of love.,Venus,Venus,Mythology reference
+MR_018,Mythology & Religion,medium,300,This figure is the Roman messenger god.,Mercury,Mercury,Mythology reference
+MR_019,Mythology & Religion,medium-hard,400,This figure is the Roman goddess of the hunt.,Diana,Diana,Mythology reference
+MR_020,Mythology & Religion,hard,500,This figure is the Roman god of fire and metalworking.,Vulcan,Vulcan,Mythology reference
+MR_021,Mythology & Religion,easy,100,This is the Norse chief god.,Odin,Odin,Mythology reference
+MR_022,Mythology & Religion,easy-medium,200,This is the Norse thunder god.,Thor,Thor,Mythology reference
+MR_023,Mythology & Religion,medium,300,This is the Norse trickster figure.,Loki,Loki,Mythology reference
+MR_024,Mythology & Religion,medium-hard,400,This is the Norse goddess associated with love and beauty.,Freya,Freya,Mythology reference
+MR_025,Mythology & Religion,hard,500,This is the Norse goddess associated with marriage.,Frigg,Frigg,Mythology reference
+MR_026,Mythology & Religion,easy,100,This is the Norse god associated with war and justice.,Tyr,Tyr,Mythology reference
+MR_027,Mythology & Religion,easy-medium,200,This is the Norse watchman of the gods.,Heimdall,Heimdall,Mythology reference
+MR_028,Mythology & Religion,medium,300,This is the Norse god associated with light and beauty.,Balder,Balder,Mythology reference
+MR_029,Mythology & Religion,medium-hard,400,This is the world tree in Norse myth.,Yggdrasil,Yggdrasil,Mythology reference
+MR_030,Mythology & Religion,hard,500,This is the hall for slain warriors in Norse myth.,Valhalla,Valhalla,Mythology reference
+MR_031,Mythology & Religion,easy,100,This is the Egyptian sun god.,Ra,Ra,Mythology reference
+MR_032,Mythology & Religion,easy-medium,200,This is the Egyptian god associated with the afterlife.,Osiris,Osiris,Mythology reference
+MR_033,Mythology & Religion,medium,300,This is the Egyptian goddess and wife of Osiris.,Isis,Isis,Mythology reference
+MR_034,Mythology & Religion,medium-hard,400,This is the Egyptian falcon-headed god.,Horus,Horus,Mythology reference
+MR_035,Mythology & Religion,hard,500,This is the Egyptian jackal-headed god linked to mummification.,Anubis,Anubis,Mythology reference
+MR_036,Mythology & Religion,easy,100,This is the Egyptian god of writing and wisdom.,Thoth,Thoth,Mythology reference
+MR_037,Mythology & Religion,easy-medium,200,This is the Egyptian cat goddess.,Bastet,Bastet,Mythology reference
+MR_038,Mythology & Religion,medium,300,This is the Egyptian god associated with chaos.,Set,Set,Mythology reference
+MR_039,Mythology & Religion,medium-hard,400,This is the Egyptian concept and goddess of truth and order.,Ma'at,Ma'at,Mythology reference
+MR_040,Mythology & Religion,hard,500,This is the Egyptian lioness goddess.,Sekhmet,Sekhmet,Mythology reference
+MR_041,Mythology & Religion,easy,100,The sacred text of Christianity is this.,Bible,Bible,World religions reference
+MR_042,Mythology & Religion,easy-medium,200,The sacred text of Islam is this.,Quran,Quran,World religions reference
+MR_043,Mythology & Religion,medium,300,The sacred texts known as the Vedas are associated with this religion.,Hinduism,Hinduism,World religions reference
+MR_044,Mythology & Religion,medium-hard,400,The Torah is especially central to this religion.,Judaism,Judaism,World religions reference
+MR_045,Mythology & Religion,hard,500,The Tripitaka is associated with this religion.,Buddhism,Buddhism,World religions reference
+MR_046,Mythology & Religion,easy,100,The Guru Granth Sahib is central to this religion.,Sikhism,Sikhism,World religions reference
+MR_047,Mythology & Religion,easy-medium,200,The Analects are associated with this Chinese teacher.,Confucius,Confucius,World religions reference
+MR_048,Mythology & Religion,medium,300,The Tao Te Ching is associated with this tradition.,Taoism,Taoism,World religions reference
+MR_049,Mythology & Religion,medium-hard,400,A mosque is a place of worship in this religion.,Islam,Islam,World religions reference
+MR_050,Mythology & Religion,hard,500,A synagogue is a place of worship in this religion.,Judaism,Judaism,World religions reference
+MR_051,Mythology & Religion,easy,100,A church is a common place of worship in this religion.,Christianity,Christianity,World religions reference
+MR_052,Mythology & Religion,easy-medium,200,"A temple is a place of worship in several religions, including this Indian religion.",Hinduism,Hinduism,World religions reference
+MR_053,Mythology & Religion,medium,300,A gurdwara is a place of worship in this religion.,Sikhism,Sikhism,World religions reference
+MR_054,Mythology & Religion,medium-hard,400,A monk is often a religious member living under this kind of rule.,monastic,monastic,World religions reference
+MR_055,Mythology & Religion,hard,500,A pilgrimage is a religious journey to this kind of place.,sacred place,sacred place,World religions reference
+MR_056,Mythology & Religion,easy,100,Mecca is the holiest city in this religion.,Islam,Islam,World religions reference
+MR_057,Mythology & Religion,easy-medium,200,"Jerusalem is sacred to Judaism, Christianity, and this religion.",Islam,Islam,World religions reference
+MR_058,Mythology & Religion,medium,300,The Sabbath is a weekly day of rest especially associated with this religion.,Judaism,Judaism,World religions reference
+MR_059,Mythology & Religion,medium-hard,400,Ramadan is a fasting month in this religion.,Islam,Islam,World religions reference
+MR_060,Mythology & Religion,hard,500,Diwali is a festival of lights especially associated with this religion.,Hinduism,Hinduism,World religions reference
+MR_061,Mythology & Religion,easy,100,"In Greek myth, this hero killed Medusa.",Perseus,Perseus,Greek mythology reference
+MR_062,Mythology & Religion,easy-medium,200,"In Greek myth, this hero completed twelve labors.",Heracles,Heracles,Greek mythology reference
+MR_063,Mythology & Religion,medium,300,"In Greek myth, this inventor made wings for himself and his son.",Daedalus,Daedalus,Greek mythology reference
+MR_064,Mythology & Religion,medium-hard,400,"In Greek myth, this son flew too close to the sun.",Icarus,Icarus,Greek mythology reference
+MR_065,Mythology & Religion,hard,500,"In Greek myth, this musician tried to rescue Eurydice.",Orpheus,Orpheus,Greek mythology reference
+MR_066,Mythology & Religion,easy,100,"In Greek myth, this woman opened a forbidden jar or box.",Pandora,Pandora,Greek mythology reference
+MR_067,Mythology & Religion,easy-medium,200,"In Greek myth, this king turned things to gold.",Midas,Midas,Greek mythology reference
+MR_068,Mythology & Religion,medium,300,"In Greek myth, this hero killed the Minotaur.",Theseus,Theseus,Greek mythology reference
+MR_069,Mythology & Religion,medium-hard,400,"In Greek myth, this city was attacked after the Trojan horse trick.",Troy,Troy,Greek mythology reference
+MR_070,Mythology & Religion,hard,500,"In Greek myth, this sea monster had many heads.",Hydra,Hydra,Greek mythology reference
+MR_071,Mythology & Religion,easy,100,"In Norse myth, Thor's hammer is called this.",Mjolnir,Mjolnir,Mythology reference
+MR_072,Mythology & Religion,easy-medium,200,"In Egyptian myth, the process of preserving bodies is this.",mummification,mummification,Mythology reference
+MR_073,Mythology & Religion,medium,300,A mythological bird reborn from ashes is this.,phoenix,phoenix,Mythology reference
+MR_074,Mythology & Religion,medium-hard,400,A one-eyed giant in Greek myth is this.,Cyclops,Cyclops,Mythology reference
+MR_075,Mythology & Religion,hard,500,"A half-human, half-horse creature is this.",centaur,centaur,Mythology reference
+MR_076,Mythology & Religion,easy,100,"A half-human, half-bull creature in a labyrinth is this.",Minotaur,Minotaur,Mythology reference
+MR_077,Mythology & Religion,easy-medium,200,A winged horse in Greek myth is this.,Pegasus,Pegasus,Mythology reference
+MR_078,Mythology & Religion,medium,300,A creature with a lion body and human head is this.,sphinx,sphinx,Mythology reference
+MR_079,Mythology & Religion,medium-hard,400,A dragon-like Greek monster killed by Bellerophon is this.,Chimera,Chimera,Mythology reference
+MR_080,Mythology & Religion,hard,500,A snake-haired monster whose gaze turned people to stone is this.,Medusa,Medusa,Mythology reference
+MR_081,Mythology & Religion,easy,100,Review clue: This figure is the Greek king of the gods.,Zeus,Zeus,Mythology reference
+MR_082,Mythology & Religion,easy-medium,200,Review clue: This figure is the Greek goddess associated with marriage.,Hera,Hera,Mythology reference
+MR_083,Mythology & Religion,medium,300,Review clue: This figure is the Greek god of the sea.,Poseidon,Poseidon,Mythology reference
+MR_084,Mythology & Religion,medium-hard,400,Review clue: This figure is the Greek god of the underworld.,Hades,Hades,Mythology reference
+MR_085,Mythology & Religion,hard,500,Review clue: This figure is the Greek goddess of wisdom.,Athena,Athena,Mythology reference
+MR_086,Mythology & Religion,easy,100,Review clue: This figure is the Greek god of war.,Ares,Ares,Mythology reference
+MR_087,Mythology & Religion,easy-medium,200,Review clue: This figure is the Greek goddess of love.,Aphrodite,Aphrodite,Mythology reference
+MR_088,Mythology & Religion,medium,300,Review clue: This figure is the Greek god associated with music and the sun.,Apollo,Apollo,Mythology reference
+MR_089,Mythology & Religion,medium-hard,400,Review clue: This figure is the Greek goddess of the hunt.,Artemis,Artemis,Mythology reference
+MR_090,Mythology & Religion,hard,500,Review clue: This figure is the Greek messenger god.,Hermes,Hermes,Mythology reference
+MR_091,Mythology & Religion,easy,100,Review clue: This figure is the Roman king of the gods.,Jupiter,Jupiter,Mythology reference
+MR_092,Mythology & Religion,easy-medium,200,Review clue: This figure is the Roman goddess associated with marriage.,Juno,Juno,Mythology reference
+MR_093,Mythology & Religion,medium,300,Review clue: This figure is the Roman god of the sea.,Neptune,Neptune,Mythology reference
+MR_094,Mythology & Religion,medium-hard,400,Review clue: This figure is the Roman god of the underworld.,Pluto,Pluto,Mythology reference
+MR_095,Mythology & Religion,hard,500,Review clue: This figure is the Roman goddess of wisdom.,Minerva,Minerva,Mythology reference
+MR_096,Mythology & Religion,easy,100,Review clue: This figure is the Roman god of war.,Mars,Mars,Mythology reference
+MR_097,Mythology & Religion,easy-medium,200,Review clue: This figure is the Roman goddess of love.,Venus,Venus,Mythology reference
+MR_098,Mythology & Religion,medium,300,Review clue: This figure is the Roman messenger god.,Mercury,Mercury,Mythology reference
+MR_099,Mythology & Religion,medium-hard,400,Review clue: This figure is the Roman goddess of the hunt.,Diana,Diana,Mythology reference
+MR_100,Mythology & Religion,hard,500,Review clue: This figure is the Roman god of fire and metalworking.,Vulcan,Vulcan,Mythology reference

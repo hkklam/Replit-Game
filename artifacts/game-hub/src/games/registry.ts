@@ -17,6 +17,7 @@ import Tetris from "./tetris";
 import FlowFree from "./flow-free";
 import TetrisRoyale from "./tetris-royale";
 import Pictionary from "./pictionary";
+import Mahjong from "./mahjong";
 
 export type Tier = "🟢" | "🟡" | "🔴";
 
@@ -237,6 +238,17 @@ export const GAMES: GameMeta[] = [
     gradient: "from-pink-950/80 via-rose-900/30 to-transparent",
     borderColor: "#f472b630",
     component: Pictionary,
+  },
+  {
+    id: "mahjong",
+    name: "Mahjong",
+    icon: "🀄",
+    tier: "🔴",
+    desc: "Hong Kong style 4-player mahjong. 1 human vs 3 AI. Pung, Chow, Tsumo — full HK rules.",
+    color: "#dc2626",
+    gradient: "from-red-950/80 via-red-900/30 to-transparent",
+    borderColor: "#dc262630",
+    component: Mahjong,
   },
 ];
 
